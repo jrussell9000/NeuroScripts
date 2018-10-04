@@ -1,0 +1,45 @@
+#!/bin/bash
+
+# Wrapper for apps/DT_ToCamino program.
+#
+# $Id$
+
+# Find the directory containing this script.
+#SCRIPTDIR=${0%/*}
+SCRIPTDIR=/Volumes/apps/rhel6/Camino/camino-current/bin
+
+# The desired classpath is the parent directory of the directory
+# containing the script.
+UNAME=`uname`
+CYGWIN=`expr ${UNAME} : "CYGWIN"` 
+
+if [ $CYGWIN == '0' ]; then
+    export CLASSPATH=${SCRIPTDIR}/..
+else 
+    export CLASSPATH=`cygpath -w ${SCRIPTDIR}/..`
+fi
+
+
+# Default maximum heap size
+MAXHEAPSIZE=$CAMINO_HEAP_SIZE
+
+if [[ -z $MAXHEAPSIZE ]]; then
+    MAXHEAPSIZE=4000
+fi
+
+# If we don't have enough RAM, decrease the heap size
+
+EXITCODE=$?
+
+if [ $EXITCODE == '127' ]; then
+    echo "java executable not found. Unable to run command" >&2
+    exit 127
+fi
+
+while [ $EXITCODE != 0 ] ; do
+    HEAPSIZE=$(($MAXHEAPSIZE / 2))
+    EXITCODE=$?
+done
+
+exec java -Xmx${MAXHEAPSIZE}M  -Djava.util.logging.config.file=${SCRIPTDIR}/../logging.properties apps/EntryPoint DT_ToCamino -lowertriangular $*
+
