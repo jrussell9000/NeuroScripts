@@ -14,6 +14,7 @@ echo eg:
 echo
 echo convert_script_all.sh /study/mri/raw-data /study5/aa-scratch/MRI 002 003 004
 echo
+echo
 
 else
 
