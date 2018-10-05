@@ -20,86 +20,142 @@ else
 
 RAW_INPUT_DIR=$1
 echo "Input directory "$RAW_INPUT_DIR
+
 DATASET_DIR=$2
 echo "Output directory "$DATASET_DIR
 
 shift 2
-subject=$*
+SUBJECTS_RAW=$* 
+
+SUBJECTS=`echo $SUBJECTS_RAW | tr -d "_"`
+
 cd ${RAW_INPUT_DIR} || exit
 
 echo ~~~Convert File~~~;
 
-for i in ${subject}; do
+for i in ${SUBJECTS}; do
 
   #Making directories to hold per subject SCANS
-  mkdir -p -v ${i}
+  mkdir -p -v ${DATASET_DIR}/${i} 
 
-done
+done 
 
 for i in ${DATASET_DIR}/*/; do
+  echo "Subject folder" ${i} "exists in dataset_dir" 
   cd ${i} || return
-  mkdir -p -v DTI_RAW
-  mkdir -p -v T1
-  mkdir -p -v T2
-  mkdir -p -v 2DFAST
-  mkdir -p -v MASK
+  mkdir -p -v ANAT
+  mkdir -p -v DTI
+  #mkdir -p -v T1
+  #mkdir -p -v T2
+  #mkdir -p -v 2DFAST
+  #mkdir -p -v MASK
   mkdir -p -v FMAP
-  mkdir -p -v EDDY
-  mkdir -p -v CORRECTED
-  mkdir -p -v SCHEME
-  mkdir -p -v CAMINO
-  mkdir -p -v SNR
-  mkdir -p -v TENSOR
-  mkdir -p -v TEMPLATE
-  mkdir -p -v SCALARS
-  mkdir -p -v TRACKVIS
+  #mkdir -p -v EDDY
+  #mkdir -p -v CORRECTED
+  #mkdir -p -v SCHEME
+  #mkdir -p -v CAMINO
+  #mkdir -p -v SNR
+  #mkdir -p -v TENSOR
+  #mkdir -p -v TEMPLATE
+  #mkdir -p -v SCALARS
+  #mkdir -p -v TRACKVIS
   mkdir -p -v INFO
-  mkdir -p -v rs-fMRI
+  #mkdir -p -v rs-fMRI
 
 done
 
-for i in ${RAW_INPUT_DIR}; do
+for i in ${SUBJECTS}; do
 
-  cd ${DATASET_DIR}/${i} || continue
-
+  cd ${RAW_INPUT_DIR}/_${i} || continue 
+  
   echo ~~~Subject in process: ${i}~~~
 
-  SUBJ=`echo $i | tr "." "-"| awk -F"/" '{$1=$1}1' OFS=""`
-  echo ~~~Prefix is ${SUBJ}~~~
-  cp ${RAW_INPUT_DIR}/${i}/dicoms/info.txt INFO/${SUBJ}_info.txt;
+  SUBJ_DIR=${DATASET_DIR}/${i}
 
+  cp ${RAW_INPUT_DIR}/_${i}/dicoms/info.txt ${SUBJ_DIR}/INFO/${i}_info.txt;
+
+
+  echo "~~~~~Converting anatomical scans~~~~~~"
+	
+	echo "-------Starting T1-------"
+
+	for scanpath in ${RAW_INPUT_DIR}/_${i}/dicoms/*bravo/; do
+		#Verify that only directories are considered, per https://unix.stackexchange.com/questions/86722/how-do-i-loop-through-only-directories-in-bash
+		if [ -d ${scanpath} ]; then
+			echo ${scanpath}
+			SCANTYPE=`basename ${scanpath} | awk 'BEGIN {FS="_"} {print $NF}'`	
+			#echo $SCANTYPE	
+			convert_file ${scanpath} ${SUBJ_DIR}/ANAT/${i}_T1_${SCANTYPE} nii;
+	
+		fi
+	done
+
+	echo "-------Starting T2-------"
+
+	for scanpath in ${RAW_INPUT_DIR}/_${i}/dicoms/*3dir/; do
+                #Verify that only directories are considered, per https://unix.stackexchange.com/questions/86722/how-do-i-loop-through-only-directories-in-bash
+                if [ -d ${scanpath} ]; then
+                        echo ${scanpath}
+                        SCANTYPE=`basename ${scanpath} | awk 'BEGIN {FS="_"} {print $NF}'` 
+			#echo $SCANTYPE  
+                        convert_file ${scanpath} ${SUBJ_DIR}/ANAT/${i}_T2_${SCANTYPE} nii;
+
+                fi
+        done
+
+echo "~~~~~Converting DTI scans~~~~~" 
+	for scanpath in ${RAW_INPUT_DIR}/_${i}/dicoms/{*dti,*FA,*ADC,*CMB}/; do
+                #Verify that only directories are considered, per https://unix.stackexchange.com/questions/86722/how-do-i-loop-through-only-directories-in-bash
+                if [ -d ${scanpath} ]; then
+                        echo ${scanpath}
+       			SCANTYPE=`basename ${scanpath} | awk 'BEGIN {FS="_"} {print $NF}'`                 
+                        #echo $SCANTYPE  
+                        convert_file ${scanpath} ${SUBJ_DIR}/DTI/${i}_DTI_${SCANTYPE} nii;
+ 
+                fi
+        done
+
+echo "~~~~~Converting Field Maps~~~~~"
+
+        for scanpath in ${RAW_INPUT_DIR}/_${i}/dicoms/*fmap/; do
+                #Verify that only directories are considered, per https://unix.stackexchange.com/questions/86722/how-do-i-loop-through-only-directories-in-bash
+                if [ -d ${scanpath} ]; then
+			
+			echo ${scanpath}
+			#Problem: Multiple fieldmap directories exist for each subject
+			#Solution: Parse each subjects info.txt file to determine which is which
+			
+			#SEQ_SCANTYPE is the full directory name of the scan sequence (e.g., s01_epi)
+			SEQ_SCANTYPE=$(basename ${scanpath})
+       				
+			IMAGE_DESC=$(grep -A 2 "_${i}/dicoms/${SEQ_SCANTYPE}" ${RAW_INPUT_DIR}/_${i}/dicoms/info.txt | tail -n 1 )
+
+			case "$IMAGE_DESC" in
+				*DTI*)
+					MAPTYPE=DTI
+					;;
+				*EPI*)
+					MAPTYPE=EPI
+					;;
+			esac
+			
+                        #echo $MAPTYPE 
+			
+			convert_file ${scanpath} ${SUBJ_DIR}/FMAP/${i}_FMAP_${MAPTYPE} nii; 
+
+                fi
+        done
 done
-fi
 
-#echo CONVERT ANATOMICAL
-#for j in `ls -d *_bravo *_3dir`;
-#do
-#prefix=`echo $j | awk 'BEGIN{FS="/"}{print $1}'`;
-##subj=${i};
-#echo Scan is ${j}
-#echo convert_file ${j} T1/${subj}_${prefix} nii;
-#convert_file ${j} T1/${subj}_${prefix} nii;
-#done
 
-#echo CONVERT T2
-#for j in `ls -d *_cube`;
-#do
-#prefix=`echo $j | awk 'BEGIN{FS="/"}{print $1}'`;
-##subj=${i};
-#echo Scan is ${j}
-#echo convert_file ${j} T2/${subj}_${prefix} nii;
-#convert_file ${j} T2/${subj}_${prefix} nii;
-#done
-#
-# echo CONVERT DTI SCANS
+
 # for j in `ls -d *_dti *_hydie *_hydi`;
 # do
 #   prefix=`echo $j | awk 'BEGIN{FS="/"}{print $1}'`;
 #   #subj=${i};
 #   echo Scan is ${j}
 #   echo convert_file ${j} DTI_RAW/${subj}_${prefix} nii;
-#   convert_file ${j} DTI_RAW/${subj}_${prefix} nii;
-# done
+#   convert_file ${j} DTI_RAW/${subj}_${prefix} nii; # done
 #
 # #echo CONVERT rs-fMRI SCANS
 # #for j in `ls -d *_epi`;
@@ -107,8 +163,7 @@ fi
 # #prefix=`echo $j | awk 'BEGIN{FS="/"}{print $1}'`;
 # ##subj=${i};
 # #echo Scan is ${j}
-# #echo convert_file ${j} rs-fMRI/${subj}_${prefix} nii;
-# #convert_file ${j} rs-fMRI/${subj}_${prefix} nii;
+# #echo convert_file ${j} rs-fMRI/${subj}_${prefix} nii; #convert_file ${j} rs-fMRI/${subj}_${prefix} nii;
 # #done
 #
 # echo CONVERT 2DFAST
@@ -128,4 +183,4 @@ fi
 # cd ${DATASET_DIR}
 # echo "You are now in the output directory "
 # pwd
-# fi
+ fi
