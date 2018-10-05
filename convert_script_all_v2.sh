@@ -9,7 +9,7 @@ echo ERROR, not enough input variables
 echo
 echo Convert DTI, FMAP, T1, T2 from DICOM to NIfTI for multiple subjects
 echo Usage:
-echo sh convert_script_all.sh {raw_input_dir} {process_dir} {subjs_separate_by_space}
+echo sh convert_script_all.sh raw_input_dir process_dir subjs_separate_by_space
 echo eg:
 echo
 echo convert_script_all.sh /study/mri/raw-data /study5/aa-scratch/MRI 002 003 004
@@ -25,7 +25,7 @@ echo "Output directory "$DATASET_DIR
 
 shift 2
 subject=$*
-cd ${RAW_INPUT_DIR}
+cd ${RAW_INPUT_DIR} || exit
 
 echo ~~~Convert File~~~;
 
@@ -36,8 +36,8 @@ for i in ${subject}; do
 
 done
 
-for i in 'ls -d ${DATASET_DIR}'; do
-  cd ${i}
+for i in ${DATASET_DIR}/*/; do
+  cd ${i} || return
   mkdir -p -v DTI_RAW
   mkdir -p -v T1
   mkdir -p -v T2
@@ -60,7 +60,7 @@ done
 
 for i in ${RAW_INPUT_DIR}; do
 
-  cd ${DATASET_DIR}/${i}
+  cd ${DATASET_DIR}/${i} || continue
 
   echo ~~~Subject in process: ${i}~~~
 
