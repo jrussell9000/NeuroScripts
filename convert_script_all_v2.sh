@@ -84,9 +84,11 @@ for i in ${SUBJECTS}; do
 		if [ -d ${scanpath} ]; then
 			echo ${scanpath}
 			SCANTYPE=`basename ${scanpath} | awk 'BEGIN {FS="_"} {print $NF}'`	
-			#echo $SCANTYPE	
-			convert_file ${scanpath} ${SUBJ_DIR}/ANAT/${i}_T1_${SCANTYPE} nii;
-	
+			cp -r ${scanpath} /tmp	
+			for z in /tmp/$(basename ${scanpath})/*.bz2; do
+				bzip2 -d $z
+			done
+			dcm2niix -b y -f %i_${SCANTYPE} -o ${SUBJ_DIR}/ANAT/ /tmp/$(basename ${scanpath})	
 		fi
 	done
 
@@ -98,7 +100,7 @@ for i in ${SUBJECTS}; do
                         echo ${scanpath}
                         SCANTYPE=`basename ${scanpath} | awk 'BEGIN {FS="_"} {print $NF}'` 
 			#echo $SCANTYPE  
-                        convert_file ${scanpath} ${SUBJ_DIR}/ANAT/${i}_T2_${SCANTYPE} nii;
+                        #convert_file ${scanpath} ${SUBJ_DIR}/ANAT/${i}_T2_${SCANTYPE} nii;
 
                 fi
         done
@@ -110,7 +112,7 @@ echo "~~~~~Converting DTI scans~~~~~"
                         echo ${scanpath}
        			SCANTYPE=`basename ${scanpath} | awk 'BEGIN {FS="_"} {print $NF}'`                 
                         #echo $SCANTYPE  
-                        convert_file ${scanpath} ${SUBJ_DIR}/DTI/${i}_DTI_${SCANTYPE} nii;
+                        #convert_file ${scanpath} ${SUBJ_DIR}/DTI/${i}_DTI_${SCANTYPE} nii;
  
                 fi
         done
@@ -141,7 +143,7 @@ echo "~~~~~Converting Field Maps~~~~~"
 			
                         #echo $MAPTYPE 
 			
-			convert_file ${scanpath} ${SUBJ_DIR}/FMAP/${i}_FMAP_${MAPTYPE} nii; 
+			#convert_file ${scanpath} ${SUBJ_DIR}/FMAP/${i}_FMAP_${MAPTYPE} nii; 
 
                 fi
         done
