@@ -34,40 +34,40 @@ SUBJECTS_RAW=$*
 SUBJECTS=$(echo $SUBJECTS_RAW | tr -d "_")
 
 #####FUNCTION CALLS#####
-convert() {
-  
-  for scanpath in ${RAW_INPUT_DIR}/_${i}/dicoms/*/; do
-      #Verify that only directories are considered, per https://unix.stackexchange.com/questions/86722/how-do-i-loop-through-only-directories-in-bash
-      if [ -d ${scanpath} ]; then
-	continue
-      fi
-		  
-      SEQ_GESCANTYPE=$(basename ${scanpath}) 
-      
-      GE_SCANTYPE=`basename ${scanpath} | awk 'BEGIN {FS="_"} {print $NF}'`		
-	
-      IMAGE_DESC=$(grep -A 2 "_${i}/dicoms/${SEQ_SCANTYPE}" ${RAW_INPUT_DIR}/_${i}/dicoms/info.txt | tail -n 1 )
-
-      case "$IMAGE_DESC" in
-	*DTI*)
-	  MAPTYPE=DTI
-	;;
-	*EPI*)
-	  MAPTYPE=EPI
-	;;
-      esac
-      
-      tmppath_check
-
-	cp -fr ${scanpath} /tmp	
-		  
-	decompress 
-	rm ${SUBJ_DIR}/ANAT/*T1*
-
-	dcm2niix -b y -f %i_${SCANTYPE}_T1 -o ${SUBJ_DIR}/ANAT/ /tmp/$(basename ${scanpath})	
-
-    done
-}
+#convert() {
+#  
+#  for scanpath in ${RAW_INPUT_DIR}/_${i}/dicoms/*/; do
+#      #Verify that only directories are considered, per https://unix.stackexchange.com/questions/86722/how-do-i-loop-through-only-directories-in-bash
+#      if [ -d ${scanpath} ]; then
+#	continue
+#      fi
+#		  
+#      SEQ_GESCANTYPE=$(basename ${scanpath}) 
+#      
+#      GE_SCANTYPE=`basename ${scanpath} | awk 'BEGIN {FS="_"} {print $NF}'`		
+#	
+#      IMAGE_DESC=$(grep -A 2 "_${i}/dicoms/${SEQ_SCANTYPE}" ${RAW_INPUT_DIR}/_${i}/dicoms/info.txt | tail -n 1 )
+#
+#      case "$IMAGE_DESC" in
+#	*DTI*)
+#	  MAPTYPE=DTI
+#	;;
+#	*EPI*)
+#	  MAPTYPE=EPI
+#	;;
+#      esac
+#      
+#      tmppath_check
+#
+#	cp -fr ${scanpath} /tmp	
+#		  
+#	decompress 
+#	rm ${SUBJ_DIR}/ANAT/*T1*
+#
+#	dcm2niix -b y -f %i_${SCANTYPE}_T1 -o ${SUBJ_DIR}/ANAT/ /tmp/$(basename ${scanpath})	
+#
+#    done
+#}
 
 #If $scanpath already exists in /tmp, delete it
 tmppath_check() {
@@ -89,10 +89,19 @@ for i in ${SUBJECTS}; do
 
 #Making directories to hold per subject SCANS
   SUBJ_PATH=${DATASET_DIR}/${i}
+  rm -rf ${SUBJ_PATH} 
   mkdir -p -v ${SUBJ_PATH}
+
+  rm -rf ${SUBJ_PATH}/ANAT
   mkdir -p -v ${SUBJ_PATH}/ANAT 
+ 
+  rm -rf ${SUBJ_PATH}/DTI
   mkdir -p -v ${SUBJ_PATH}/DTI 
+ 
+  rm -rf ${SUBJ_PATH}/FMAP
   mkdir -p -v ${SUBJ_PATH}/FMAP  
+ 
+  rm -rf ${SUBJ_PATH}/INFO
   mkdir -p -v ${SUBJ_PATH}/INFO 
 
 done
@@ -124,9 +133,8 @@ for i in ${SUBJECTS}; do
 	cp -fr ${scanpath} /tmp	
 		  
 	decompress 
-	rm ${SUBJ_DIR}/ANAT/*T1*
 
-	dcm2niix -b y -f %i_${SCANTYPE}_T1 -o ${SUBJ_DIR}/ANAT/ /tmp/$(basename ${scanpath})	
+	dcm2niix -b y -z y -f ${i}_${SCANTYPE}_T1 -o ${SUBJ_DIR}/ANAT/ /tmp/$(basename ${scanpath})	
       
       fi
 
@@ -145,8 +153,8 @@ for i in ${SUBJECTS}; do
 	cp -fr ${scanpath} /tmp	
       
 	decompress 
-		       
-	dcm2niix -b y -f %i_${SCANTYPE}_T2 -o ${SUBJ_DIR}/ANAT/ /tmp/$(basename ${scanpath})	
+
+	dcm2niix -b y -z y -f ${i}_${SCANTYPE}_T2 -o ${SUBJ_DIR}/ANAT/ /tmp/$(basename ${scanpath})	
       
       fi
     
@@ -165,8 +173,8 @@ for i in ${SUBJECTS}; do
 	cp -fr ${scanpath} /tmp	
       
 	decompress 
-		       
-	dcm2niix -b y -f %i_${SCANTYPE}_DTI -o ${SUBJ_DIR}/DTI/ /tmp/$(basename ${scanpath})
+
+	dcm2niix -b y -z y -f ${i}_${SCANTYPE}_DTI -o ${SUBJ_DIR}/DTI/ /tmp/$(basename ${scanpath})
 
       fi
     
@@ -182,11 +190,8 @@ for i in ${SUBJECTS}; do
 	#Problem: Multiple fieldmap directories exist for each subject
 	#Solution: Parse each subjects info.txt file to determine which is which
 	
-	#SEQ_SCANTYPE is the full directory name of the scan sequence (e.g., s01_epi)
-	SEQ_SCANTYPE=$(basename ${scanpath})
-		
-	IMAGE_DESC=$(grep -A 2 "_${i}/dicoms/${SEQ_SCANTYPE}" ${RAW_INPUT_DIR}/_${i}/dicoms/info.txt | tail -n 1 )
-
+	IMAGE_DESC=$(grep -A 2 "_${i}/dicoms/$(basename ${scanpath})" ${RAW_INPUT_DIR}/_${i}/dicoms/info.txt | tail -n 1 )
+	echo $IMAGE_DESC
 	case "$IMAGE_DESC" in
 		*DTI*)
 			MAPTYPE=DTI
@@ -201,13 +206,16 @@ for i in ${SUBJECTS}; do
 	cp -fr ${scanpath} /tmp	
       
 	decompress 
-		       
-	dcm2niix -b y -f %i_${SCANTYPE}_${MAPTYPE}_DTI -o ${SUBJ_DIR}/FMAP/ /tmp/$(basename ${scanpath}) 
+
+	dcm2niix -b y -z y -m y -f ${i}_${SCANTYPE}_FMAP_${MAPTYPE} -o ${SUBJ_DIR}/FMAP/ /tmp/$(basename ${scanpath}) 
 	
       fi
-        done
+    
+    done
 
-      done
+done
+
+fi
 
 # for j in `ls -d *_dti *_hydie *_hydi`;
 # do
@@ -243,4 +251,3 @@ for i in ${SUBJECTS}; do
 # cd ${DATASET_DIR}
 # echo "You are now in the output directory "
 # pwd
- fi
