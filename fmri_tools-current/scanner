@@ -1,0 +1,692 @@
+#!/usr/bin/env python
+
+ID = "$Id:"[1:-1]
+
+# Written by John Ollinger
+#
+# University of Wisconsin, 8/16/09
+
+#Copyright (c) 2006-2007, John Ollinger, University of Wisconsin
+#All rights reserved.
+#
+#Redistribution and use in source and binary forms, with or without
+#modification, are permitted provided that the following conditions are
+#met:
+#
+#    * Redistributions of source code must retain the above copyright
+#       notice, this list of conditions and the following disclaimer.
+#
+#    * Redistributions in binary form must reproduce the above
+#       copyright notice, this list of conditions and the following
+#       disclaimer in the documentation and/or other materials provided
+#       with the distribution.
+#
+#THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+#"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+#LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+#A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+#OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+#SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+#LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+#DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+#THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+#(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+#OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# ** This software was designed to be used only for research purposes. **
+# ** Clinical uses are not recommended, and have never been evaluated. **
+# ** This software comes with no warranties of any kind whatsoever,    **
+# ** and may not be useful for anything.  Use it at your own risk!     **
+# ** If these terms are not acceptable, you aren't allowed to use the code.**
+
+
+import sys
+import os
+import math
+import time
+from optparse import OptionParser
+
+import wx
+from numpy import zeros, float, ubyte, array, isnan, integer, empty, \
+                  short, fromstring, arange, ones, where, abs
+
+from wimage_lib import SSHPipe, except_msg, OpenRemote
+from subprocess import PIPE, Popen
+
+UPDATE_INTERVAL = 100 # Duration of timer loop in ms.
+DATA_RATE = 2000  # Data rate in bytes/sec
+READ_LENGTH = 4*(int(DATA_RATE*UPDATE_INTERVAL/1000.)/4 + .999) 
+PACKET_TIME=.004
+PACKET_LGTH = 8
+PACKET_WDS = PACKET_LGTH/2
+LINUX_HOST = 'mentha'
+LINUX_USER = 'mri'
+LINUX_STATUS_FILE = '/local/.get_physio_status.txt'
+CHANNEL_NAMES = ['ECG2','ECG3','Resp','PPG']
+IOCODES = {'init':'init', 'go':'gogo', 'stop':'stop'}
+
+
+YDIM = 128
+WXDIM = 1024
+LABELDIM = 40
+
+WINDOW_WIDTH_NOMINAL = 10 # width in seconds
+HASH_WIDTH = YDIM
+HASH_STEP = 50
+
+SCANNER_FILE = '.scanner_info.txt'
+
+
+def exec_linux_cmd(args):
+#    print "ssh %s@%s %s" % (LINUX_USER, LINUX_HOST, args)
+    f = Popen("ssh %s@%s " %  (LINUX_USER, LINUX_HOST) + args, shell=True, \
+                            stdout=PIPE, stderr=PIPE, executable='/bin/bash')
+    output, errmsg = f.communicate()
+    errs = f.wait()
+#    if len(errmsg) > 0:
+#        raise IOError('Error executing %s\n%s\n' % (cmd, errmsg))
+    return output
+
+class StripChart(wx.Panel):
+
+    def __init__(self, topframe, nchan=3, ID=-1, size=(1024, 384), pos=wx.DefaultPosition, label='', chan_names=CHANNEL_NAMES, verbose=False):
+        wx.Panel.__init__(self, topframe, ID, pos, size, wx.NO_BORDER,label)
+
+        self.exam = ''
+        self.patid = ''
+        self.serno = ''
+        self.psdname = ''
+
+        self.verbose = verbose
+        self.SetBackgroundColour(wx.BLACK)
+        self.frame_xdim = size[0]
+        self.frame_ydim = size[1]
+        self.xdim = size[0]
+        self.ydim = YDIM
+        self.nchan = nchan
+        self.chan_names = chan_names
+        self.pos_yaxes = self.ydim*ones(self.nchan)
+
+        self.fs = self.GetFont().GetPointSize()
+        self.fs = 14
+        self.font = wx.Font(self.fs,wx.SWISS,wx.NORMAL,wx.BOLD)
+
+        self.axis_color =  array([0, 255, 255]).astype(ubyte)
+        self.frame_color = array([0, 255, 255]).astype(ubyte)
+        self.sec_per_div = 1.
+        self.rescale = True
+
+        self.plot_data = zeros([self.xdim, self.nchan], integer)
+        self.plot_scl = zeros([self.xdim, self.nchan], integer)
+        self.scrap = zeros([1, self.nchan], integer)
+        self.scrap_off = 0
+        self.plotmax = zeros(self.nchan, float)
+        self.paused = False
+
+        self.TimeStep(1.)
+        self.SetupDecorations()
+        self.time0 = time.time()
+        self.scale_time = self.time0
+        self.start = True
+        self.last_serno = -1
+        self.last_outfile = 'None'
+
+        self.DrawFrame()
+
+    def TimeStep(self, sec_per_div):
+        self.sec_per_div = sec_per_div
+        self.time_step = 2*int(sec_per_div/(PACKET_TIME*HASH_STEP))
+        if self.verbose:
+            print 'Time step: %d pts' % self.time_step
+        if self.time_step < 1.:
+            self.time_step = 1.
+
+    def SetupDecorations(self):
+
+#       Set hash marks for every HASH_STEP pixels.
+        nsteps = int(WXDIM/HASH_STEP) + 1
+        xposs = (HASH_STEP*arange(nsteps)).tolist()
+        self.hash_marks = []
+        for ch in xrange(self.nchan):
+            ypos = ch*self.ydim + self.ydim/2
+            for xpos in xposs:
+                self.hash_marks.append(\
+                        (xpos, ypos-HASH_WIDTH/2, xpos, ypos+HASH_WIDTH/2))
+
+#       Now define the axes and frames.
+        self.axes_list = []
+        self.box_list = []
+        for ch in xrange(self.nchan):
+            self.axes_list.append( \
+                    (0,        ch*self.ydim+self.pos_yaxes[ch], \
+                     self.xdim,ch*self.ydim+self.pos_yaxes[ch]))
+            self.box_list.append( \
+                    (0, (ch+1)*self.ydim, self.xdim, (ch+1)*self.ydim))
+
+    def Update(self, data_in):
+#       Inuitialize.
+        if self.paused:
+            return
+        if self.start:
+            self.time0 = time.time()
+            self.start = False
+
+        nscrap = self.scrap.shape[0]
+
+#       Get new data points
+        newpts = data_in.shape[0]
+        plot_new = zeros([1 + newpts/self.time_step, self.nchan], integer)
+        i0  = self.scrap_off
+        n_new = 0
+        nlast = 0
+        while i0 < data_in.shape[0]:
+            plot_new[n_new,:] = data_in[i0,:]
+            n_new += 1
+            nlast = i0
+            i0 += self.time_step
+
+#       Update plot data.
+#        if n_new <= 0:
+#            print 111,'n_new: ',n_new, data_in.shape, nscrap, self.scrap_off
+        self.scrap = data_in[nlast+1:,:]
+        self.scrap_off = (self.time_step - (data_in.shape[0] - nlast - 1)) % self.time_step
+        if n_new <= 0:
+            return
+
+        self.plot_data[:-n_new,:] = self.plot_data[n_new:,:]
+        self.plot_data[-n_new:,:] = plot_new[:n_new,:]
+
+#       Find scale factor.
+        if self.rescale:
+            self.rescale = False
+            self.Rescale()
+        plot_scl = self.scl*(self.plot_data - self.plotmin)
+        if plot_scl.max() > self.ydim or plot_scl.min() < 0:
+            self.Rescale()
+            plot_scl = self.scl*(self.plot_data - self.plotmin)
+
+#       Plot it.
+        x_coords = arange(self.xdim).astype(integer)
+        y_coords = zeros([self.nchan, self.xdim], integer)
+        for ch in xrange(self.nchan):
+            y_coords[ch,:] = self.nchan*self.ydim - \
+                        (plot_scl[:,ch] + ch*self.ydim).astype(integer)
+        self.DrawFrame()
+        self.DrawPlot(x_coords, y_coords)
+
+    def Rescale(self):
+        self.plotmax = self.plot_data.max(axis=0)
+        self.plotmin = self.plot_data.min(axis=0)
+        self.scl = .95*float(self.ydim)/(self.plotmax - self.plotmin)
+        self.scl = where(self.plotmax == self.plotmin, 1., self.scl)
+        self.pos_yaxes = self.scl*self.plotmin
+        self.SetupDecorations()
+
+    def DrawFrame(self):
+        dc = wx.ClientDC(self)
+        dc.SetTextForeground("goldenrod")
+        dc.Clear()
+        pen = dc.GetPen()
+        dc.SetPen(pen)
+
+#       Draw the axes, boxes, and hash marks.
+        pen.SetColour('green')
+        pen.SetWidth(1)
+        dc.DrawLineList(self.axes_list, pens=pen)
+        pen.SetColour('green')
+        pen.SetWidth(2)
+        dc.DrawLineList(self.box_list, pens=pen)
+
+        pen = wx.Pen('white', style=wx.USER_DASH, width=1)
+        pen.SetDashes([1,1,0,0,1,1,0,0,1,1,0,0,1,1,0,0])
+        pen.SetWidth(1)
+        dc.DrawLineList(self.hash_marks, pens=pen)
+
+#       Now for the annotations
+        dc.SetPen(pen)
+        pen.SetWidth(1)
+        dc.SetFont(self.font)
+        dc.SetTextForeground("cyan")
+        line_hght = 20
+        for ch in xrange(self.nchan):
+            dc.DrawText(self.chan_names[self.nchan-ch-1], 0, ch*self.ydim)
+        xpos = 0
+        ypos = self.nchan*self.ydim
+        dc.DrawText('%3.1f seconds per division' % self.sec_per_div, xpos, ypos)
+        sec = time.time() - self.time0
+        min = int(sec/60)
+        sec -= min*60
+        ypos += line_hght
+        dc.DrawText('Elapsed time: %02d:%02d'%(min,sec), xpos, ypos)
+        xpos = 200
+        ypos = self.nchan*self.ydim
+        dc.DrawText('Exam number: %s' % self.exam, xpos, ypos)
+        ypos += line_hght
+        dc.DrawText('Subject ID: %s' % self.patid, xpos, ypos)
+        ypos += line_hght
+        dc.DrawText('Series Number: %s' % self.serno, xpos, ypos)
+        ypos += line_hght
+        dc.DrawText('Pulse sequence: %s' % self.psdname, xpos, ypos)
+        xpos += 300
+        ypos = self.nchan*self.ydim
+        dc.DrawText('Last Series: %s' % self.last_serno, xpos, ypos)
+        ypos = self.nchan*self.ydim + line_hght
+        dc.DrawText('Last File: %s' % self.last_outfile, xpos, ypos)
+#            self.exam, self.patid, self.psdname, self.serno = data.split('_')
+
+    def DrawPlot(self, x_coords, y_coords):
+#       Draw the graph.
+        dc = wx.ClientDC(self)
+        pen = wx.Pen('yellow', style=wx.SOLID, width=1)
+        pen.SetWidth(1)
+        lines = []
+        for i in xrange(self.nchan):
+            for j in xrange(len(x_coords)-1):
+                lines.append(\
+                (x_coords[j], y_coords[i][j], x_coords[j+1], y_coords[i][j+1]))
+        pen.SetWidth(1)
+        pen.SetColour('yellow')
+        dc.DrawLineList(lines, pens=pen)
+
+    def GetFilename(self):
+#       Open file dialog box.
+        wildcard = "*.dat | *.mat "
+        dlg = wx.FileDialog(self,message="Choose File", \
+                            defaultDir=os.getcwd(), \
+                            defaultFile="", \
+                            wildcard="*", \
+                            style=wx.SAVE | wx.MULTIPLE | wx.CHANGE_DIR)
+
+        if dlg.ShowModal() == wx.ID_OK:
+            self.dialog_fname = dlg.GetPaths()[0]
+            dlg.Destroy()
+        else:
+            self.dialog_fname = None
+            sys.stderr.write("Read dialog failed.\n")
+            dlg.Destroy()
+            return None
+
+
+
+class PhysioTop(wx.Frame):
+
+    def __init__(self):
+        pass
+
+    def Init(self, outfile=None, update_interval=UPDATE_INTERVAL, title='', \
+             test_pattern=False, verbose=False, auto_trigger=False, \
+             exam=None, series=None, id=None): 
+
+
+        self.verbose = verbose
+        if test_pattern:
+            self.test_pattern = '--test-pattern --auto-trigger'
+        elif auto_trigger:
+            self.test_pattern = '--auto-trigger'
+        else:
+            self.test_pattern = ''
+        self.channels = [2,3]
+        self.nchan = len(self.channels)
+        self.stopped = True
+        self.last_summary_string = ''
+        self.button_hght = 100
+        wxdim = WXDIM
+        wydim = self.nchan*YDIM + LABELDIM
+        wx.Frame.__init__(self, None, size=(wxdim, wydim+self.button_hght), \
+                                                                title=title)
+        
+        self.update_interval = update_interval
+        self.read_length = 8*(int(DATA_RATE*UPDATE_INTERVAL/1000.)/8 + 1)
+        self.SetBackgroundColour("darkslategray")
+
+#       Create strip chart object.
+        self.chart = StripChart(self, nchan=self.nchan, size=(wxdim, wydim), chan_names=('Resp', 'PulseOx'), verbose=self.verbose)
+
+        if outfile is not None:
+            self.outfile = outfile
+        else:
+            self.outfile = ''
+            if exam is not None:
+                self.outfile += 'E%s_' % exam
+            if series is not None:
+                self.outfile += 'S%s_' % series
+            if id is not None:
+                self.outfile += 'ID%s_' % id
+            if len(self.outfile) > 0:
+                self.outfile = self.outfile[:-1]
+        if self.outfile != 'auto' and len(self.outfile) == 0:
+#           No output file specified and no study info.
+            self.chart.GetFilename()
+            self.outfile = self.chart.dialog_fname
+            if self.outfile is None:
+                raise RuntimeError('Invalid output file')
+        if not self.outfile.startswith('/study'):
+            self.outfile = '/local/%s' % os.path.basename(self.outfile)
+
+#       Create status bar
+        self.statusbar = self.CreateStatusBar()
+        self.statusbar.SetFieldsCount(1)
+        self.status_text = ''
+        self.UpdateStatusBar('Intialized')
+
+        self.WaitTTLButton()
+        self.StopButton()
+        self.PauseButton()
+        self.RescaleButton()
+        self.HalfSecPerDiv()
+        self.OneSecPerDiv()
+        self.TwoSecPerDiv()
+        self.FourSecPerDiv()
+        self.ExitButton()
+
+        btnsizer = wx.BoxSizer(wx.HORIZONTAL)
+        btnsizer.Add(self.go, 1, wx.ALIGN_LEFT | wx.EXPAND | wx.ALL, border=2 )
+        btnsizer.Add(self.stop, 1, wx.ALIGN_LEFT | wx.EXPAND | wx.ALL, border=2 )
+        btnsizer.Add(self.pause, 1, wx.ALIGN_LEFT | wx.EXPAND | wx.ALL, border=2 )
+        btnsizer.Add(self.rescale, 1, wx.ALIGN_LEFT | wx.EXPAND | wx.ALL, border=2 )
+        btnsizer.Add(self.halfdiv, 1, wx.ALIGN_LEFT | wx.EXPAND | wx.ALL, border=2 )
+        btnsizer.Add(self.onediv, 1, wx.ALIGN_LEFT | wx.EXPAND | wx.ALL, border=2 )
+        btnsizer.Add(self.twodiv, 1, wx.ALIGN_LEFT | wx.EXPAND | wx.ALL, border=2 )
+        btnsizer.Add(self.fourdiv, 1, wx.ALIGN_LEFT | wx.EXPAND | wx.ALL, border=2 )
+        btnsizer.Add(self.exit, 1, wx.ALIGN_LEFT | wx.EXPAND | wx.ALL, border=2)
+        btnsizer.SetDimension(0, 0, wxdim, self.button_hght/2)
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(self.chart,            1, wx.ALIGN_TOP | wx.ALL, border=2)
+        sizer.Add(btnsizer) #, 1, wx.ALIGN_BOTTOM | wx.ALL, border=2)
+        self.SetSizerAndFit(sizer)
+        self.sizer = sizer
+
+#       Create timer events to implement real-time loop.
+        self.timer = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER, self.OnTimerEvent, self.timer)
+        status = self.timer.Start(self.update_interval, oneShot=False)
+        self.scanfile = '%s/%s' % (os.getenv('HOME'), SCANNER_FILE)
+        self.scanfile_mtime = 0
+        self.GetScanInfo()
+
+        self.time0 = time.time()
+
+        self.StartAcq()
+
+    
+    def GetScanInfo(self):
+        st = os.stat(self.scanfile)
+        if self.scanfile_mtime != st.st_mtime:
+            self.scanfile_mtime = st.st_mtime
+            f = open(self.scanfile, 'r')
+            data = f.read().strip()
+            f.close()
+            self.exam, self.patid, psdname, self.serno = data.split('_')
+            self.psdname = psdname.split('/')[-1]
+            self.chart.exam = self.exam
+            self.chart.patid = self.patid
+            self.chart.psdname = self.psdname
+            self.chart.serno = self.serno
+            self.new_scaninfo = True
+
+    def UpdateStatusBar(self, status_text):
+        if status_text != self.status_text:
+            self.status_text = status_text
+            self.statusbar.SetStatusText(status_text,0)
+        
+
+    def StartAcq(self):
+        """
+        Spawn remote task and prep communications.
+        """
+        self.pipe = None
+        try:
+            cmd = 'get_physio --pipe %s auto' % self.test_pattern
+#            sys.stdout.write(cmd + '\n')
+#            sys.stdout.flush()
+            self.pipe = SSHPipe(cmd, LINUX_HOST, LINUX_USER)
+            if self.pipe is None:
+                raise OSError('Unidentified error in SSHPipe')
+        except OSError, errstr:
+            sys.stderr.write('\n%s\n%s\n' % (errstr, except_msg()))
+            self.Exit()
+
+        print 'Starting acquisition task on %s.' % LINUX_HOST
+        while True:
+            if self.pipe.ReadReady():
+                sys.stdout.write('Acquisition task ready.\n')
+                sys.stdout.flush()
+                break
+
+#       Handshake with remote process before starting GUI.
+        loop = True
+        while loop:
+            text = self.pipe.Read(self.read_length)
+            err = self.pipe.ReadError()
+            if len(err) > 0:
+                sys.stdout.write('Error msg: %s\n' % err)
+                sys.stdout.flush()
+            if len(text) > 0:
+#                sys.stdout.write('get_physio output: %s\n' % text)
+#                sys.stdout.flush()
+                wds = text.split('\n')
+                for wd in wds:
+                    if wd.strip().endswith('begin'):
+                        print 'Acquisition ready. Click "Wait for TTL" button when ready.'
+                        loop = False
+                        break
+            else:
+                time.sleep(.1)
+        self.tail = ''
+        self.iocode = 'init'
+    
+    def WaitTTLButton(self):
+#       Wait for sync pulse from scanner.
+        self.go_id = wx.NewId()
+        self.go = wx.Button(self, self.go_id, "Wait For TTL", size=(100, 50), \
+                            pos=wx.DefaultPosition)
+        self.Bind(wx.EVT_BUTTON, self.OnWaitTTL, id=self.go_id)
+    
+    def StopButton(self):
+#       Terminate data collection.
+        self.stop_id = wx.NewId()
+        self.stop = wx.Button(self, self.stop_id, "Stop", size=(100, 50), \
+                            pos=wx.DefaultPosition)
+        self.Bind(wx.EVT_BUTTON, self.OnStop, id=self.stop_id)
+
+    def HalfSecPerDiv(self):
+        self.halfdiv_id = wx.NewId()
+        self.halfdiv = wx.Button(self, self.halfdiv_id, ".5 sec/div", \
+                                size=(100, 50), pos=wx.DefaultPosition)
+        self.Bind(wx.EVT_BUTTON, self.OnHalfDiv, id=self.halfdiv_id)
+
+    def OneSecPerDiv(self):
+        self.onediv_id = wx.NewId()
+        self.onediv = wx.Button(self, self.onediv_id, "1 sec/div", \
+                                size=(100, 50), pos=wx.DefaultPosition)
+        self.Bind(wx.EVT_BUTTON, self.OnOneDiv, id=self.onediv_id)
+
+    def TwoSecPerDiv(self):
+        self.twodiv_id = wx.NewId()
+        self.twodiv = wx.Button(self, self.twodiv_id, "2 sec/div", \
+                                size=(100, 50), pos=wx.DefaultPosition)
+        self.Bind(wx.EVT_BUTTON, self.OnTwoDiv, id=self.twodiv_id)
+
+    def FourSecPerDiv(self):
+        self.fourdiv_id = wx.NewId()
+        self.fourdiv = wx.Button(self, self.fourdiv_id, "4 sec/div", \
+                                size=(100, 50), pos=wx.DefaultPosition)
+        self.Bind(wx.EVT_BUTTON, self.OnFourDiv, id=self.fourdiv_id)
+
+    def PauseButton(self):
+        self.pause_id = wx.NewId()
+        self.pause = wx.Button(self, self.pause_id, "Pause", \
+                            pos=wx.DefaultPosition)
+        self.Bind(wx.EVT_BUTTON, self.OnPause, id=self.pause_id)
+
+    def RescaleButton(self):
+        self.rescale_id = wx.NewId()
+        self.rescale = wx.Button(self, self.rescale_id, "Rescale", \
+                            pos=wx.DefaultPosition)
+        self.Bind(wx.EVT_BUTTON, self.OnRescale, id=self.rescale_id)
+
+
+    def ExitButton(self):
+        self.exit_id = wx.NewId()
+        self.exit = wx.Button(self, self.exit_id, "Exit", \
+                            pos=wx.DefaultPosition)
+        self.Bind(wx.EVT_BUTTON, self.OnExit, id=self.exit_id)
+
+
+    def OnWaitTTL(self, evt):
+        self.iocode = 'wait'
+        self.pipe.Write('wait')
+        self.chart.time0 = time.time()
+        self.stopped = False
+        self.UpdateStatusBar('Waiting for TTL pulse.')
+
+    def OnStop(self, evt):
+        self.iocode = 'stop'
+        self.pipe.Write(self.iocode)
+        self.stopped = True
+        self.UpdateStatusBar('Acquisition stopped.')
+
+    def OnRescale(self, evt):
+        self.chart.rescale = True
+
+    def OnHalfDiv(self, evt):
+        self.chart.TimeStep(.5)
+
+    def OnOneDiv(self, evt):
+        self.chart.TimeStep(1)
+
+    def OnTwoDiv(self, evt):
+        self.chart.TimeStep(2)
+
+    def OnFourDiv(self, evt):
+        self.chart.TimeStep(4)
+
+    def OnPause(self, evt):
+        if self.chart.paused:
+            self.chart.paused = False
+            self.UpdateStatusBar(self.pause_status)
+        else:
+            self.chart.paused = True
+            self.pause_status = self.status_text
+            self.UpdateStatusBar('Strip chart display paused.')
+
+    def OnTimerEvent(self,evt):
+        if self.pipe.ReadReady():
+            newdata = self.pipe.Read(self.read_length)
+            if len(newdata) > 0 and not self.stopped and not self.chart.paused:
+                self.UpdateStatusBar('Acquiring data.')
+#           Add leftovers from the last read.
+            data = self.tail + newdata
+#           Check for errors.
+            self.pipe.ReadError()
+
+            npacket = int(len(data)/PACKET_LGTH)
+            packets = fromstring(data[:PACKET_LGTH*npacket], short).\
+                                            reshape([npacket, PACKET_WDS])
+            packets = packets[:,(2,3)]
+            if not self.stopped:
+                self.chart.Update(packets)
+
+#           Left overs for next pass.
+            self.tail = newdata[npacket*PACKET_LGTH:]
+
+#           Update status info.
+            if self.stopped:
+                f = OpenRemote(LINUX_STATUS_FILE, 'r', LINUX_HOST, LINUX_USER)
+                summary_string = f.read()
+                f.close()
+                if summary_string != self.last_summary_string:
+                    print 100,summary_string
+                    print 'File written to %s' % summary_string.split('*')[-1]
+                    self.last_summary_string = summary_string
+                    self.chart.last_serno, self.chart.last_outfile = \
+                                                    summary_string.split('*')
+                    self.chart.DrawFrame()
+        else:
+            err = self.pipe.ReadError()
+            if len(err) > 0:
+                print 'Error, pipe not ready: ',err
+
+#       Update summary info.
+        self.GetScanInfo()
+
+    def OnExit(self, evt):
+        self.Exit()
+
+    def Exit(self):
+        if self.pipe is not None:
+            if  self.pipe.WriteReady():
+                self.pipe.Write('exit')
+            self.pipe.Close()
+        print 'Killing mentha:get_physio'
+        text = exec_linux_cmd("ps -aef | grep get_physio")
+        pids = ''
+        for line in text.split('\n'):
+            if 'get_physio' in line and 'grep' not in line:
+                wds = line.split()
+                pids = '%s %s' % (pids, line.split()[1])
+        exec_linux_cmd('kill -s SIGINT %s' % pids)
+        self.Destroy()
+        sys.exit()
+
+
+class PhysioGui(wx.App):
+    """
+    Dummy object required by wx to create the application widget.
+    """
+    def OnInit(self):
+#       Call the widget that does the work.
+        self.frame = PhysioTop()
+        self.Init = self.frame.Init
+        self.Show = self.frame.Show
+#        self.chart = self.frame.UpdateChart()
+        return True
+
+def parse_options():
+    usage = '\tUsage: physio <exam_number> <run_number>\n' + \
+            '\tget_physio --help for more usage info.\n'
+    optparser = OptionParser(usage)
+    optparser.add_option( "-v", "--verbose", action="store_true", \
+            dest="verbose",default=False, \
+            help='Print stuff to screen.')
+    optparser.add_option( "", "--test-pattern", action="store_true", \
+            dest="test_pattern",default=False, \
+            help='Simulate data for testing purposes.')
+    optparser.add_option( "", "--auto-trigger", action="store_true", \
+            dest="auto_trigger",default=False, \
+            help='Trigger automatically rather than waiting for sync signal from scanner.')
+    optparser.add_option( "", "--exam", action="store", type="str", \
+            dest="exam_number",default=None, \
+            help='Exam number.')
+    optparser.add_option( "", "--series", action="store", type="str", \
+            dest="series_number",default=None, \
+            help='Series number.')
+    optparser.add_option( "", "--subject-id", action="store", type="str", \
+            dest="subject_id",default=None, \
+            help='Subject ID.')
+    opts, args = optparser.parse_args()
+
+    return args, opts
+
+
+def physio():
+
+
+    args, opts = parse_options()
+    if len(args) == 1:
+        outfile = args[0]
+    else:
+        outfile = None
+
+    gui = PhysioGui(redirect=False)
+
+#   Now initialize the window.
+    gui.Init(outfile=outfile, title='Scanner Cardiac and Respiration data', test_pattern=opts.test_pattern, verbose=opts.verbose, auto_trigger=opts.auto_trigger,exam=opts.exam_number, series=opts.series_number, id=opts.subject_id)
+
+    gui.Show()
+    gui.MainLoop()
+
+if __name__ == "__main__":
+    physio()
+
