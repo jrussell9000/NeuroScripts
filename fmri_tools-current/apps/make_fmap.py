@@ -4,12 +4,21 @@
 #
 # University of Wisconsin, 8/16/09
 
+<<<<<<< HEAD
 #Copyright (c) 2006-2007, John Ollinger, University of Wisconsin
 #All rights reserved.
 #
 #Redistribution and use in source and binary forms, with or without
 #modification, are permitted provided that the following conditions are
 #met:
+=======
+# Copyright (c) 2006-2007, John Ollinger, University of Wisconsin
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are
+# met:
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
 #
 #    * Redistributions of source code must retain the above copyright
 #       notice, this list of conditions and the following disclaimer.
@@ -19,6 +28,7 @@
 #       disclaimer in the documentation and/or other materials provided
 #       with the distribution.
 #
+<<<<<<< HEAD
 #THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 #"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 #LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -30,6 +40,19 @@
 #THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 #(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+=======
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
 #
 # ** This software was designed to be used only for research purposes. **
 # ** Clinical uses are not recommended, and have never been evaluated. **
@@ -40,6 +63,7 @@
 
 import sys
 import os
+<<<<<<< HEAD
 from os import R_OK,W_OK,F_OK
 import string
 from math  import pi
@@ -47,17 +71,35 @@ from math  import pi
 import numpy
 from numpy import *
 from numpy.linalg import inv 
+=======
+from os import R_OK, W_OK, F_OK
+import string
+from math import pi
+
+import numpy
+from numpy import *
+from numpy.linalg import inv
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
 import file_io
 from file_io import isIfile, Wimage, writefile, DicomTar
 from wbl_util import execCmd, except_msg,  chg_perm, GetTmpSpace
 import scipy
 from scipy.stats.stats import histogram2
+<<<<<<< HEAD
 from scipy.ndimage.morphology import binary_erosion,binary_dilation, \
                                      grey_dilation
 from scipy.ndimage.filters import median_filter
 
 import math_bic
 from math_bic import print_matrix,erode,fit_legendre,whisto
+=======
+from scipy.ndimage.morphology import binary_erosion, binary_dilation, \
+    grey_dilation
+from scipy.ndimage.filters import median_filter
+
+import math_bic
+from math_bic import print_matrix, erode, fit_legendre, whisto
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
 from optparse import OptionParser
 from wisc_dicom import isdicom, IsDicom
 import time
@@ -71,6 +113,7 @@ FMAP_DIM = 256  # Desired resolution of field map images.
 """
 Program: make_fmap
 
+<<<<<<< HEAD
 Purpose: Use the FSL program "prelude" to compute a field map that can 
          be used to correct for distortion.  
 
@@ -84,6 +127,21 @@ Outputs: A single field map in analyze format.  The field map is stored in
          N*tau*fm/(2*pi) where N is the number of voxels in the phase encode
          direction, tau is the time from the center of one readout to the next, 
          .i.e, the time it takes to readout one line of k-space including the 
+=======
+Purpose: Use the FSL program "prelude" to compute a field map that can
+         be used to correct for distortion.
+
+Inputs: Images acquired with gradient echo  sequence at two TE's.  It
+        is assumed that phase, magnitude, real and imaginary parts are stored.
+        Data are specified by the name of the directory in which the
+        dicom files or GE I-files are stored.
+
+Outputs: A single field map in analyze format.  The field map is stored in
+         in units of radians.  The pixel shifts are given by
+         N*tau*fm/(2*pi) where N is the number of voxels in the phase encode
+         direction, tau is the time from the center of one readout to the next,
+         .i.e, the time it takes to readout one line of k-space including the
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
          ramps (the echo spacing).
 
 Written by John Ollinger
@@ -92,13 +150,22 @@ University of Wisconsin
 
 Modified for the GE scanner on 3/26/05.
 
+<<<<<<< HEAD
 """ 
+=======
+"""
+
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
 
 class MakeFieldmap():
 
     def __init__(self):
 
+<<<<<<< HEAD
 #       Set default permission to 0775
+=======
+        #       Set default permission to 0775
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
         os.umask(0002)
 
         usage = \
@@ -112,6 +179,7 @@ class MakeFieldmap():
 
         optparser = OptionParser(usage)
 
+<<<<<<< HEAD
         optparser.add_option( "-v", "--verbose", action="store_true", \
             dest="verbose",default=False, help='Verbose mode.')
         optparser.add_option( "", "--force-slicecorr", action="store_true", \
@@ -143,6 +211,38 @@ class MakeFieldmap():
             dest="usermask",default=None, help=\
             "Use user supplied mask rather " + \
             "than bet. This must be used for nonhuman subjects.")
+=======
+        optparser.add_option("-v", "--verbose", action="store_true",
+                             dest="verbose", default=False, help='Verbose mode.')
+        optparser.add_option("", "--force-slicecorr", action="store_true",
+                             dest="force_slicecorr", default=False,
+                             help='Force correction for 180 degree phase shifts across slices.')
+        optparser.add_option("", "--omit-slicecorr", action="store_true",
+                             dest="omit_slicecorr", default=False,
+                             help='Skip correction for 180 degree phase shifts across slices even if it is automatically detected.')
+        optparser.add_option("-d", "--debug", action="store_true",
+                             dest="debug", default=False, self.tmp()
+                             help='Keep intermediate files in /tmp/fmap_debug. " + \
+            "Otherwise delete them.')
+        optparser.add_option("-f", "--fast", action="store_true",
+                             dest="fast", default=False,
+                             help='Skip calls to bet and prelude.')
+        optparser.add_option("", "--TE1", action="store",
+                             dest="TE1", default=0, type=float,
+                             help='First (shortest) echo time.')
+        optparser.add_option("", "--TE2", action="store",
+                             dest="TE2", default=0, type=float,
+                             help='Second (longest) echo time.')
+        optparser.add_option("", "--mag", action="store",
+                             dest="save_magfile", default=None, type=str,
+                             help='Prefix where magnitude image at shortest TE should be saved.')
+        optparser.add_option("", "--anat", action="store",
+                             dest="anatfile", default=None, type=str,
+                             help='Anatomical image, target for registration of the first magnitude image.')
+        optparser.add_option("-m", "--mask", action="store", type="string",
+                             dest="usermask", default=None, help="Use user supplied mask rather " +
+                             "than bet. This must be used for nonhuman subjects.")
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
         self.opts, args = optparser.parse_args()
 
         # First print out the path for bug reports.
@@ -153,8 +253,13 @@ class MakeFieldmap():
 
         if len(args) < 2:
             sys.stderr.write(usage)
+<<<<<<< HEAD
             raise SyntaxError(\
             "*** Expecting 2 arguments, got %d ***\n" % len(args))
+=======
+            raise SyntaxError(
+                "*** Expecting 2 arguments, got %d ***\n" % len(args))
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
 
 #       Get file names.
         self.fmapdata = os.path.abspath(args[0])
@@ -164,7 +269,11 @@ class MakeFieldmap():
         elif IsDicom(self.fmapdata)():
             self.file_type = 'dicom'
         else:
+<<<<<<< HEAD
             raise RuntimeError('Invalid file type for fieldmap data: %s' % \
+=======
+            raise RuntimeError('Invalid file type for fieldmap data: %s' %
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
                                self.fmapdata)
         self.fullpath = self.fmapdata
         prefix = args[-1]
@@ -188,7 +297,11 @@ class MakeFieldmap():
 
 #       Get path to anatomical, if any.
         if self.anatfile is not None:
+<<<<<<< HEAD
             self.anatfile = opts.anatfile
+=======
+            self.anatfile = self.anatfile
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
             if self.anatfile.endswith('+orig'):
                 testname = self.anatfile + '.HEAD'
             elif self.anatfile.endswith('.nii'):
@@ -196,9 +309,15 @@ class MakeFieldmap():
             else:
                 testname = self.anatfile + '.nii'
             if not os.access(testname, R_OK):
+<<<<<<< HEAD
                 raise RuntimeError(\
                 'Anatomical image (%s) is not readable.'%self.anatfile, \
                 name='__init__')
+=======
+                raise RuntimeError(
+                    'Anatomical image (%s) is not readable.' % self.anatfile,
+                    name='__init__')
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
 
         self.zoomfactor = 1.
         self.verbose = self.opts.verbose
@@ -208,7 +327,11 @@ class MakeFieldmap():
             self.fsl_verbose = ''
 
     def CheckPaths(self):
+<<<<<<< HEAD
 #       Create a directory for temporary data.
+=======
+        #       Create a directory for temporary data.
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
         if not self.opts.fast:
             if self.opts.debug:
                 self.tmp = GetTmpSpace(300, '/tmp/debug')
@@ -228,13 +351,19 @@ class MakeFieldmap():
    #         "\nmake_fmap: Output path is not writeable: %s\n\n" % self.outdir)
 
     def SetupFSL(self):
+<<<<<<< HEAD
 #       Setup path to latest version of fsl.
         topdir = "" 
+=======
+        #       Setup path to latest version of fsl.
+        topdir = ""
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
         fsldir = c.FSLDIR
         if fsldir is None:
             fd = os.popen('which fsl')
             lines = fd.read()
             fd.close()
+<<<<<<< HEAD
             print 'Using FSL version:\n',lines
             if len(lines) == 0:
                 raise OSError( \
@@ -247,12 +376,27 @@ class MakeFieldmap():
 
     def SetupAFNI(self):
 #       Get AFNI version.
+=======
+            print 'Using FSL version:\n', lines
+            if len(lines) == 0:
+                raise OSError(
+                    "Could not find fsl. Check your path environment variable.\n")
+            fsldir = os.path.basename(lines.strip())
+        if len(fsldir) > 0:
+            os.putenv('FSLDIR', fsldir)
+            os.putenv('PATH', "%s/bin:%s" % (fsldir, os.environ['PATH']))
+            os.putenv('FSLOUTPUTTYPE', 'NIFTI')
+
+    def SetupAFNI(self):
+        #       Get AFNI version.
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
         cmd = "3dinfo -verb 2>/dev/null"
         f = os.popen(cmd)
         lines = f.readlines()
         f.close()
         for line in lines:
             if 'version=' in line.lower():
+<<<<<<< HEAD
 #               This line has version information.
                 words = line.split()
                 while 'version=' not in word:
@@ -263,6 +407,18 @@ class MakeFieldmap():
                     afni_dir = '/apps/linux/afni-latest'
                     os.putenv('AFNI_PLUGINPATH',afni_dir)
                     os.putenv('PATH',"%s:%s" % (afni_dir,os.environ['PATH']))
+=======
+                #               This line has version information.
+                words = line.split()
+                while 'version=' not in word:
+                    pass
+                version = int(word[8:].replace('_', ''))
+                if version < 200705291644:
+                    #                   Need version that handles nifti files correctly.
+                    afni_dir = '/apps/linux/afni-latest'
+                    os.putenv('AFNI_PLUGINPATH', afni_dir)
+                    os.putenv('PATH', "%s:%s" % (afni_dir, os.environ['PATH']))
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
 
    # def FindFieldmapData(self):
 #  #     Find the field map data (images acquired with 2dfast).
@@ -297,7 +453,11 @@ class MakeFieldmap():
 
         print "Reading data."
         if self.file_type == 'ge_Ifile':
+<<<<<<< HEAD
 #            Wdata = Wimage("%s/I.001" % (self.fmapdirs[0]), scan=True)
+=======
+            #            Wdata = Wimage("%s/I.001" % (self.fmapdirs[0]), scan=True)
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
             Wdata = Wimage(self.fmapdata, scan=True)
             self.hdr = Wdata.hdr
 #            sys.stdout.write('201, data read\n')
@@ -310,6 +470,7 @@ class MakeFieldmap():
             fnames = os.listdir(self.fmapdata)
             nf = int(len(fnames))/self.hdr['zdim']
             if nf == 9:
+<<<<<<< HEAD
                 self.image = self.image[1:,...]
                 sys.stderr.write(\
                 '\n\t******************************************************\n\n'+ \
@@ -317,19 +478,39 @@ class MakeFieldmap():
                 '\tacquisition was rerun after initial error.\n' + \
                 '\tCheck results carefully !!!.\n' + \
                 '\t******************************************************\n\n')
+=======
+                self.image = self.image[1:, ...]
+                sys.stderr.write(
+                    '\n\t******************************************************\n\n' +
+                    '\t9 frames were collected rather than 8.  Assuming that \n' +
+                    '\tacquisition was rerun after initial error.\n' +
+                    '\tCheck results carefully !!!.\n' +
+                    '\t******************************************************\n\n')
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
             elif nf < 8:
                 raise ValueError("Fieldmap data are incomplete")
             elif nf > 8:
                 raise ValueError("Fieldmap data are invalid: too many frames")
+<<<<<<< HEAD
             hdr2 = file_io.readheader("%s/I.%03d" % \
                                 (self.fmapdata,8*self.hdr['zdim']))
             self.EchoTimes = [self.hdr['native_header']['EchoTime'], \
                                   hdr2['native_header']['EchoTime']]
+=======
+            hdr2 = file_io.readheader("%s/I.%03d" %
+                                      (self.fmapdata, 8*self.hdr['zdim']))
+            self.EchoTimes = [self.hdr['native_header']['EchoTime'],
+                              hdr2['native_header']['EchoTime']]
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
             self.format = 'rimprimp'
 #            sys.stdout.write('200, data read\n')
 #            sys.stdout.flush()
         elif self.file_type == 'dicom':
+<<<<<<< HEAD
 #           Data in dicom format.
+=======
+            #           Data in dicom format.
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
             if self.verbose:
                 print "%s" % (self.fmapdata)
             Wdata = Wimage(self.fmapdata, scan=True)
@@ -343,12 +524,21 @@ class MakeFieldmap():
             self.format = 'rimprimp'
             self.EchoTimes = nhdr['EchoTimes']
         else:
+<<<<<<< HEAD
 #           Assume that the data are in either brik or nifti stored
 #           as follows:
 #           frame 1: magnitude, short TE
 #           frame 2: phase, short TE
 #           frame 3: magnitude, long TE
 #           frame 4: phase, long TE
+=======
+            #           Assume that the data are in either brik or nifti stored
+            #           as follows:
+            #           frame 1: magnitude, short TE
+            #           frame 2: phase, short TE
+            #           frame 3: magnitude, long TE
+            #           frame 4: phase, long TE
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
             if self.verbose:
                 print "%s" % (self.fmapdir)
             Wdata = Wimage(self.fmapdir, scan=True)
@@ -356,8 +546,13 @@ class MakeFieldmap():
             if self.hdr is not None:
                 self.image = Wdata.readfile(dtype=float)
             else:
+<<<<<<< HEAD
                 raise IOError(\
                 "make_fmap: Could not read %s" % "%s/%s" % (self.fmapdir,test))
+=======
+                raise IOError(
+                    "make_fmap: Could not read %s" % "%s/%s" % (self.fmapdir, test))
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
             nhdr = self.hdr['native_header']
             self.format = 'mpmp'
             self.EchoTimes = [self.TE1, self.TE2]
@@ -370,11 +565,19 @@ class MakeFieldmap():
         self.zdim = self.hdr['zdim']
         self.tdim = self.hdr['tdim']
         self.mdim = self.hdr['mdim']
+<<<<<<< HEAD
         self.fmap_stem = "%s/%s" % (self.fmapdata, \
                                         os.path.splitext(self.fullpath)[0])
 
         self.R_fmap = self.hdr['R']
         print_matrix(self.R_fmap,'Field map data transformation matrix:')
+=======
+        self.fmap_stem = "%s/%s" % (self.fmapdata,
+                                    os.path.splitext(self.fullpath)[0])
+
+        self.R_fmap = self.hdr['R']
+        print_matrix(self.R_fmap, 'Field map data transformation matrix:')
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
 
         self.whdr = self.hdr['native_header']
 
@@ -384,25 +587,42 @@ class MakeFieldmap():
         self.zsize = self.hdr['zsize']
         self.xdim_out = FMAP_DIM
         self.ydim_out = FMAP_DIM
+<<<<<<< HEAD
         self.zdim_out = self.zdim 
         self.GetHdrout()
     
+=======
+        self.zdim_out = self.zdim
+        self.GetHdrout()
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
 
     def CheckEchoTimes(self):
         if isinstance(self.EchoTimes, list):
             if len(self.EchoTimes) >= 2:
                 self.delay = self.EchoTimes[1] - self.EchoTimes[0]
             else:
+<<<<<<< HEAD
                 raise ValueError(\
                 'Images at %d TE(s) were found.' % len(self.EchoTimes) + \
                 'Two and only two echo-times are required.')
+=======
+                raise ValueError(
+                    'Images at %d TE(s) were found.' % len(self.EchoTimes) +
+                    'Two and only two echo-times are required.')
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
         else:
             self.delay = self.hdr2['te'] - self.hdr['te']
 
         if abs(self.delay) < 1:
+<<<<<<< HEAD
             raise ValueError(\
             "make_fmap: Both field map series used the same " + \
             "TE.  Field map cannot be computed. %s\n" % self.fullpath)
+=======
+            raise ValueError(
+                "make_fmap: Both field map series used the same " +
+                "TE.  Field map cannot be computed. %s\n" % self.fullpath)
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
 
         print '\nDelay time: %4.1f ms' % (self.delay)
 
@@ -411,7 +631,11 @@ class MakeFieldmap():
 
     def FixSlicePhaseFlips(self, mag, phs):
         """
+<<<<<<< HEAD
         Fix 180 degree phase shifts across slices. These are artifactual and 
+=======
+        Fix 180 degree phase shifts across slices. These are artifactual and
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
         occur in fieldmap acquired with version ESE20 of the scanner OS.
         """
         if self.omit_slicecorr:
@@ -419,7 +643,11 @@ class MakeFieldmap():
 
 #       Detect 180 phase shifts across slices.
         mask = where(mag > .25*mag.max(), 1., 0.)
+<<<<<<< HEAD
         mask = binary_erosion(mask, ones([3,3,3]))
+=======
+        mask = binary_erosion(mask, ones([3, 3, 3]))
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
    #     xmg = zeros([self.ydim, self.xdim], complex)
    #     jmg = zeros([self.zdim, self.ydim, self.xdim], float)
    #     flip = -ones([self.ydim, self.xdim], complex)
@@ -430,7 +658,11 @@ class MakeFieldmap():
    #             jmg[z,...] = angle(flip*xmg)
    #         else:
    #             jmg[z,...] = angle(xmg)
+<<<<<<< HEAD
 #       For smoothly varying phase, subtracting 
+=======
+#       For smoothly varying phase, subtracting
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
 #        kmg = mask*jmg
         phs1 = mask*phs
 
@@ -443,6 +675,7 @@ class MakeFieldmap():
 #        a = (kmg[2*arange(self.zdim/2),...] - \
 #                            kmg[2*arange(self.zdim/2)+1,...]).sum()/mask.sum()
 #       First compute sum of phase in even and odd slices.  Should be big.
+<<<<<<< HEAD
         a = 2*(phs1[2*arange(self.zdim/2),...] + \
                             phs1[2*arange(self.zdim/2)+1,...]).sum()/mask.sum()
 #       Mean phase difference between even and odd slices.  Shold be near zero.
@@ -450,10 +683,20 @@ class MakeFieldmap():
                             phs1[2*arange(self.zdim/2)+1,...]).sum()/mask.sum()
         if abs(b/a) > 10. and b > pi/8. or self.force_slicecorr:
 #           Phase flips are present, return corrected phase.
+=======
+        a = 2*(phs1[2*arange(self.zdim/2), ...] +
+               phs1[2*arange(self.zdim/2)+1, ...]).sum()/mask.sum()
+#       Mean phase difference between even and odd slices.  Shold be near zero.
+        b = 2*(phs1[2*arange(self.zdim/2), ...] -
+               phs1[2*arange(self.zdim/2)+1, ...]).sum()/mask.sum()
+        if abs(b/a) > 10. and b > pi/8. or self.force_slicecorr:
+            #           Phase flips are present, return corrected phase.
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
             xmg = zeros([self.ydim, self.xdim], complex)
             jmg = zeros([self.zdim, self.ydim, self.xdim], float)
             flip = -ones([self.ydim, self.xdim], complex)
             for z in xrange(self.zdim):
+<<<<<<< HEAD
                 xmg.real = cos(phs[z,...])
                 xmg.imag = sin(phs[z,...])
                 if (z % 2) > 0:
@@ -461,6 +704,16 @@ class MakeFieldmap():
                 else:
                     jmg[z,...] = angle(xmg)
             sys.stderr.write('\n*** 180 degree phase errors across slices were detected and corrected. ***\n\n')
+=======
+                xmg.real = cos(phs[z, ...])
+                xmg.imag = sin(phs[z, ...])
+                if (z % 2) > 0:
+                    jmg[z, ...] = angle(flip*xmg)
+                else:
+                    jmg[z, ...] = angle(xmg)
+            sys.stderr.write(
+                '\n*** 180 degree phase errors across slices were detected and corrected. ***\n\n')
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
             return jmg
 #        elif self.force_slicecorr:
 #            sys.stderr.write('\n*** 180 degree phase errors across slices were not detected but were corrected per command line option. ***\n\n')
@@ -470,6 +723,7 @@ class MakeFieldmap():
             return phs
 
     def GetRawPhase(self):
+<<<<<<< HEAD
 #       Get the real and imaginary parts.
         mag1 =  zeros((self.fmap_shape),float)
         real1 = zeros((self.fmap_shape),float)
@@ -477,6 +731,15 @@ class MakeFieldmap():
         mag2 =  zeros((self.fmap_shape),float)
         real2 = zeros((self.fmap_shape),float)
         imag2 = zeros((self.fmap_shape),float)
+=======
+        #       Get the real and imaginary parts.
+        mag1 = zeros((self.fmap_shape), float)
+        real1 = zeros((self.fmap_shape), float)
+        imag1 = zeros((self.fmap_shape), float)
+        mag2 = zeros((self.fmap_shape), float)
+        real2 = zeros((self.fmap_shape), float)
+        imag2 = zeros((self.fmap_shape), float)
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
         if self.file_type == 'ge_Ifile':
           #  self.image = reshape(self.image,\
           #                  [2, self.zdim, 4, self.ydim, self.xdim])
@@ -487,6 +750,7 @@ class MakeFieldmap():
           #  imag1 = self.image[0,:,3,:,:]
           #  imag2 = self.image[1,:,3,:,:]
           #  phs1, phs2 = self.ComputePhase(imag1, real1, imag2, real2)
+<<<<<<< HEAD
             self.image = reshape(self.image,[self.hdr['mdim'], \
                         self.hdr['tdim'],self.hdr['zdim'], \
                         self.hdr['ydim'], self.hdr['xdim']])
@@ -513,6 +777,34 @@ class MakeFieldmap():
             phs1  = self.image[1,:,:,:]
             mag2 = self.image[2,:,:,:]
             phs2 = self.image[3,:,:,:]
+=======
+            self.image = reshape(self.image, [self.hdr['mdim'],
+                                              self.hdr['tdim'], self.hdr['zdim'],
+                                              self.hdr['ydim'], self.hdr['xdim']])
+            mag1 = self.image[0, 0, :, :, :]
+            mag2 = self.image[0, 1, :, :, :]
+            real1 = self.image[2, 0, :, :, :]
+            real2 = self.image[2, 1, :, :, :]
+            imag1 = self.image[3, 0, :, :, :]
+            imag2 = self.image[3, 1, :, :, :]
+            phs1, phs2 = self.ComputePhase(imag1, real1, imag2, real2)
+        elif self.file_type == 'dicom':
+            self.image = reshape(self.image, [self.hdr['mdim'],
+                                              self.hdr['tdim'], self.hdr['zdim'],
+                                              self.hdr['ydim'], self.hdr['xdim']])
+            mag1 = self.image[0, 0, :, :, :]
+            mag2 = self.image[0, 1, :, :, :]
+            real1 = self.image[2, 0, :, :, :]
+            real2 = self.image[2, 1, :, :, :]
+            imag1 = self.image[3, 0, :, :, :]
+            imag2 = self.image[3, 1, :, :, :]
+            phs1, phs2 = self.ComputePhase(imag1, real1, imag2, real2)
+        else:
+            mag1 = self.image[0, :, :, :]
+            phs1 = self.image[1, :, :, :]
+            mag2 = self.image[2, :, :, :]
+            phs2 = self.image[3, :, :, :]
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
 
 #       Write magnitude images for use by prelude.
         self.WriteMagFiles(mag1, mag2)
@@ -529,7 +821,10 @@ class MakeFieldmap():
 
         return phs1, phs2
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
     def GetHdrout(self):
         self.hdr['datatype'] = 'float'
         self.hdr_out = self.hdr.copy()
@@ -547,17 +842,29 @@ class MakeFieldmap():
         self.hdr_out['datatype'] = "float32"
         self.hdr_out['swap'] = 0
 
+<<<<<<< HEAD
         self.hdr_out['x0'] = self.R_fmap[0,3]
         self.hdr_out['y0'] = self.R_fmap[1,3]
         self.hdr_out['z0'] = self.R_fmap[2,3]
+=======
+        self.hdr_out['x0'] = self.R_fmap[0, 3]
+        self.hdr_out['y0'] = self.R_fmap[1, 3]
+        self.hdr_out['z0'] = self.R_fmap[2, 3]
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
         self.hdr_out['R'] = self.R_fmap
         self.hdr_out['datatype'] = 'float'
         self.hdr_out['filetype'] = 'n+1'
 
     def RegisterFmapToT1High(self):
+<<<<<<< HEAD
 #           Register shortest TE magnitude image with anatomical.
 #        compute_xform_to_anat(self.anatfile, self.mag1_file,  \
 #                        self.mag1, self.tmpdir,self.hdr_out, self.opts)
+=======
+        #           Register shortest TE magnitude image with anatomical.
+        #        compute_xform_to_anat(self.anatfile, self.mag1_file,  \
+        #                        self.mag1, self.tmpdir,self.hdr_out, self.opts)
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
 
         hdr = self.hdr.copy()
         hdr['filetype'] = 'n+1'
@@ -568,7 +875,11 @@ class MakeFieldmap():
             execCmd(cmd)
             anat_file = anat_stem + '+orig'
         else:
+<<<<<<< HEAD
 #           Make sure file has full path and correct extensions.
+=======
+            #           Make sure file has full path and correct extensions.
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
             anat_dir = os.path.dirname(os.path.abspath(self.anatfile))
             anat_base = os.path.basename(self.anatfile)
             anat_stem = os.path.splitext(anat_base)[0].split('+')[0]
@@ -578,6 +889,7 @@ class MakeFieldmap():
                 self.anatfile = self.anatfile[:-5]
 
         mag1_file = "%s/mag1_tmp" % self.tmpdir
+<<<<<<< HEAD
         anat_resamp = "%s/%s_resamp" % (self.tmpdir,anat_stem)
 
 #       Resample the anatomical data to the fieldmap image size.
@@ -585,12 +897,25 @@ class MakeFieldmap():
             os.remove('%s.nii' % anat_resamp)
         cmd = "3dresample -prefix %s.nii -inset %s -master %s" % \
                                     (anat_resamp, self.anatfile, self.mag1_file)
+=======
+        anat_resamp = "%s/%s_resamp" % (self.tmpdir, anat_stem)
+
+#       Resample the anatomical data to the fieldmap image size.
+        if os.access('%s.nii' % anat_resamp, R_OK):
+            os.remove('%s.nii' % anat_resamp)
+        cmd = "3dresample -prefix %s.nii -inset %s -master %s" % \
+            (anat_resamp, self.anatfile, self.mag1_file)
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
         if self.verbose:
             print cmd
         execCmd(cmd)
         chg_perm("%s.nii" % self.mag1_file)
 
+<<<<<<< HEAD
         if os.access('%s_reg.nii' % anat_resamp,R_OK):
+=======
+        if os.access('%s_reg.nii' % anat_resamp, R_OK):
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
             os.remove('%s_reg.nii' % anat_resamp)
 
 #       Register the field-map magnitude to the anatomical.
@@ -608,6 +933,7 @@ class MakeFieldmap():
 #       Extract the rotate command from the 3dvolreg output.
         for line in lines:
             if "3drotate" in line and len(line.split()) > 3:
+<<<<<<< HEAD
                 tmpfile = "%s/3drotate_%s_cmd.txt" % (self.outdir,hdr['plane'])
                 i = 0
                 while os.access(tmpfile,F_OK):
@@ -617,11 +943,23 @@ class MakeFieldmap():
                 sys.stdout.write(\
                 "Fragmentary rotate command written to: %s\n" % tmpfile)
                 ftmp = open(tmpfile,"w")
+=======
+                tmpfile = "%s/3drotate_%s_cmd.txt" % (self.outdir, hdr['plane'])
+                i = 0
+                while os.access(tmpfile, F_OK):
+                    i = i + 1
+                    tmpfile = "%s/3drotate_%s_cmd_%d.txt" % \
+                        (self.outdir, hdr['plane'], i)
+                sys.stdout.write(
+                    "Fragmentary rotate command written to: %s\n" % tmpfile)
+                ftmp = open(tmpfile, "w")
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
                 ftmp.write(line.strip())
                 ftmp.close()
                 break
 
     def StripBrain(self):
+<<<<<<< HEAD
 #       Create brain mask.
 
 #       First write magnitude and phase images to disk.
@@ -636,6 +974,22 @@ class MakeFieldmap():
         #   Don't skip call to bet.
             cmd = "bet2 %s %s -m -f .3" % \
                             (self.mag1_file, strip_file1)
+=======
+        #       Create brain mask.
+
+        #       First write magnitude and phase images to disk.
+        #        self.WriteMagFiles()
+
+        os.path.splitext(self.fmap_file)[0]
+        self.mask_file = '%s/%s_strip_mask.nii' % \
+            (self.tmpdir, os.path.basename(self.fmap_stem))
+        strip_file1 = '%s/%s_strip' % \
+            (self.tmpdir, os.path.basename(self.fmap_stem))
+        if not self.opts.fast or not os.path.exists(self.mask_file):
+            #   Don't skip call to bet.
+            cmd = "bet2 %s %s -m -f .3" % \
+                (self.mag1_file, strip_file1)
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
             if self.opts.verbose:
                 print cmd
             execCmd(cmd)
@@ -643,8 +997,13 @@ class MakeFieldmap():
             print "Skipping brain extraction."
 
     def WriteMagFiles(self, mag1, mag2):
+<<<<<<< HEAD
         self.mag1_file = '%s/mag1_tmp'  % self.tmpdir
         self.mag2_file = '%s/mag2_tmp'  % self.tmpdir
+=======
+        self.mag1_file = '%s/mag1_tmp' % self.tmpdir
+        self.mag2_file = '%s/mag2_tmp' % self.tmpdir
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
         writefile(self.mag1_file, mag1, self.hdr_out)
         writefile(self.mag2_file, mag2, self.hdr_out)
         chg_perm(self.mag1_file)
@@ -654,11 +1013,16 @@ class MakeFieldmap():
             chg_perm(self.save_magfile)
 
     def CreateMask(self):
+<<<<<<< HEAD
 #       Read mask created by bet.
+=======
+        #       Read mask created by bet.
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
         Wbet = Wimage(self.mask_file)
 #        mhdr = Wbet.hdr
         bet_mask = Wbet.readfile(dtype=float32)
         if bet_mask is None:
+<<<<<<< HEAD
             raise RuntimeError(\
             'make_fmap: Error while reading brain-stripped mask: %s\n' \
             % self.mask_file, name='CreateMask')
@@ -666,12 +1030,25 @@ class MakeFieldmap():
         if not allclose(Wbet.hdr['dims'], self.hdr_out['dims']):
             bet_mask = self.RegisterMask()
         struct = ones([1, 3, 3],float)
+=======
+            raise RuntimeError(
+                'make_fmap: Error while reading brain-stripped mask: %s\n'
+                % self.mask_file, name='CreateMask')
+
+        if not allclose(Wbet.hdr['dims'], self.hdr_out['dims']):
+            bet_mask = self.RegisterMask()
+        struct = ones([1, 3, 3], float)
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
         self.fmap_mask = binary_dilation(bet_mask, struct, 1)
 
 #       Write mask to disk for use by prelude.
         mhdr = self.hdr_out.copy()
         mask_file = '%s/%s_mask_tmp.nii' % \
+<<<<<<< HEAD
                         (self.tmpdir,os.path.basename(self.fmap_file))
+=======
+            (self.tmpdir, os.path.basename(self.fmap_file))
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
         mhdr['filetype'] = 'n+1'
         mhdr['datatype'] = 'short'
         mhdr['mdim'] = 1
@@ -683,9 +1060,15 @@ class MakeFieldmap():
     def RegisterMask(self):
         mask_infile = self.mask_file
         self.mask_file = '%s/%s.tmp.nii' % \
+<<<<<<< HEAD
                             (self.tmpdir, os.path.basename(self.mask_file))
         cmd = '3dresample -master %s -prefix %s -inset %s' % \
                     (self.mag1_file, self.mask_file, mask_infile)
+=======
+            (self.tmpdir, os.path.basename(self.mask_file))
+        cmd = '3dresample -master %s -prefix %s -inset %s' % \
+            (self.mag1_file, self.mask_file, mask_infile)
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
         if self.verbose:
             print "Registering mask with field-map data"
             print cmd
@@ -694,13 +1077,21 @@ class MakeFieldmap():
         return Wbet.readfile(dtype=float32)
 
     def ComputePhase(self, imag1, real1, imag2, real2):
+<<<<<<< HEAD
 #       Compute phase. Mask so we don't unwrap noise.
+=======
+        #       Compute phase. Mask so we don't unwrap noise.
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
         phs1 = scipy.arctan2(imag1, real1)
         phs2 = scipy.arctan2(imag2, real2)
         return phs1, phs2
 
     def WritePhase(self, phs1, phs2):
+<<<<<<< HEAD
 #       Write phase images to disk.
+=======
+        #       Write phase images to disk.
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
         self.phase1_file = '%s/phase1_tmp' % self.tmpdir
         self.phase2_file = '%s/phase2_tmp' % self.tmpdir
         writefile(self.phase1_file, phs1, self.hdr_out)
@@ -721,8 +1112,13 @@ class MakeFieldmap():
 #       First acquistion.
         if not self.opts.fast or not os.path.exists(phs1_unw_file):
             cmd = "prelude -a %s -p %s -u %s %s -m %s" %  \
+<<<<<<< HEAD
                     (self.mag1_file, self.phase1_file, phs1_unw_file, \
                                         self.fsl_verbose, self.mask_file)
+=======
+                (self.mag1_file, self.phase1_file, phs1_unw_file,
+                 self.fsl_verbose, self.mask_file)
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
             if self.verbose:
                 print "Unwrapping first phase image."
                 print cmd
@@ -731,8 +1127,13 @@ class MakeFieldmap():
 #       Second acquistion.
         if not self.opts.fast or not os.path.exists(phs2_unw_file):
             cmd = "prelude -a %s -p %s -u %s %s -m %s" %  \
+<<<<<<< HEAD
                     (self.mag2_file, self.phase2_file, phs2_unw_file, \
                                          self.fsl_verbose, self.mask_file)
+=======
+                (self.mag2_file, self.phase2_file, phs2_unw_file,
+                 self.fsl_verbose, self.mask_file)
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
             if self.verbose:
                 print "Unwrapping second phase image."
                 print cmd
@@ -754,6 +1155,7 @@ class MakeFieldmap():
             raise IOError("make_fmap: Could not read %s\n" % phs2_unw_file)
 
     def EditMask(self):
+<<<<<<< HEAD
 #       Delete voxels that violate the Nyquist criterion, i.e., 
 #       that change by more than pi/2 in one pixel.
 
@@ -763,12 +1165,27 @@ class MakeFieldmap():
             mask1 = self.NyquistMask(self.phs1[z,...])
             mask2 = self.NyquistMask(self.phs2[z,...])
             mask[z,:,:] = mask1.astype(bool)| mask2.astype(bool)
+=======
+        #       Delete voxels that violate the Nyquist criterion, i.e.,
+        #       that change by more than pi/2 in one pixel.
+
+        #       First create a mask identifying voxels that exceed the Nyquist rate.
+        mask = zeros(self.fmap_shape, bool)
+        for z in range(self.zdim):
+            mask1 = self.NyquistMask(self.phs1[z, ...])
+            mask2 = self.NyquistMask(self.phs2[z, ...])
+            mask[z, :, :] = mask1.astype(bool) | mask2.astype(bool)
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
 
 
 #       Fill in-plane holes in the initial mask.
         ORDER = 7
         struct = ones([1, ORDER, ORDER], bool)
+<<<<<<< HEAD
         mask = binary_dilation(mask,struct, 1)
+=======
+        mask = binary_dilation(mask, struct, 1)
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
         struct = ones([1, ORDER, ORDER], bool)
         mask = binary_erosion(mask, struct, 1)
 
@@ -778,29 +1195,51 @@ class MakeFieldmap():
 #       cortical edges.
         struct = ones([1, 3, 3], int)
         mask_fill = binary_erosion(self.fmap_mask.astype(int), struct, 1)
+<<<<<<< HEAD
         
         mask_exterior = ((1 - mask_fill) | mask) #.clip(0, 1)
+=======
+
+        mask_exterior = ((1 - mask_fill) | mask)  # .clip(0, 1)
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
 
 #       Erode and dilate to eliminate interior islands.
         ORDER = 7
         struct = ones([1, ORDER, ORDER], int)
+<<<<<<< HEAD
         mask_exterior = binary_erosion( mask_exterior, struct, 1)
+=======
+        mask_exterior = binary_erosion(mask_exterior, struct, 1)
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
         mask_exterior = binary_dilation(mask_exterior, struct, 1)
         ORDER = 5
         struct = ones([1, ORDER, ORDER], int)
         mask_exterior = binary_dilation(mask_exterior, struct, 1)
+<<<<<<< HEAD
         mask_exterior = binary_erosion( mask_exterior, struct, 1)
+=======
+        mask_exterior = binary_erosion(mask_exterior, struct, 1)
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
 
 #       Erode the interior boundary of the mask.
         ORDER = 3
         struct = ones([1, ORDER, ORDER], int)
+<<<<<<< HEAD
         mask_exterior = binary_erosion( mask_exterior, struct, 1)
+=======
+        mask_exterior = binary_erosion(mask_exterior, struct, 1)
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
 
 #       Multiply eroded exterior mask and the "reject" mask to ensure that
 #       we aren't throwing away brain voxels.
         mask = (mask*mask_exterior).astype(float)
+<<<<<<< HEAD
         mask= binary_erosion( mask, struct, 1)
         mask= binary_dilation( mask, struct, 1)
+=======
+        mask = binary_erosion(mask, struct, 1)
+        mask = binary_dilation(mask, struct, 1)
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
 
 #       Edit out voxels with phase shifts exceeding Nyquist rate as well as
 #       regions added in edge slices by 3D dilation.
@@ -813,6 +1252,7 @@ class MakeFieldmap():
 #        mask = where(abs(self.fmap) > 0.,1.,0.)
         self.fmap = self.fmap_mask*(self.phs2 - self.phs1)
 
+<<<<<<< HEAD
         self.fmap = 1000.*self.fmap/self.delay # Phase change in radians/sec.
 
 #       Create coarse mask guaranteed not to remove brain voxels.
@@ -831,33 +1271,75 @@ class MakeFieldmap():
         y_centroid = dot(arange(self.ydim).astype(float),sum(tmp,1))/sumall
         z_centroid = dot(arange(self.zdim).astype(float),sum(reshape(msk,\
                                 [self.zdim, self.ydim*self.xdim]),1))/sumall
+=======
+        self.fmap = 1000.*self.fmap/self.delay  # Phase change in radians/sec.
+
+#       Create coarse mask guaranteed not to remove brain voxels.
+        self.coarse_mask = where(self.fmap_mask +
+                                 where(self.fmap != 0., 1, 0), 1., 0.)
+
+#       Filter with a median filter 3 pixels square.  This removes
+#       single-pixel outliers.
+        median_filter(self.fmap, size=3, mode='constant', cval=0.)
+
+        # Set correction to zero at the centroid of the image.
+        msk = where(abs(self.fmap) > 0., 1., 0.)
+        sumall = sum(msk.flat)  # Collapse over z dimension.
+        tmp = sum(msk, 0)  # Collapse over z dimension.
+        x_centroid = dot(arange(self.xdim).astype(float), sum(tmp, 0))/sumall
+        y_centroid = dot(arange(self.ydim).astype(float), sum(tmp, 1))/sumall
+        z_centroid = dot(arange(self.zdim).astype(float), sum(reshape(msk,
+                                                                      [self.zdim, self.ydim*self.xdim]), 1))/sumall
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
         ix_centroid = int(x_centroid + .5)
         iy_centroid = int(y_centroid + .5)
         iz_centroid = int(z_centroid + .5)
 
         print "XYZ centers of mass: %f, %f, %f" % \
+<<<<<<< HEAD
                                 (x_centroid,y_centroid,z_centroid)
         print "XYZ centers of mass coordinates: %d, %d, %d" % \
                                 (ix_centroid,iy_centroid,iz_centroid)
 #        print "Value of phase difference at center of mass: %f" % \
 #                        self.fmap[iz_centroid,iy_centroid,ix_centroid]
         ctr_value = self.fmap[iz_centroid,iy_centroid,ix_centroid]
+=======
+            (x_centroid, y_centroid, z_centroid)
+        print "XYZ centers of mass coordinates: %d, %d, %d" % \
+            (ix_centroid, iy_centroid, iz_centroid)
+#        print "Value of phase difference at center of mass: %f" % \
+#                        self.fmap[iz_centroid,iy_centroid,ix_centroid]
+        ctr_value = self.fmap[iz_centroid, iy_centroid, ix_centroid]
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
         self.fmap = msk*(self.fmap - ctr_value)
 
     def NyquistMask(self, data):
         ydim, xdim = data.shape
+<<<<<<< HEAD
         difx = zeros([ydim,xdim], float)
         dify = zeros([ydim,xdim], float)
         difxy = zeros([ydim,xdim], float)
         difx[1:,:] = diff(data, 1, 0)
         dify[:,1:] = diff(data, 1, 1)
         difxy[:,1:] = diff(difx, 1, 1)
+=======
+        difx = zeros([ydim, xdim], float)
+        dify = zeros([ydim, xdim], float)
+        difxy = zeros([ydim, xdim], float)
+        difx[1:, :] = diff(data, 1, 0)
+        dify[:, 1:] = diff(data, 1, 1)
+        difxy[:, 1:] = diff(difx, 1, 1)
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
         deriv = difx + dify + difxy
 
         mask = where(abs(deriv) > math.pi, 1, 0)
         ORDER = 9
         struct = ones([ORDER, ORDER], float)
+<<<<<<< HEAD
         mask = binary_dilation(mask,struct, 1)
+=======
+        mask = binary_dilation(mask, struct, 1)
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
         mask = binary_erosion(mask, struct, 1)
 
         return mask
@@ -875,13 +1357,20 @@ class MakeFieldmap():
 #        hdr_mask['datatype'] = 'short'
 #        writefile(self.coarse_mask_file, self.coarse_mask, hdr_mask)
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
     def CleanUp(self):
         if not self.opts.debug:
             self.tmp.Clean()
 #            cmd = "rm -rf %s" % self.tmpdir
 #            execCmd(cmd)
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
 def make_fieldmap():
 
     try:
@@ -909,7 +1398,11 @@ def make_fieldmap():
         if not fmap.opts.debug:
             fmap.CleanUp()
     except RuntimeError, err:
+<<<<<<< HEAD
 #        sys.stderr.write(err.errmsg)
+=======
+        #        sys.stderr.write(err.errmsg)
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
         errstr = except_msg()
         sys.stderr.write(errstr)
         fmap.CleanUp()
@@ -918,7 +1411,11 @@ def make_fieldmap():
         sys.stderr.write(except_msg('make_fmap'))
         fmap.CleanUp()
         sys.exit(1)
+<<<<<<< HEAD
     
+=======
+
+>>>>>>> 84591c28c58f7da5da6d7529400ea2c2c82b1081
 
 if __name__ == '__main__':
     make_fieldmap()

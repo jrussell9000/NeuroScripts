@@ -32,7 +32,7 @@ SUBJECTS_RAW=$*
 #####GLOBALS#####
 
 SUBJECTS=$(echo $SUBJECTS_RAW | tr -d "_")
-
+fmri_tools_local=$HOME/brave_scripts/fmri_tools-current/apps
 #####FUNCTION CALLS#####
 #convert() {
 #
@@ -135,7 +135,7 @@ for i in ${SUBJECTS}; do
 
       	decompress
 
-      	dcm2niix -b y -z y -f ${i}_${SCANTYPE}_T1 -o ${SUBJ_DIR}/ANAT/ /tmp/"${scanpath##*/}"
+      	dcm2niix -b y -f ${i}_${SCANTYPE}_T1 -o ${SUBJ_DIR}/ANAT/ /tmp/"${scanpath##*/}"
 
       fi
 
@@ -155,7 +155,7 @@ for i in ${SUBJECTS}; do
 
       	decompress
 
-      	dcm2niix -b y -z y -f ${i}_${SCANTYPE}_T2 -o ${SUBJ_DIR}/ANAT/ /tmp/"${scanpath##*/}"
+      	dcm2niix -b y -f ${i}_${SCANTYPE}_T2 -o ${SUBJ_DIR}/ANAT/ /tmp/"${scanpath##*/}"
 
       fi
 
@@ -166,22 +166,22 @@ for i in ${SUBJECTS}; do
     printf "\n%s\n" "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 
     for scanpath in ${RAW_INPUT_DIR}/_${i}/dicoms/{*dti,*FA,*ADC,*CMB}; do
-      #Verify that only directories are considered, per https://unix.stackexchange.com/questions/86722/how-do-i-loop-through-only-directories-in-bash
-      if [ -d ${scanpath} ]; then
-
-      	SCANTYPE=`basename ${scanpath} | awk 'BEGIN {FS="_"} {print $NF}'`
-
-      	tmppath_check
-
-      	cp -fr ${scanpath} /tmp
-
-      	decompress
-
-      	dcm2niix -b y -z y -f ${i}_${SCANTYPE}_DTI -o ${SUBJ_DIR}/DTI/ /tmp/"${scanpath##*/}"
-
-      fi
-
-    done
+       #Verify that only directories are considered, per https://unix.stackexchange.com/questions/86722/how-do-i-loop-through-only-directories-in-bash
+       if [ -d ${scanpath} ]; then
+    
+         SCANTYPE=`basename ${scanpath} | awk 'BEGIN {FS="_"} {print $NF}'`
+   
+         tmppath_check
+    
+         cp -fr ${scanpath} /tmp
+    
+         decompress
+    
+         dcm2niix -b y -v 2 -f ${i}_${SCANTYPE}_DTI -o ${SUBJ_DIR}/DTI/ /tmp/"${scanpath##*/}" > ~/dticonv_${SCANTYPE}.txt
+    
+       fi
+    
+     done
 
     printf "\n%s\n" "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
     printf "%s" "~~~~~~~~~CONVERTING FIELDMAPS~~~~~~~~~~"
@@ -191,28 +191,30 @@ for i in ${SUBJECTS}; do
                 #Verify that only directories are considered, per https://unix.stackexchange.com/questions/86722/how-do-i-loop-through-only-directories-in-bash
       if [ -d ${scanpath} ]; then
 
-      	echo ${scanpath}
-      	#Problem: Multiple fieldmap directories exist for each subject
-      	#Solution: Parse each subjects info.txt file to determine which is which
+        echo ${scanpath}
+        #Problem: Multiple fieldmap directories exist for each subject
+        #Solution: Parse each subjects info.txt file to determine which is which
 
       	IMAGE_DESC=$(grep -A 2 "_${i}/dicoms/${scanpath##*/}" ${RAW_INPUT_DIR}/_${i}/dicoms/info.txt | tail -n 1 )
 
-      	case "$IMAGE_DESC" in
-      		*DTI*)
-      			MAPTYPE=DTI
-      			;;
-      		*EPI*)
-      			MAPTYPE=EPI
-      			;;
-      	esac
+        case "$IMAGE_DESC" in
+          *DTI*)
+            MAPTYPE=DTI
+            ;;
+          *EPI*)
+            MAPTYPE=EPI
+            ;;
+        esac
 
-      	tmppath_check
+        tmppath_check
 
-      	cp -fr ${scanpath} /tmp
+        cp -fr ${scanpath} /tmp
 
-      	decompress
+        decompress
 
-      	dcm2niix -b y -z y -m y -f ${i}_${SCANTYPE}_FMAP_${MAPTYPE} -o ${SUBJ_DIR}/FMAP/ /tmp/"${scanpath##*/}"
+        make_fmap /tmp/"${scanpath##*/}" ${SUBJ_DIR}/FMAP/${i}_${MAPTYPE}_FMAP.nii -v
+        # Option to register fieldmap to anatomical scan does NOT work (e.g., --anat ${SUBJ_DIR}/ANAT/${i}_bravo_T1.nii)
+        # dcm2niix -b y -z y -m y -f ${i}_${SCANTYPE}_FMAP_${MAPTYPE} -o ${SUBJ_DIR}/FMAP/ /tmp/"${scanpath##*/}"
 
       fi
 

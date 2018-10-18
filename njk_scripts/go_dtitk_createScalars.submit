@@ -1,0 +1,44 @@
+################################
+# Testing...
+#  
+################################
+
+Requirements  = ( OpSys == "LINUX" && Arch =="X86_64" )    
+
+notification = never
+# getenv = True
+
+Executable = go_dtitk_createScalars.sh
+Universe = vanilla
+Log = tmp/go_dtitk_createScalars.log
+Error = tmp/go_dtitk_createScalars.error
+Output = tmp/go_dtitk_createScalars.output
+
+should_transfer_files = yes
+when_to_transfer_output = ON_EXIT
+
+transfer_input_files = bin/TVtool,bin/SVGaussianSmoothing,$(inputFile)
+
+transfer_output_files = $(fa),$(tr),$(ad),$(rd),$(pd),$(rgb)
+
+# Arguments = $(templateFile) $(inputFile) $(outputFile)
+Arguments = $(inputFile) $(fa) $(tr) $(ad) $(rd) $(pd) $(rgb)
+
+# Put the job on hold if it is taking longer than 5 hours...
+periodic_hold = (JobStatus == 2) && ((CurrentTime - EnteredCurrentStatus) > (60 * 60 * 5))
+# # remember where you have run
+match_list_length = 5
+# # release any job that had an issue and got set to hold after 30 seconds
+# ## FROM WRAPPER... periodic_release = (JobStatus == 5) && ((CurrentTime - EnteredCurrentStatus) > 30)
+periodic_release = (JobStatus == 5) && ((CurrentTime - EnteredCurrentStatus) > 30) && (NumSystemHolds < 10)
+# # neither run where you failed to complete, nor on too busy a server.
+requirements = (TARGET.Name =!= LastMatchName1)
+
+request_cpus = 1
+request_memory = 1000
+request_disk = 1000000
+
+
+Queue
+
+

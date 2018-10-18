@@ -1,0 +1,49 @@
+################################
+# go_dtitk_difIndiv.submit
+#  
+################################
+
+Requirements  = ( OpSys == "LINUX" && Arch =="X86_64" )    
+
+notification = never
+# getenv = True
+
+Executable = go_dtitk_difIndiv.sh
+#Executable = dti_diffeomorphic_reg
+Universe = vanilla
+Log = tmp/go_dtitk_difIndiv$(subj).log
+Error = tmp/go_dtitk_difIndiv$(subj).error
+Output = tmp/go_dtitk_difIndiv$(subj).output
+
+should_transfer_files = yes
+when_to_transfer_output = ON_EXIT
+
+# Put the job on hold if it is taking longer than 5 hours...
+periodic_hold = (JobStatus == 2) && ((CurrentTime - EnteredCurrentStatus) > (60 * 60 * 5))
+# # remember where you have run
+match_list_length = 5
+# # release any job that had an issue and got set to hold after 30 seconds
+# ## FROM WRAPPER... periodic_release = (JobStatus == 5) && ((CurrentTime - EnteredCurrentStatus) > 30)
+periodic_release = (JobStatus == 5) && ((CurrentTime - EnteredCurrentStatus) > 30) && (NumSystemHolds < 10)
+# # neither run where you failed to complete, nor on too busy a server.
+requirements = (TARGET.Name =!= LastMatchName1)
+
+# Set some min requirements...
+request_cpus = 1
+request_memory = 2000
+request_disk = 1000000
+
+
+transfer_input_files = bin/dtitk_common.sh,bin/TVtool,bin/BinaryThresholdImageFilter,bin/atvCGM,bin/deformationSymTensor3DVolume,bin/dfToDiffeomorphic,bin/dfToJacobian,bin/piecewiseAtvCGM,bin/pwaToDisp,bin/SVResample,bin/SVtool,bin/dfComposition,bin/dti_diffeomorphic_reg,$(template),$(subj)
+#transfer_input_files = bin/atvCGM,bin/deformationSymTensor3DVolume,bin/dfToDiffeomorphic,bin/dfToJacobian,bin/piecewiseAtvCGM,bin/pwaToDisp,bin/SVResample,bin/SVtool,bin/dti_diffeomorphic_reg,TEST_DATA/mean_diffeomorphic_initial6.nii.gz,TEST_DATA/r09021_461_s05_dti_eddy_fm_sdt_LPI.nii.gz,TEST_DATA/mask.nii.gz
+
+transfer_output_files = $(outputDiffeo),$(outputDiffeoDF)
+# transfer_output_files = diffeo.nii.gz,diffeo.df.nii.gz
+
+Arguments = $(template) $(subj) $(no_of_iter) $(ftol) 
+
+## DO noticed that the below line is flawed, and doesn't pass the right info to go_dtitk_difIndiv.sh
+## Arguments = $(template) $(subj) $(mask) 1 $(no_of_iter) $(ftol) #no_of_iter is from group level count
+# Arguments = TEST_DATA/mean_diffeomorphic_initial6.nii.gz,TEST_DATA/r09021_461_s05_dti_eddy_fm_sdt_LPI.nii.gz,TEST_DATA/mask.nii.gz 1 1 0.01
+
+Queue
