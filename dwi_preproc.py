@@ -1,6 +1,7 @@
 #! /usr/bin/python3
 import argparse
 import os
+import re
 from subprocess import call
 
 
@@ -13,11 +14,10 @@ class dwi_preproc():
         # self.input_file = args
         # if not os.access(self.input_file, os.R_OK):
         #    print('Error')
-        input_file = args.input_file
-        # print(input_file)
+        self.input_file = args.input_file
 
     def skullstip(self):
-        call('dwipreproc' & input_file)
+        call("dwipreproc {}".format(self.input_file))
 
 
 if __name__ == '__main__':
