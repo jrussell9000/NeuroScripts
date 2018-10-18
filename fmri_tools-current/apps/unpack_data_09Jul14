@@ -1,0 +1,292 @@
+#!/usr/bin/env python
+
+# Purpose: Unpack compressed data file uploaded from scanner.
+
+# By: John Ollinger
+
+# June 11, 2008
+
+import sys
+import os
+from os import O_RDONLY
+import yaml
+import cPickle
+from optparse import OptionParser
+import file_io
+from file_io import add_ndarray_to_yaml
+import numpy
+from numpy import ndarray
+from cStringIO import StringIO
+import bz2
+from wimage_lib import Timer, except_msg
+from dicom import ScanDicomSlices
+import hashlib
+from tarfile import TarFile
+from subprocess import Popen, PIPE
+
+ID = "$Id: unpack_data.py 156 2009-07-10 00:46:47Z jmo $"[1:-1]
+TMPDIR='/tmp'
+
+#from numpy import array, dot, zeros, transpose, fromstring, reshape, nonzero, \
+#        take, float, short, float32, identity, fliplr, flipud, sign, \
+#        prod, where, ones, byte, int8, uint8, int16, uint16, complex,  \
+#        integer, diag, argmax, ubyte, float64, complex64, complex128, ubyte, \
+#        long, ndarray, array2string, dtype
+
+class UnpackDicoms():
+    def __init__(self):
+        usage = '\n\nExpecting two arguments\n' + \
+                '\tUsage: unpack_data <input_file> [<destination_dir>]\n' + \
+                '\tType unpack_data --help for more usage info.\n'
+        optparser = OptionParser('')
+        optparser.add_option( "-v", "--verbose", action="store_true", \
+                dest="verbose",default=False, \
+                help='Print useless stuff to screen.')
+        optparser.add_option( "-V", "--version", action="store_true",  \
+                dest="show_version",default=None, help="Display svn version.")
+        opts, args = optparser.parse_args()
+        
+        if opts.show_version:
+            sys.stdout.write('%s\n' % ID)
+            sys.exit(1)
+
+        if len(args) < 1 or len(args) > 2:
+            sys.stderr.write(usage)
+            sys.exit(1)
+
+        self.infile = '%s/%s' % (TMPDIR, os.path.basename(args[0]))
+#        self.infile = args[0]
+        if len(args) == 2:
+            self.outdir = (os.path.abspath(args[1]))
+        else:
+#            self.outdir = os.path.abspath('.')
+            self.outdir = os.path.abspath(os.path.dirname(args[0]))
+
+#        self.timer = Timer()
+        self.md5 = hashlib.md5()
+
+    def LoadToc(self):
+        sys.stdout.write('Loading table-of-contents ...')
+        sys.stdout.flush()
+
+        self.fd = os.open(self.infile, O_RDONLY)
+        st = os.fstat(self.fd)
+        os.lseek(self.fd, -42, 2)
+        self.start_toc_str = os.read(self.fd, 10)
+        self.scanner_md5 = os.read(self.fd, 32)
+        self.start_toc = int(self.start_toc_str)
+        lgth_toc = st.st_size - self.start_toc - 42
+        os.lseek(self.fd, self.start_toc, 0)
+        self.toc_serialized = os.read(self.fd, lgth_toc)
+        os.lseek(self.fd, 0, 0)
+        self.fd_ptr = 0
+
+#       Convert table-of-contents. Rename npycore to core becase workaround
+#       for GE's core-renaming issue isn't needed here.
+        self.toc = cPickle.loads(self.toc_serialized)
+        sys.stdout.write('\n')
+        sys.stdout.flush()
+        return self.toc
+
+    def WritePrescription(self):
+        """
+        Write the prescription read from review.out to both a yaml file.
+        containing a dictionary holding the prescripton and a text file
+        in a formatted human-readable form.
+        """
+        if not self.toc.has_key('prescription'):
+#           Return immediately for old version without review data.
+            return
+        self.logdir = '%s/log' % self.outdir
+        if not os.path.exists(self.logdir):
+            os.makedirs(self.logdir)
+        f= open('%s/presciption.yaml' % self.logdir, 'w')
+        f.write(self.toc['prescription'])
+        f.close()
+#       Write the prescription in text
+        f= open('%s/presciption.txt' % self.logdir, 'w')
+        f.write(self.toc['presc_fmt'])
+        f.close()
+
+    def ReadSlice(self, toc_entry):
+        lgth = toc_entry[1] - toc_entry[0]
+        if self.fd_ptr != toc_entry[0]:
+#           Noncontiguous location, seek to the right position
+            self.fd_ptr = toc_entry[0]
+            os.lseek(self.fd, self.fd_ptr, 0)
+        data = os.read(self.fd, lgth)
+        self.fd_ptr += lgth
+        if lgth != len(data):
+            raise IOError( \
+            'Failure reading %s, tried to read %d bytes, got %d bytes' % \
+                                                    (fname,lgth, len(data)))
+        self.md5.update(data)
+        return data, lgth
+
+    def UnpackEntry(self, toc_entry, odir, nfiles):
+#       Unpack a single entry.
+#       A single series can be stored in multiple directories 
+#       on the scanner. The table of contents has one entry per
+#       scanner directory per series. (more than one series might
+#       be stored in a single scanner directory.
+#        if not os.path.exists(self.outdir):
+#            os.makedirs(self.outdir)
+        data, lgth = self.ReadSlice(toc_entry)
+        fname = ('%s/dicoms/%s' % (self.outdir, \
+                                   toc_entry[3])).replace(' ','')
+        f1 = open(fname, 'w')
+        f1.write(data)
+        f1.close()
+        if 'screensave' in fname:
+            self.ConvertToJpeg(fname)
+
+        if self.nfiles_unpacked[odir] == nfiles-2:
+#           Check validity of last slice in this directory.
+            self.CheckValidity(data, odir)
+
+
+
+    def CheckValidity(self, data, odir):
+        try:
+            udata = bz2.decompress(data)
+        except AttributeError():
+            errstr = \
+                '\n****** Error decompressing data for %s ******\n\n' % odir
+            sys.stderr.write(errstr)
+            sys.exit(1)
+        try:
+            dcm =  ScanDicomSlices(udata)
+            tsyntx = dcm.get_value('TransferSyntax',('undefined'))
+        except RuntimeError, errstr:
+            sys.stderr.write('\n%s\n%s\n' % (errstr, except_msg()))
+            tsyntx = ''
+        if tsyntx != '1.2.840.10008.1.2.1':
+#           Invalid transfer syntax, not a GE dicom file.
+            errstr =  'Error: Invalid transfer syntax for %s: %s' % \
+                                                    (odir, tsyntx)
+            sys.stderr.write('\n****** %s ******\n' % errstr)
+            sys.exit(1)
+
+    def ConvertToJpeg(self, fname):
+        """
+        Convert a dicom file saved in screen save syntax to jpeg.
+        """
+        cmd = 'bunzip2 %s' % fname
+        self.SSHCmd(cmd)
+        fname_bun = fname.replace('.bz2','')
+        cmd = 'convert %s %s.jpg' % (fname_bun, fname_bun)
+        print cmd
+        self.SSHCmd(cmd)
+
+    def SSHCmd(self, cmd):
+        f = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
+        output, errs = f.communicate()
+        errs = f.wait()
+        if errs < 0:
+            raise OSError('Error while executing %s\n%s\n' % (cmd,except_msg()))
+        return output, errs
+
+    def Unpack(self):
+        """ Unpack data from the entire data file."""
+        add_ndarray_to_yaml()
+        toc = self.LoadToc()
+        self.WritePrescription()
+        toc_keys = toc['keylist']
+        slice_toc = toc['slice_toc']
+#       First unpack incidental data and create directories.
+        self.nfiles_unpacked = {}
+        self.nfiles_packed = {}
+        for odir in toc_keys:
+            if 'cardiac' not in odir and 'raw' not in odir:
+                self.nfiles_packed[odir] = toc['series_toc'][odir]['nfiles']
+            if not self.nfiles_unpacked.has_key(odir):
+                self.nfiles_unpacked[odir] = 0
+            outdir = ('%s/dicoms/%s' % (self.outdir, odir)).replace(' ','')
+            if not os.path.exists(outdir):
+                os.makedirs(outdir)
+            anatlink = '%s/anatomicals' % self.outdir
+            if not os.path.exists(anatlink):
+                cmd = 'cd %s && ln -s dicoms anatomicals' % (self.outdir)
+                os.system(cmd)
+
+#           Write yaml version of header.
+            fname = ('%s/%s.yaml' % \
+                                (outdir, odir)).replace(' ','')
+            f1 = open(fname, 'w')
+            f1.write(file_io.yaml_magic_code)
+            f1.write(toc[odir]['hdr'])
+            f1.close()
+
+#        found_cardiac = False
+        for entry in slice_toc:
+#           Get output directory.
+            odir = toc['outdirs'][entry[2]]
+            if self.nfiles_unpacked[odir] == 0:
+                sys.stdout.write('Unpacking %d files in %s ...\n' % \
+                                             (self.nfiles_packed[odir], odir))
+                sys.stdout.flush()
+            self.UnpackEntry(entry, odir, toc['series_toc'][odir]['nfiles'])
+
+            self.nfiles_unpacked[odir] += 1
+        sys.stdout.write('\n')
+
+        if 'cardiac' in toc_keys:
+#           Unpack cardiac data last.
+            self.UnpackOther('cardiac', toc['cardiac'])
+        os.close(self.fd)
+
+#       Check for correct number of files.
+        keys = self.nfiles_packed.keys()
+        keys.sort()
+        for key in keys:
+            if self.nfiles_unpacked[odir] != self.nfiles_packed[odir] and \
+                                               'localizer' not in odir:
+                errstr = '\n*** Error during upload ***\n*** Only %d files out of %d files were found ***\n' % (self.nfiles_unpacked, self.nfiles_packed)
+                sys.stderr.write(errstr)
+
+    def UnpackOther(self, odir, (position, lgth)):
+        sys.stdout.write('Unpacking %s' % odir)
+        sys.stdout.flush()
+        os.lseek(self.fd, position, 0)
+        data = os.read(self.fd, lgth)
+        self.md5.update(data)
+        sio = StringIO(data)
+        tarfile = TarFile(odir, 'r', sio)
+        tarfile.extractall(self.outdir)
+        tarfile.close()
+        sio.close()
+
+    def CheckMd5(self):
+        self.md5.update(self.toc_serialized)
+        self.md5.update(self.start_toc_str)
+        new_md5 = self.md5.hexdigest()
+        if new_md5 != self.scanner_md5:
+            sys.stderr.write( \
+            '\n\t*** Checksum Error ***\n')
+            sys.stderr.write( \
+            '\t\tChecksum on scanner:   \t%s\n' % self.scanner_md5)
+            sys.stderr.write( \
+            '\t\tChecksum after upload: \t%s\n\n' % new_md5)
+            sys.exit(1)
+        else:
+            sys.stdout.write(
+            '\n\tChecksum verified:\n')
+            sys.stdout.write( \
+            '\t\tChecksum on scanner:  \t%s\n' % self.scanner_md5)
+            sys.stdout.write( \
+            '\t\tChecksum after upload:\t%s\n' % new_md5)
+            sys.stdout.flush()
+            sys.exit(0)
+
+def unpack():
+    try:
+        u = UnpackDicoms()
+        u.Unpack()
+        u.CheckMd5()
+    except OSError, err:
+        sys.stderr.write('\nError unpacking data: %s\n%s\n\n' % \
+                        (err, except_msg()))
+    sys.stderr.write('\n')
+
+if __name__ == '__main__':
+    unpack()
