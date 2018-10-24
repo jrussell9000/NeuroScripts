@@ -1,16 +1,14 @@
 #!/usr/bin/env bash
 # JD Russell 2018
 
-while getopts 'p:o:' args; do
+while getopts 'p:' args; do
 	case "${args}" in
 	p)
 		PROC_DIR=${OPTARG}
 		;;
-	o)
-		STORE_DIR=${OPTARG}
-		;;
-	*) ;;
-
+	# o)
+	# 	STORE_DIR=${OPTARG}
+	# 	;;
 	esac
 done
 
@@ -84,6 +82,7 @@ parse_subjs
 
 for SUBJ in "${subj_array[@]}"; do
 	set +f
+  subj_start
   make_proc_dir
   proc_prep
   pushd "${MRTRIX_PROC}" || continue
