@@ -16,16 +16,20 @@ while getopts 'i:o:' args; do
 done
 
 ######GLOBALS######
+FMRITOOLS_PATH="/Users/jdrussell3/brave_scripts/fmri_tools-current/apps/"
 
 ######FUNCTIONS#####
 parse_subjs() {
-  if [ -f ${PWD}/subj_list.txt ]; then
-    rm subj_list.txt;
+	if [ -f subj_list.txt ]; then
+		while read -r subjects; do
+		  subj_array+=("$subjects")
+	  done <subj_list.txt
+  else
+    find /Volumes/Studies/Herringa/YouthPTSD -maxdepth 1 -mindepth 1 -type d -printf '%f\n' | sort -u | tr -d "_" >>subj_list.txt
+    while read -r subjects; do
+      subj_array+=("$subjects")
+	  done <subj_list.txt
   fi
-  find /Volumes/Studies/Herringa/YouthPTSD -maxdepth 1 -mindepth 1 -type d -printf '%f\n' | sort -u |tr -d "_" >> subj_list.txt
-  while read -r subjects; do
-    subj_array+=("$subjects");
-  done < subj_list.txt
 }
 
 tmp_dir() {
@@ -95,20 +99,6 @@ convert_t2() {
   done
 }
 
-convert_dti() {
-  printf "\\n%s\\n" "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-  printf "%s" "~~~~~~~~CONVERTING DTI SCANS~~~~~~~~~~"
-  printf "\\n%s\\n" "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-
-  for SCAN in "${RAW_INPUT_DIR}"/*"${SUBJ}"/dicoms/*dti; do
-    if [ -d "${SCAN}" ]; then
-      cp -fr "${SCAN}"/*.bz2 "${TMP_PATH}"/DTI
-      decompress DTI
-      dcm2niix -b y -f "${SUBJ}"_DTI -o "${SUBJ_PATH}"/DTI/ "${TMP_PATH}"/DTI/
-    fi
-  done
-}
-
 convert_fmap() {
   printf "\\n%s\\n" "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
   printf "%s" "~~~~~~~~CONVERTING FIELDMAPS~~~~~~~~~~"
@@ -140,12 +130,32 @@ convert_fmap() {
       # cp -fr "${SCAN}" "${TMP_PATH}"/FMAP/"${MAPTYPE}"
       decompress FMAP/"$(basename "${SCAN}")"
       # Using local, corrected version of make_fmap.py (original is very buggy)
-      /Users/jdrussell3/brave_scripts/fmri_tools-current/apps/make_fmap.py "${TMP_PATH}"/FMAP/"$(basename "$SCAN")" "${SUBJ_PATH}"/FMAP/"${SUBJ}"_"${MAPTYPE}"_FMAP.nii 
+      "${FMRITOOLS_PATH}"/make_fmap.py "${TMP_PATH}"/FMAP/"$(basename "$SCAN")" "${SUBJ_PATH}"/FMAP/"${SUBJ}"_"${MAPTYPE}"_FMAP.nii 
       # Option to register fieldmap to T1: --anat "${SUBJ_PATH}"/ANAT/"${SUBJ}"_T1.nii
       # Don't use dcm2niix to convert field maps (doesn't work well)
       # dcm2niix -b y -z y -m y -f ${i}_${SCANTYPE}_FMAP_${MAPTYPE} -o ${SUBJ_DIR}/FMAP/ /tmp/"${scanpath##*/}"
     fi
   done
+}
+
+convert_dti() {
+  printf "\\n%s\\n" "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+  printf "%s" "~~~~~~~~CONVERTING DTI SCANS~~~~~~~~~~"
+  printf "\\n%s\\n" "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+
+  for SCAN in "${RAW_INPUT_DIR}"/*"${SUBJ}"/dicoms/*dti; do
+    if [ -d "${SCAN}" ]; then
+      cp -fr "${SCAN}"/*.bz2 "${TMP_PATH}"/DTI
+      decompress DTI
+      dcm2niix -b y -f "${SUBJ}"_DTI -o "${SUBJ_PATH}"/DTI/ "${TMP_PATH}"/DTI/
+    fi
+  done
+}
+
+correct_dti() {
+  #Using local version of fieldmap_correction.py - the version in Vol\apps has a bug
+  #Echo spacing time of .568ms taken from dcm2niix JSON file, which specifies it as 0.000568s
+  "${FMRITOOLS_PATH}"/fieldmap_correction.py --beautify --dti "${SUBJ_PATH}"/FMAP/"${SUBJ}"_DTI_FMAP.nii .568 "${SUBJ_PATH}"/DTI "${SUBJ_PATH}"/DTI/001_DTI.nii
 }
 
 mv_to_local() {
@@ -170,6 +180,6 @@ for SUBJ in "${subj_array[@]}"; do
   convert_dti
   convert_fmap
   rm -rf "${TMP_PATH}"
-  mv_to_local
+  # mv_to_local
 done
 rm -rf "${TMP}"

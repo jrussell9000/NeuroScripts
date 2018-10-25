@@ -471,7 +471,7 @@ class FieldmapCorrection():
                 for z in range(zdim):
                     output[z,:,:] = self.mask[z,:,:]* \
                       self.ResamplePhaseAxisCubic(epi[z,:,:], self.fmap1[z,:,:])
-                output *= self.valid_mask.astype(int, casting='unsafe')
+                output *= self.valid_mask.astype(int)
                 if not self.allow_negative:
                     output = where(output < 0., 0, output).astype(datatype)
                 self.WriteOutput(fname, hdrout, output, tdim, frame=t, \
