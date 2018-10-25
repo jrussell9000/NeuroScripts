@@ -19,7 +19,7 @@ done
 
 ######FUNCTIONS#####
 parse_subjs() {
-  if [ -f subj_list.txt ]; then
+  if [ -f ${PWD}/subj_list.txt ]; then
     rm subj_list.txt;
   fi
   find /Volumes/Studies/Herringa/YouthPTSD -maxdepth 1 -mindepth 1 -type d -printf '%f\n' | sort -u |tr -d "_" >> subj_list.txt
