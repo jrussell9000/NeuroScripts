@@ -16,7 +16,7 @@ while getopts 'i:o:' args; do
 done
 
 ######GLOBALS######
-FMRITOOLS_PATH="/Users/jdrussell3/brave_scripts/fmri_tools-current/apps/"
+FMRITOOLS_PATH="/Users/jdrussell3/brave_scripts/fmri_tools-current/apps"
 
 ######FUNCTIONS#####
 parse_subjs() {
@@ -38,7 +38,6 @@ tmp_dir() {
   mkdir "${TMP}"
 }
 
-#Decompress bz2 DICOM files
 decompress() {
   for z in "${TMP_PATH}"/"$1"/*.bz2; do
     bzip2 -d "$z"
@@ -62,9 +61,12 @@ make_proc_dirs() {
 }
 
 start_subj() {
+  blink=$(tput blink)$(tput setaf 1)
+  normal=$(tput sgr0)
+  SUBJ_F=${blink}${SUBJ}${normal}
   printf "\\n%s" "//////////////////////////////////////////"
   printf "\\n%s" "//-------NOW CONVERTING SUBJECT #-------//"
-  printf "\\n%s" "//------------------$SUBJ-----------------//"  
+  printf "\\n%s" "//------------------$SUBJ_F-----------------//"  
   printf "\\n%s\\n" "//////////////////////////////////////////"
 }
 
@@ -100,9 +102,9 @@ convert_t2() {
 }
 
 convert_fmap() {
-  printf "\\n%s\\n" "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-  printf "%s" "~~~~~~~~CONVERTING FIELDMAPS~~~~~~~~~~"
-  printf "\\n%s\\n" "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+  printf "\\n%s\\n" "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+  printf "%s" "~~~~~~~~~~MAKING FIELDMAPS~~~~~~~~~"
+  printf "\\n%s\\n" "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 
   for SCAN in "${RAW_INPUT_DIR}"/*"${SUBJ}"/dicoms/*fmap; do
     if [ -d "${SCAN}" ]; then
@@ -177,9 +179,10 @@ for SUBJ in "${subj_array[@]}"; do
   cp_info
   convert_t1
   convert_t2
-  convert_dti
   convert_fmap
+  convert_dti
+  correct_dti
   rm -rf "${TMP_PATH}"
-  # mv_to_local
+  mv_to_local
 done
 rm -rf "${TMP}"

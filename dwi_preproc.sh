@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # JD Russell 2018
+# MRTrix3 preprocessing steps
 
 while getopts 'p:' args; do
 	case "${args}" in
@@ -57,26 +58,26 @@ mif_conv() {
 }
 
 denoise() {
-  dwidenoise "${SUBJ}"_DTI_raw_0.mif "${SUBJ}"_DTI_den_1.mif -noise "${SUBJ}"_DTI_noise.mif
-  mrcalc "${SUBJ}"_DTI_raw_0.mif "${SUBJ}"_DTI_den_1.mif -subtract "${SUBJ}"_DTI_residual.mif
+  dwidenoise "${SUBJ}"_DTI_raw.mif "${SUBJ}"_DTI_den.mif -noise "${SUBJ}"_DTI_noise.mif
+  mrcalc "${SUBJ}"_DTI_raw.mif "${SUBJ}"_DTI_den.mif -subtract "${SUBJ}"_DTI_residual.mif
 }
 
 degibbs() {
-  mrdegibbs "${SUBJ}"_DTI_den_1.mif "${SUBJ}"_DTI_den_deg_2.mif -axes 0,1
-  mrcalc "${SUBJ}"_DTI_den_1.mif "${SUBJ}"_DTI_den_deg_2.mif -subtract "${SUBJ}"_DTI_den_resid_undeg.mif 
+  mrdegibbs "${SUBJ}"_DTI_den.mif "${SUBJ}"_DTI_den_deg.mif -axes 0,1
+  mrcalc "${SUBJ}"_DTI_den.mif "${SUBJ}"_DTI_den_deg.mif -subtract "${SUBJ}"_DTI_den_resid_undeg.mif 
 }
 
 extract_b0() {
-  dwiextract -bzero "${SUBJ}"_DTI_den_deg_2.mif "${SUBJ}"_b0.mif
+  dwiextract -bzero "${SUBJ}"_DTI_den_deg.mif "${SUBJ}"_b0.mif
   mrmath "${SUBJ}"_b0.mif mean "${SUBJ}"_b0_mean.mif -axis 3
 }
 
 motioncorrect() {
-  dwipreproc "${SUBJ}"_DTI_den_deg_2.mif "${SUBJ}"_DTI_den_deg_preproc_3.mif -rpe_none -pe_dir PA -eddy_options " --slm=linear"
+  dwipreproc "${SUBJ}"_DTI_den_deg.mif "${SUBJ}"_DTI_den_deg_preproc.mif -rpe_none -pe_dir PA -eddy_options " --slm=linear"
 }
 
 biascorrect() {
-  dwibiascorrect -ants "${SUBJ}"_DTI_den_deg_preproc_3.mif "${SUBJ}"_DTI_den_deg_preproc_unbiased_4.mif -bias "${SUBJ}"_bias.mif
+  dwibiascorrect -ants "${SUBJ}"_DTI_den_deg_preproc.mif "${SUBJ}"_DTI_den_deg_preproc_unbiased_4.mif -bias "${SUBJ}"_bias.mif
 }
 
 create_mask() {
