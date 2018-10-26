@@ -54,7 +54,7 @@ proc_prep() {
 }
 
 mif_conv() {
-  mrconvert -json_import "${SUBJ}"_DTI.json -fslgrad "${SUBJ}"_DTI.bvec "${SUBJ}"_DTI.bval "${SUBJ}"_DTI.nii "${SUBJ}"_DTI_raw_0.mif
+  mrconvert -json_import "${SUBJ}"_DTI.json -fslgrad "${SUBJ}"_DTI.bvec "${SUBJ}"_DTI.bval "${SUBJ}"_DTI.nii "${SUBJ}"_DTI_raw.mif
 }
 
 denoise() {
