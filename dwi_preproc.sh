@@ -97,7 +97,7 @@ for SUBJ in "${subj_array[@]}"; do
   denoise
   degibbs
   extract_b0
-  motioncorrect
+  time motioncorrect
   biascorrect
   create_mask
 done
