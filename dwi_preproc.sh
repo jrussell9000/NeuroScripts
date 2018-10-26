@@ -77,11 +77,11 @@ motioncorrect() {
 }
 
 biascorrect() {
-  dwibiascorrect -ants "${SUBJ}"_DTI_den_deg_preproc.mif "${SUBJ}"_DTI_den_deg_preproc_unbiased_4.mif -bias "${SUBJ}"_bias.mif
+  dwibiascorrect -ants "${SUBJ}"_DTI_den_deg_preproc.mif "${SUBJ}"_DTI_den_deg_preproc_unbiased.mif -bias "${SUBJ}"_bias.mif
 }
 
 create_mask() {
-  dwi2mask "${SUBJ}"_DTI_den_deg_preproc_unbiased_4.mif "${SUBJ}"_DTI_den_deg_preproc_unbiased_mask.mif
+  dwi2mask "${SUBJ}"_DTI_den_deg_preproc_unbiased.mif "${SUBJ}"_DTI_den_deg_preproc_unbiased_mask.mif
 }
 
 ######MAIN######
