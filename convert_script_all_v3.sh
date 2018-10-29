@@ -60,6 +60,20 @@ make_proc_dirs() {
   mkdir -p "${TMP_PATH}"/INFO
 }
 
+create_log() {
+  LF="${SUBJ_PATH}"/LOGS/"${SUBJ}"_convert.log
+  if [ -e "${LF}" ]; then
+    rm "${LF}"
+  fi
+  printf "\\n\\n%s\\n\\n" "JDR CONVERSION SCRIPT v3.0"
+  printf "Start time: %s" "$(date)"
+  printf "Script: %s" "$(basename "$0")"
+  printf "%s" "$(dcm2niix | grep --color=NONE "Chris")"
+  printf "Starting from %s\\n" "${DATASET_DIR}"
+  printf "#######################################\\n"
+  printf "#######################################\\n"
+}
+
 start_subj() {
   blink=$(tput blink)$(tput setaf 1)
   normal=$(tput sgr0)
@@ -173,16 +187,19 @@ mv_to_local() {
 parse_subjs
 tmp_dir
 for SUBJ in "${subj_array[@]}"; do
+  create_log
   set +f
-  start_subj
-  make_proc_dirs "${SUBJ}"
-  cp_info
-  convert_t1
-  convert_t2
-  convert_fmap
-  convert_dti
-  correct_dti
-  rm -rf "${TMP_PATH}"
-  mv_to_local
+  {
+    start_subj
+    make_proc_dirs "${SUBJ}"
+    cp_info
+    convert_t1
+    convert_t2
+    convert_fmap
+    convert_dti
+    correct_dti
+    rm -rf "${TMP_PATH}"
+    mv_to_local
+  } >> "${LF}"
 done
 rm -rf "${TMP}"
