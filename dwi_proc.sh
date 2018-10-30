@@ -23,6 +23,8 @@ subj_start() {
   printf "\\n%s" "//----------------SUBJECT #--------------//"
 	printf "\\n%s" "//------------------$SUBJ_F------------------//"
 	printf "\\n%s\\n" "///////////////////////////////////////////"
+  SUBJ_PATH="${PROC_DIR}"/"${SUBJ}"
+  MRTRIX_PROC="${SUBJ_PATH}"/mrtrix3_proc
 }
 
 parse_subjs() {
@@ -39,7 +41,7 @@ parse_subjs() {
 }
 
 dwi2res() {
-  dwi2response dhollander "${SUBJ}"_DTI_den_deg_preproc_unbiased.mif "${SUBJ}"_wm.txt "${SUBJ}"_gm.txt "${SUBJ}"_csf.txt -voxels "${SUBJ}"_voxels.mig
+  dwi2response dhollander "${SUBJ}"_DTI_den_deg_preproc_unbiased.mif "${SUBJ}"_wm.txt "${SUBJ}"_gm.txt "${SUBJ}"_csf.txt -voxels "${SUBJ}"_voxels.mif
 }
 
 dwi2fd () {
@@ -75,14 +77,10 @@ parse_subjs
 for SUBJ in "${subj_array[@]}"; do
 	set +f
   subj_start
-  make_proc_dir
-  proc_prep
   pushd "${MRTRIX_PROC}" || continue
-  mif_conv
-  denoise
-  degibbs
-  extract_b0
-  motioncorrect
-  biascorrect
-  create_mask
+  dwi2res
+  dwi2fd
+  2tnormalize
+  make_5tt_mask
+  reg_5tt_mask
 done
