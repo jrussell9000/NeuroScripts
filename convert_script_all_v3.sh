@@ -19,6 +19,8 @@ done
 FMRITOOLS_PATH="/Users/jdrussell3/brave_scripts/fmri_tools-current/apps"
 
 ######FUNCTIONS#####
+trap '{ echo "Keyboard interrupted detected. Terminating..." ; exit 1; }' SIGINT SIGTERM
+
 parse_subjs() {
 	if [ -f subj_list.txt ]; then
 		while read -r subjects; do
@@ -38,12 +40,6 @@ tmp_dir() {
   mkdir "${TMP}"
 }
 
-decompress() {
-  for z in "${TMP_PATH}"/"$1"/*.bz2; do
-    bzip2 -d "$z"
-  done
-}
-
 make_proc_dirs() {
   SUBJ_PATH="${DATASET_DIR}"/"${SUBJ}"
   rm -rf "${SUBJ_PATH}"
@@ -61,17 +57,29 @@ make_proc_dirs() {
 }
 
 create_log() {
+  mkdir "${SUBJ_PATH}"/LOGS
   LF="${SUBJ_PATH}"/LOGS/"${SUBJ}"_convert.log
   if [ -e "${LF}" ]; then
     rm "${LF}"
+    touch "${LF}"
+  else
+    touch "${LF}"
   fi
-  printf "\\n\\n%s\\n\\n" "JDR CONVERSION SCRIPT v3.0"
-  printf "Start time: %s" "$(date)"
-  printf "Script: %s" "$(basename "$0")"
-  printf "%s" "$(dcm2niix | grep --color=NONE "Chris")"
-  printf "Starting from %s\\n" "${DATASET_DIR}"
-  printf "#######################################\\n"
-  printf "#######################################\\n"
+  printf "\\n\\n##########################################\\n"
+  printf "%s\\n" "####### JDR CONVERSION SCRIPT v3.0 #######"
+  printf "##########################################\\n\\n"
+  printf "Start time: %s\\n" "$(date)"
+  printf "Script: %s\\n" "$(basename "$0")"
+  printf "%s\\n" "$(dcm2niix | grep --color=NONE "Chris")"
+  printf "Starting from %s\\n\\n" "${DATASET_DIR}"
+  printf "##########################################\\n"
+  printf "##########################################\\n"
+}
+
+decompress() {
+  for z in "${TMP_PATH}"/"$1"/*.bz2; do
+    bzip2 -d "$z"
+  done
 }
 
 start_subj() {
@@ -89,10 +97,10 @@ cp_info() {
 }
 
 convert_t1() {
-  printf "\\n%s\\n" "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-  printf "%s" "~~~~~CONVERTING ANATOMICAL SCANS~~~~~~"
-  printf "\\n%s\\n" "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-  printf "\\n%s\\n\\n" "--------------T1 (BRAVO)--------------"
+  printf "\\n%s\\n" "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+  printf "%s" "~~~~~~~CONVERTING ANATOMICAL SCANS~~~~~~~~"
+  printf "\\n%s\\n" "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+  printf "\\n%s\\n\\n" "----------------T1 (BRAVO)----------------"
   for SCAN in "${RAW_INPUT_DIR}"/*"${SUBJ}"/dicoms/*bravo; do
     #Verify that only directories are considered, per https://unix.stackexchange.com/questions/86722/how-do-i-loop-through-only-directories-in-bash
     if [ -d "${SCAN}" ]; then
@@ -104,9 +112,8 @@ convert_t1() {
 }
 
 convert_t2() {
-  printf "\\n%s\\n\\n" "--------------T2 (3DIR)--------------"
+  printf "\\n%s\\n\\n" "----------------T2 (3DIR)-----------------"
   for SCAN in "${RAW_INPUT_DIR}"/*"${SUBJ}"/dicoms/*3dir; do
-    #Verify that only directories are considered, per https://unix.stackexchange.com/questions/86722/how-do-i-loop-through-only-directories-in-bash
     if [ -d "${SCAN}" ]; then
       rsync -rq "${SCAN}"/*.bz2 "${TMP_PATH}"/T2
       decompress T2
@@ -116,9 +123,9 @@ convert_t2() {
 }
 
 convert_fmap() {
-  printf "\\n%s\\n" "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-  printf "%s" "~~~~~~~~~~MAKING FIELDMAPS~~~~~~~~~"
-  printf "\\n%s\\n" "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+  printf "\\n%s\\n" "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+  printf "%s" "~~~~~~~~~~~~~MAKING FIELDMAPS~~~~~~~~~~~~~"
+  printf "\\n%s\\n" "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 
   for SCAN in "${RAW_INPUT_DIR}"/*"${SUBJ}"/dicoms/*fmap; do
     if [ -d "${SCAN}" ]; then
@@ -155,9 +162,9 @@ convert_fmap() {
 }
 
 convert_dti() {
-  printf "\\n%s\\n" "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-  printf "%s" "~~~~~~~~CONVERTING DTI SCANS~~~~~~~~~~"
-  printf "\\n%s\\n" "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+  printf "\\n%s\\n" "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+  printf "%s" "~~~~~~~~~~~CONVERTING DTI SCANS~~~~~~~~~~~"
+  printf "\\n%s\\n" "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 
   for SCAN in "${RAW_INPUT_DIR}"/*"${SUBJ}"/dicoms/*dti; do
     if [ -d "${SCAN}" ]; then
@@ -171,7 +178,7 @@ convert_dti() {
 correct_dti() {
   #Using local version of fieldmap_correction.py - the version in Vol\apps has a bug
   #Echo spacing time of .568ms taken from dcm2niix JSON file, which specifies it as 0.000568s
-  "${FMRITOOLS_PATH}"/fieldmap_correction.py --beautify --dti "${SUBJ_PATH}"/FMAP/"${SUBJ}"_DTI_FMAP.nii .568 "${SUBJ_PATH}"/DTI "${SUBJ_PATH}"/DTI/001_DTI.nii
+  "${FMRITOOLS_PATH}"/fieldmap_correction.py --beautify --dti "${SUBJ_PATH}"/FMAP/"${SUBJ}"_DTI_FMAP.nii .568 "${SUBJ_PATH}"/DTI "${SUBJ_PATH}"/DTI/"${SUBJ}"_DTI.nii
 }
 
 mv_to_local() {
@@ -186,12 +193,12 @@ mv_to_local() {
 ######MAIN######
 parse_subjs
 tmp_dir
-for SUBJ in "${subj_array[@]}"; do
-  create_log
-  set +f
+# Adding parentheses around for loop allows breaking using keyboard interrupt?
+( for SUBJ in "${subj_array[@]}"; do
+  make_proc_dirs "${SUBJ}"
   {
+    create_log
     start_subj
-    make_proc_dirs "${SUBJ}"
     cp_info
     convert_t1
     convert_t2
@@ -199,7 +206,7 @@ for SUBJ in "${subj_array[@]}"; do
     convert_dti
     correct_dti
     rm -rf "${TMP_PATH}"
-    mv_to_local
-  } >> "${LF}"
-done
+  } 2>&1 | tee -a "$LF"
+  mv_to_local
+done ) 
 rm -rf "${TMP}"
