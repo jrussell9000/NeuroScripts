@@ -17,8 +17,7 @@ subj_start() {
   printf "\\n%s" "//----------------SUBJECT #--------------//"
 	printf "\\n%s" "//------------------$SUBJ_F------------------//"
 	printf "\\n%s\\n" "///////////////////////////////////////////"
-  SUBJ_PATH="${PROC_DIR}"/"${SUBJ}"
- }
+}
 
 parse_subjs() {
 	if [ -f subj_list.txt ]; then
@@ -34,7 +33,9 @@ parse_subjs() {
 }
 
 makeprocdir () {
+pushd "${PROC_DIR}" || return
 mkdir "${SUBJ}"/fslproc
+SUBJ_PATH="${PROC_DIR}"/"${SUBJ}"
 FSL_PROC="${SUBJ_PATH}"/fslproc
 cp "${SUBJ}"/ANAT/* "${SUBJ}"/fslproc
 cp "${SUBJ}"/FMAP/* "${SUBJ}"/fslproc
