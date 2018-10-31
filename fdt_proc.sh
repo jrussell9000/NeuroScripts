@@ -33,7 +33,6 @@ parse_subjs() {
 }
 
 makeprocdir () {
-pushd "${PROC_DIR}" || return
 mkdir "${SUBJ}"/fslproc
 SUBJ_PATH="${PROC_DIR}"/"${SUBJ}"
 FSL_PROC="${SUBJ_PATH}"/fslproc
@@ -56,10 +55,10 @@ denoise() {
 
 # 0 1 for A>>P phase encoding
 create_acqp_index() {
-printf "0 1 0 0.05" >> acqparams.txt
-indx=""
-for ((i=1; i<=56; i+=1)); do indx="$indx 1"; done
-echo "$indx" > index.txt
+  printf "0 1 0 0.05" >> acqparams.txt
+  indx=""
+  for ((i=1; i<=56; i+=1)); do indx="$indx 1"; done
+  echo "$indx" > index.txt
 }
 
 eddy() {
@@ -72,6 +71,7 @@ parse_subjs
 
 for SUBJ in "${subj_array[@]}"; do
 	subj_start
+  makeprocdir
   pushd "${FSL_PROC}" || continue
   bet
   denoise
