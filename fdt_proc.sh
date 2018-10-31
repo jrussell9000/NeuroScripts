@@ -1,5 +1,13 @@
 #!/usr/bin/env bash
 
+while getopts 'p:' args; do
+	case "${args}" in
+	p)
+		PROC_DIR=${OPTARG}
+		;;
+	esac
+done
+
 subj_start() {
   blink=$(tput blink)$(tput setaf 1)
   normal=$(tput sgr0)
