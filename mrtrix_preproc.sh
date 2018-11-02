@@ -51,20 +51,29 @@ make_proc_dir() {
 
 proc_prep() {
   cp "${SUBJ_PATH}"/DTI/* "${MRTRIX_PROC}"
+  cp "${SUBJ_PATH}"/ANAT/* "${MRTRIX_PROC}"
 }
 
 mif_conv() {
-  mrconvert -json_import "${SUBJ}"_DTI.json -fslgrad "${SUBJ}"_DTI.bvec "${SUBJ}"_DTI.bval "${SUBJ}"_DTI.nii "${SUBJ}"_DTI_raw.mif
+  mrconvert -json_import "${SUBJ}"_DTI.json -fslgrad "${SUBJ}"_DTI.bvec "${SUBJ}"_DTI.bval "${SUBJ}"_DTI.nii "${SUBJ}"_DTI.mif
+  mrconvert "${SUBJ}"_T1.nii "${SUBJ}"_T1.mif
+  dwidenoise_input="${SUBJ}"_DTI.mif
 }
 
 denoise() {
-  dwidenoise "${SUBJ}"_DTI_raw.mif "${SUBJ}"_DTI_den.mif -noise "${SUBJ}"_DTI_noise.mif
-  mrcalc "${SUBJ}"_DTI_raw.mif "${SUBJ}"_DTI_den.mif -subtract "${SUBJ}"_DTI_residual.mif
+  printf "\\n%s\\n" "Performing MP-PCA denoising of DWI data..."
+  mrgibbs_input="${dwidenoise_input}_denoise.mif"
+  dwidenoise "$dwidenoise_input" "$mrgibbs_input"
+  rm "$dwidenoise_input"
+  # mrcalc "${SUBJ}"_DTI_raw.mif "${SUBJ}"_DTI_den.mif -subtract "${SUBJ}"_DTI_residual.mif
 }
 
 degibbs() {
-  mrdegibbs "${SUBJ}"_DTI_den.mif "${SUBJ}"_DTI_den_deg.mif -axes 0,1
-  mrcalc "${SUBJ}"_DTI_den.mif "${SUBJ}"_DTI_den_deg.mif -subtract "${SUBJ}"_DTI_den_resid_undeg.mif 
+  printf "\\n%s\\n" "Removing Gibbs rings from DWI data..."
+  geomcorr_input="${mrgibbs_input}_degibbs.mif"
+  mrdegibbs "$mrgibbs_input" "$preproc_input" -axes 0,1
+  rm "$dwidenoise_input"
+  # mrcalc "${SUBJ}"_DTI_den.mif "${SUBJ}"_DTI_den_deg.mif -subtract "${SUBJ}"_DTI_den_resid_undeg.mif 
 }
 
 extract_b0() {
@@ -72,32 +81,40 @@ extract_b0() {
   mrmath "${SUBJ}"_b0.mif mean "${SUBJ}"_b0_mean.mif -axis 3
 }
 
-motioncorrect() {
-  dwipreproc "${SUBJ}"_DTI_den_deg.mif "${SUBJ}"_DTI_den_deg_preproc.mif -rpe_none -pe_dir PA -eddy_options " --slm=linear"
+geomcorrect() {
+  printf "\\n%s\\n" "Performing geometric correction of DWI data... Go see a movie."
+  biascorr_input="${geomcorr_input}_geomcorr.mif"
+  dwipreproc "$geomcorr_input" "$biascorr_input" -rpe_none -pe_dir PA -eddy_options " --slm=linear"
 }
 
 biascorrect() {
-  dwibiascorrect -ants "${SUBJ}"_DTI_den_deg_preproc.mif "${SUBJ}"_DTI_den_deg_preproc_unbiased.mif -bias "${SUBJ}"_bias.mif
+  printf "\\n%s\\n" "Performing bias correction of DWI data..."
+  preproc_output="${SUBJ}_preproc.mif"
+  dwibiascorrect -ants "$biascorr_input" "$preproc_output"
 }
 
 create_mask() {
-  dwi2mask "${SUBJ}"_DTI_den_deg_preproc_unbiased.mif "${SUBJ}"_DTI_den_deg_preproc_unbiased_mask.mif
+  printf "\\n%s\\n" "Creating brain mask for spherical deconvolution..."
+  dwi2mask "${SUBJ}"_preproc.mif "${SUBJ}"_preproc_mask.mif
+  maskfilter "${SUBJ}"_preproc_mask.mif -dilate "${SUBJ}"_preproc_mask_dilated.mif -npass 3
 }
 
 ######MAIN######
-parse_subjs
+main() {
+  parse_subjs
 
-for SUBJ in "${subj_array[@]}"; do
-	set +f
-  subj_start
-  make_proc_dir
-  proc_prep
-  pushd "${MRTRIX_PROC}" || continue
-  mif_conv
-  denoise
-  degibbs
-  extract_b0
-  time motioncorrect
-  biascorrect
-  create_mask
-done
+  for SUBJ in "${subj_array[@]}"; do
+    set +f
+    subj_start
+    make_proc_dir
+    proc_prep
+    pushd "${MRTRIX_PROC}" || continue
+    mif_conv
+    denoise
+    degibbs
+    # extract_b0
+    time geomcorrect
+    biascorrect
+    create_mask
+  done
+}

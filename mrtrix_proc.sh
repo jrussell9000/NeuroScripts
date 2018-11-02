@@ -40,24 +40,29 @@ parse_subjs() {
   fi
 }
 
+make_dwi_mask() {
+  "${SUBJ}"_
+}
+
 dwi2res() {
-  dwi2response dhollander "${SUBJ}"_DTI_den_deg_preproc_unbiased.mif "${SUBJ}"_wm.txt "${SUBJ}"_gm.txt "${SUBJ}"_csf.txt -voxels "${SUBJ}"_voxels.mif
+  dwi2response dhollander "${SUBJ}"_preproc.mif "${SUBJ}"_wm.txt "${SUBJ}"_gm.txt "${SUBJ}"_csf.txt -mask "${SUBJ}"_preproc_mask.mif
 }
 
 dwi2fd () {
-  dwi2fod msmt_csd "${SUBJ}"_DTI_den_deg_preproc_unbiased.mif -mask "${SUBJ}"_DTI_den_deg_preproc_unbiased_mask.mif "${SUBJ}"_wm.txt "${SUBJ}"_wmfod.mif  "${SUBJ}"_csf.txt "${SUBJ}"_csffod.mif
+  dwi2fod msmt_csd "${SUBJ}"_preproc.mif -mask "${SUBJ}"_preproc_mask_dilated.mif "${SUBJ}"_wm.txt "${SUBJ}"_wmfod.mif  "${SUBJ}"_csf.txt "${SUBJ}"_csffod.mif \
+  -lmax 10,0,0
   mrconvert -coord 3 0 "${SUBJ}"_wmfod.mif "${SUBJ}"_wmfod_1st.mif
   mrcat "${SUBJ}"_csffod.mif "${SUBJ}"_wmfod_1st.mif "${SUBJ}"_volfract.mif
 }
 
 2tnormalize() {
-  mtnormalise "${SUBJ}"_wmfod.mif "${SUBJ}"_wmfod_norm.mif "${SUBJ}"_csffod.mif "${SUBJ}"_csffod_norm.mif -mask "${SUBJ}"_DTI_den_deg_preproc_unbiased_mask.mif
+  mtnormalise "${SUBJ}"_wmfod.mif "${SUBJ}"_wmfod_norm.mif "${SUBJ}"_csffod.mif "${SUBJ}"_csffod_norm.mif -mask "${SUBJ}"_preproc_mask_dilated.mif
   mrconvert -coord 3 0 "${SUBJ}"_wmfod_norm.mif "${SUBJ}"_wmfod_norm_1st.mif
   mrcat "${SUBJ}"_csffod_norm.mif "${SUBJ}"_wmfod_norm_1st.mif "${SUBJ}"_volfract_norm.mif
 }
 
 make_5tt_mask() {
-  mrconvert ../ANAT/"${SUBJ}"_T1.nii "${SUBJ}"_T1_raw.mif
+  mrconvert "${SUBJ}"_T1.nii "${SUBJ}"_T1.mif
   5ttgen fsl "${SUBJ}"_T1_raw.mif "${SUBJ}"_5tt_nocoreg.mif
 }
 
