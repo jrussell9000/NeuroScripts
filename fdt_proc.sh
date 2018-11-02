@@ -63,7 +63,7 @@ denoise() {
 
 # 0 1 for A>>P phase encoding
 create_acqp_index() {
-  printf "0 1 0 0.05" >> "${FSL_PROC}"/acqparams.txt
+  printf "0 0 0 0.05" >> "${FSL_PROC}"/acqparams.txt
   indx=""
   for ((i=1; i<=56; i+=1)); do indx="$indx 1"; done
   echo "$indx" > index.txt
