@@ -61,6 +61,13 @@ dwi2fd () {
   mrcat "${SUBJ}"_csffod_norm.mif "${SUBJ}"_wmfod_norm_1st.mif "${SUBJ}"_volfract_norm.mif
 }
 
+anat() {
+  mrconvert "${SUBJ}"_T1.nii "${SUBJ}"_T1.mif
+  runROBEX.sh "${SUBJ}"_T1.nii T1_initial.nii T1_initial_mask.nii
+  N4BiasFieldCorrection -i "${SUBJ}"_T1.nii -w T1_initial_mask.nii -o T1_biascorr.nii
+  runROBEX.sh
+
+}
 make_5tt_mask() {
   mrconvert "${SUBJ}"_T1.nii "${SUBJ}"_T1.mif
   5ttgen fsl "${SUBJ}"_T1_raw.mif "${SUBJ}"_5tt_nocoreg.mif

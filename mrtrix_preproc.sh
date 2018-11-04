@@ -55,30 +55,29 @@ proc_prep() {
 }
 
 mif_conv() {
-  mrconvert -json_import "${SUBJ}"_DTI.json -fslgrad "${SUBJ}"_DTI.bvec "${SUBJ}"_DTI.bval "${SUBJ}"_DTI.nii "${SUBJ}"_DTI.mif
-  mrconvert "${SUBJ}"_T1.nii "${SUBJ}"_T1.mif
-  dwidenoise_input="${SUBJ}"_DTI.mif
+  mrconvert -json_import DTI.json -fslgrad DTI.bvec DTI.bval DTI.nii DTI.mif
+  mrconvert T1.nii T1.mif
+  dwidenoise_input=DTI.mif
 }
 
 denoise() {
   printf "\\n%s\\n" "Performing MP-PCA denoising of DWI data..."
-  mrgibbs_input="${dwidenoise_input}_denoise.mif"
+  mrgibbs_input="${dwidenoise_input}_den"
   dwidenoise "$dwidenoise_input" "$mrgibbs_input"
   rm "$dwidenoise_input"
-  # mrcalc "${SUBJ}"_DTI_raw.mif "${SUBJ}"_DTI_den.mif -subtract "${SUBJ}"_DTI_residual.mif
 }
 
 degibbs() {
   printf "\\n%s\\n" "Removing Gibbs rings from DWI data..."
-  geomcorr_input="${mrgibbs_input}_degibbs.mif"
-  mrdegibbs "$mrgibbs_input" "$preproc_input" -axes 0,1
-  rm "$dwidenoise_input"
-  # mrcalc "${SUBJ}"_DTI_den.mif "${SUBJ}"_DTI_den_deg.mif -subtract "${SUBJ}"_DTI_den_resid_undeg.mif 
+  geomcorr_input="${mrgibbs_input}_deg"
+  mrdegibbs "$mrgibbs_input" "$geomcorr_input" -axes 0,1
+  rm "$mrgibbs_input"
 }
 
 extract_b0() {
-  dwiextract -bzero "${SUBJ}"_DTI_den_deg.mif "${SUBJ}"_b0.mif
-  mrmath "${SUBJ}"_b0.mif mean "${SUBJ}"_b0_mean.mif -axis 3
+  dwiextract -bzero "$geomcorr_input" all_b0.mif
+  mrmath all_b0.mif mean b0_mean.mif -axis 3
+  rm all_b0.mif
 }
 
 geomcorrect() {
@@ -89,14 +88,13 @@ geomcorrect() {
 
 biascorrect() {
   printf "\\n%s\\n" "Performing bias correction of DWI data..."
-  preproc_output="${SUBJ}_preproc.mif"
-  dwibiascorrect -ants "$biascorr_input" "$preproc_output"
+  dwibiascorrect -ants "$biascorr_input" DTI_preproc.mif
 }
 
 create_mask() {
   printf "\\n%s\\n" "Creating brain mask for spherical deconvolution..."
-  dwi2mask "${SUBJ}"_preproc.mif "${SUBJ}"_preproc_mask.mif
-  maskfilter "${SUBJ}"_preproc_mask.mif -dilate "${SUBJ}"_preproc_mask_dilated.mif -npass 3
+  dwi2mask DTI_preproc.mif DTI_preproc_mask.mif
+  maskfilter DTI_preproc_mask.mif -dilate DTI_preproc_mask_dilated.mif -npass 3
 }
 
 ######MAIN######
