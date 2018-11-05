@@ -110,7 +110,7 @@ main() {
     mif_conv
     denoise
     degibbs
-    # extract_b0
+    extract_b0
     time geomcorrect
     biascorrect
     create_mask
