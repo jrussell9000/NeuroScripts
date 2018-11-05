@@ -280,6 +280,52 @@ reg_5tt_mask() {
 parse_subjs
 groupwise_dirs
 
+foreach * : dwidenoise IN/"${MRTRIX_PROC}"/dwi.mif IN/"${MRTRIX_PROC}"/dwi_den.mif
+foreach * : mrdegibbs IN/"${MRTRIX_PROC}"/dwi_den.mif IN/"${MRTRIX_PROC}"/dwi_den_deg.mif -axes 0,1
+foreach * : dwipreproc IN/"${MRTRIX_PROC}"/dwi_den_deg.mif IN/"${MRTRIX_PROC}"/dwi_den_deg_pp.mif -rpe_none -pe_dir PA
+foreach * : dwi2mask IN/"${MRTRIX_PROC}"/dwi_den_deg.mif IN/"${MRTRIX_PROC}"/dwi_temp_mask.mif
+foreach * : dwibiascorrect -ants IN/"${MRTRIX_PROC}"/dwi_den_deg_pp.mif "${MRTRIX_PROC}"/dwi_den_deg_pp_unb.mif
+mkdir -p "${intnorm_dir}"/dwi_input
+mkdir "${intnorm_dir}"/mask_input
+foreach * : ln -s IN/"${MRTRIX_PROC}"/dwi_den_deg_pp_unb.mif "${intnorm_dir}"/dwi_input/IN.mif
+foreach * : ln -s IN/"${MRTRIX_PROC}"/dwi_temp_mask.mif "${intnorm_dir}"/mask_input/IN.mif
+dwiintensitynorm "${intnorm_dir}"/dwi_input/ "${intnorm_dir}"/mask_input/ "${intnorm_dir}"/dwi_output/ "${intnorm_dir}"/fa_template.mif "${intnorm_dir}"/fa_template_wm_mask.mif
+foreach "${intnorm_dir}"/dwi_output/* : ln -s IN PRE/dwi_den_deg_pp_unb_norm.mif
+foreach * : dwi2response tournier IN/dwi_den_deg_pp_unb_norm.mif IN/response.txt
+average_response */response.txt "${PROC_DIR}"/group_average_response.txt
+foreach * : mrresize IN/dwi_den_deg_pp_unb_norm.mif -vox 1.3 IN/dwi_den_deg_pp_unb_norm_upsamp.mif
+foreach * : dwi2mask IN/dwi_den_deg_pp_unb_norm_upsamp.mif IN/dwi_mask_upsampled.mif
+foreach * : dwiextract IN/dwi_den_deg_pp_unb_norm_upsamp.mif IN/noB0s.mif
+foreach * : dwi2fod msmt_csd IN/noB0s.mif "${PROC_DIR}"/group_average_response.txt IN/wmfod.mif -mask IN/dwi_mask_upsampled.mif 
+mkdir -p "${template_dir}"/fod_input
+mkdir "${template_dir}"/mask_input
+foreach * : ln -s IN/wmfod.mif "${template_dir}"/fod_input/PRE.mif
+foreach * : ln -s IN/dwi_mask_upsampled.mif "${template_dir}"/mask_input/PRE.mif
+population_template "${template_dir}"/fod_input -mask_dir "${template_dir}"/mask_input "${template_dir}"/wmfod_template.mif -voxel_size 1.3
+foreach * : mrregister IN/wmfod.mif -mask1 IN/dwi_mask_upsampled.mif "${template_dir}"/wmfod_template.mif -nl_warp IN/subject2template_warp.mif IN/template2subject_warp.mif
+foreach * : mrtransform IN/dwi_mask_upsampled.mif -warp IN/subject2template_warp.mif -interp nearest -datatype bit IN/dwi_mask_in_template_space.mif
+mrmath */dwi_mask_in_template_space.mif min "${template_dir}"/template_mask.mif -datatype bit
+fod2fixel -mask "${template_dir}"/template_mask.mif -fmls_peak_value 0.10 "${template_dir}"/wmfod_template.mif "${template_dir}"/fixel_mask
+foreach * : mrtransform IN/wmfod.mif -warp IN/subject2template_warp -noreorientation IN/FOD_in_template_space_NOT_REORIENTED.mif
+foreach * : fod2fixel -mask "${template_dir}"/template_mask.mif IN/FOD_in_template_space_NOT_REORIENTED.mif IN/fixel_in_template_space_NOT_REORIENTED -afd fd.mif
+foreach * : fixelreorient IN/fixel_in_template_space_NOT_REORIENTED IN/subject2template_warp.mif IN/fixel_in_template_space
+foreach * : rm -rf fixel_in_template_space_NOT_REORIENTED
+foreach * : fixelcorrespondence IN/fixel_in_template_space/fd.mif "${template_dir}"/fixel_mask "${template_dir}"/fd PRE.mif
+foreach * : warp2metric IN/subject2template_warp.mif -fc "${template_dir}"/fixel_mask "${template_dir}"/fc IN.mif
+mkdir "${template_dir}"/log_fc
+cp "${template_dir}"/fc/index.mif "${template_dir}"/fc/directions.mif "${template_dir}"/log_fc
+foreach * : mrcalc "${template_dir}"/fc/IN.mif -log "${template_dir}"/log_fc/IN.mif
+mkdir "${template_dir}"/fdc
+cp "${template_dir}"/fc/index.mif  "${template_dir}"/fdc
+cp "${template_dir}"/fc/directions.mif "${template_dir}"/fdc
+foreach * : mrcalc "${template_dir}"/fd/IN.mif "${template_dir}"/fc/IN.mif -mult "${template_dir}"/fdc/IN.mif
+cd "${template_dir}"
+tckgen -angle 22.5 -maxlen 250 -minlen 10 -power 1.0 wmfod_template.mif -seed_image template_mask.mif -mask template_mask -select 20000000 -cutoff 0.10 tracks_20_million.tck
+tcksift tracks_20_million.tck wmfod_template.mif tracks_2_million_sift.tck -term_number 2000000
+fixelcfestats fd files.txt design_matrix.txt contrast_matrix.txt tracks_2_million_sift.tck stats_fd
+fixelcfestats log_fc files.txt design_matrix.txt contrast_matrix.txt tracks_2_million_sift.tck stats_log_fc
+fixelcfestats fdc files.txt design_matrix.txt contrast_matrix.txt tracks_2_million_sift.tck stats_fdc
+
 for SUBJ in "${subj_array[@]}"; do
 	set +f
   subj_start
