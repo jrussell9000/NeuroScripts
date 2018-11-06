@@ -3,7 +3,7 @@
 # Single tissue fixel-based fibre density and cross section processing and analyses
 # https://mrtrix.readthedocs.io/en/latest/fixel_based_analysis/st_fibre_density_cross-section.html
 
-while getopts 'p:' args; do
+while getopts 'i::p:' args; do
 	case "${args}" in
   i)
     INPUT_DIR=${OPTARG}
@@ -30,112 +30,94 @@ parse_subjs() {
   fi
 }
 
-subj_start() {
-  blink=$(tput blink)$(tput setaf 1)
-  normal=$(tput sgr0)
-  SUBJ_F=${blink}${SUBJ}${normal}
-	printf "\\n%s" "///////////////////////////////////////////"
-	printf "\\n%s" "//-------------NOW PROCESSING------------//"
-  printf "\\n%s" "//----------------SUBJECT #--------------//"
-	printf "\\n%s" "//------------------$SUBJ_F------------------//"
-	printf "\\n%s\\n" "///////////////////////////////////////////"
-  SUBJ_PATH="${PROC_DIR}"/"${SUBJ}"
-
-}
-
 make_proc_dir() {
   if [ -d ${PROC_DIR} ]; then
     rm -rf "${PROC_DIR}"
   fi
-  mkdir -p "${PROC_DIR}"
-  SUBJ_PATH="${PROC_DIR}"/"${SUBJ}"
-  if [ -d "${SUBJ_PATH}"/mrtrix3_proc ]; then
-    rm -rfv "${SUBJ_PATH}"/mrtrix3_proc
-	  mkdir -p "${SUBJ_PATH}"/mrtrix3_proc
-  else
-    mkdir -p "${SUBJ_PATH}"/mrtrix3_proc
-  fi
-  MRTRIX_PROC="${SUBJ_PATH}"/mrtrix3_proc
+  mkdir "${PROC_DIR}"
 }
 
-groupwise_dirs() {
+make_intnorm_dir() {
   # Making directory for global intensity normalization
-  intnorm_dir="${PROC_DIR}"/dwiintensitynorm
-  if [ -d "${intnorm_dir}" ]; then
-    rm -rf "${intnorm_dir}"
+  INTNORM_DIR="${PROC_DIR}"/dwiintensitynorm
+  if [ -d "${INTNORM_DIR}" ]; then
+    rm -rf "${INTNORM_DIR}"
   fi
-  mkdir -p "${intnorm_dir}"/dwi_input
-  mkdir "${intnorm_dir}"/mask_input
+  mkdir -p "${INTNORM_DIR}"/dwi_input
+  mkdir "${INTNORM_DIR}"/mask_input
+}
 
+make_template_dir() {
   # Making directory to contain inputs needed to make FOD template
-  template_dir="${PROC_DIR}"/template
-  if [ -d "${template_dir}" ]; then
-    rm -rf "${template_dir}"
+  TEMPLATE_DIR="${PROC_DIR}"/template
+  if [ -d "${TEMPLATE_DIR}" ]; then
+    rm -rf "${TEMPLATE_DIR}"
   fi
-  mkdir -p "${template_dir}"/fod_input
-  mkdir "${template_dir}"/mask_input
+  mkdir -p "${TEMPLATE_DIR}"/fod_input
+  mkdir "${TEMPLATE_DIR}"/mask_input
+  mkdir "${TEMPLATE_DIR}"/log_fc
+  mkdir "${TEMPLATE_DIR}"/fdc
 }
 
 copy_scanfiles() {
-  cp "${SUBJ_PATH}"/DTI/* "${MRTRIX_PROC}"
-  cp "${SUBJ_PATH}"/ANAT/* "${MRTRIX_PROC}"
-}
-
-conv_nii2mif() {
-  cd "${MRTRIX_PROC}" || return
-  mrconvert -json_import "${SUBJ}"_DTI.json -fslgrad "${SUBJ}"_DTI.bvec "${SUBJ}"_DTI.bval "${SUBJ}"_DTI.nii DTI.mif
-  mrconvert "${SUBJ}"_T1.nii T1.mif
+  for SUBJ in "${subj_array[@]}"; do
+    mkdir "${PROC_DIR}"/"${SUBJ}"
+    cp "${INPUT_DIR}"/"${SUBJ}"/DTI/* "${PROC_DIR}"/"${SUBJ}"
+    cp "${INPUT_DIR}"/"${SUBJ}"/ANAT/* "${PROC_DIR}"/"${SUBJ}"
+    mv "${PROC_DIR}"/"${SUBJ}"/"${SUBJ}"_DTI.json "${PROC_DIR}"/"${SUBJ}"/DTI.json
+    mv "${PROC_DIR}"/"${SUBJ}"/"${SUBJ}"_DTI.bvec "${PROC_DIR}"/"${SUBJ}"/DTI.bvec
+    mv "${PROC_DIR}"/"${SUBJ}"/"${SUBJ}"_DTI.bval "${PROC_DIR}"/"${SUBJ}"/DTI.bval
+    mv "${PROC_DIR}"/"${SUBJ}"/"${SUBJ}"_DTI.nii "${PROC_DIR}"/"${SUBJ}"/DTI.nii
+    mv "${PROC_DIR}"/"${SUBJ}"/"${SUBJ}"_T1.nii "${PROC_DIR}"/"${SUBJ}"/T1.nii
+  done
 }
 
 ######MAIN######
 parse_subjs
-groupwise_dirs
 make_proc_dir
 copy_scanfiles
-conv_nii2mif
 
-foreach * : dwidenoise IN/mrtrix_proc/dwi.mif IN/mrtrix_proc/dwi_den.mif
-foreach * : mrdegibbs IN/mrtrix_proc/dwi_den.mif IN/mrtrix_proc/dwi_den_deg.mif -axes 0,1
-foreach * : dwipreproc IN/mrtrix_proc/dwi_den_deg.mif IN/mrtrix_proc/dwi_den_deg_pp.mif -rpe_none -pe_dir PA
-foreach * : dwi2mask IN/mrtrix_proc/dwi_den_deg.mif IN/mrtrix_proc/dwi_temp_mask.mif
-foreach * : dwibiascorrect -ants IN/mrtrix_proc/dwi_den_deg_pp.mif mrtrix_proc/dwi_den_deg_pp_unb.mif
-mkdir -p "${intnorm_dir}"/dwi_input
-mkdir "${intnorm_dir}"/mask_input
-foreach * : ln -s IN/mrtrix_proc/dwi_den_deg_pp_unb.mif "${intnorm_dir}"/dwi_input/IN.mif
-foreach * : ln -s IN/mrtrix_proc/dwi_temp_mask.mif "${intnorm_dir}"/mask_input/IN.mif
-dwiintensitynorm "${intnorm_dir}"/dwi_input/ "${intnorm_dir}"/mask_input/ "${intnorm_dir}"/dwi_output/ "${intnorm_dir}"/fa_template.mif "${intnorm_dir}"/fa_template_wm_mask.mif
-foreach "${intnorm_dir}"/dwi_output/* : ln -s IN PRE/mrtrix_proc/dwi_den_deg_pp_unb_norm.mif
-foreach * : dwi2response tournier IN/mrtrix_proc/dwi_den_deg_pp_unb_norm.mif IN/mrtrix_proc/response.txt
-average_response */response.txt "${PROC_DIR}"/group_average_response.txt
-foreach * : mrresize IN/dwi_den_deg_pp_unb_norm.mif -vox 1.3 IN/mrtrix_proc/dwi_den_deg_pp_unb_norm_upsamp.mif
-foreach * : dwi2mask IN/dwi_den_deg_pp_unb_norm_upsamp.mif IN/mrtrix_proc/dwi_mask_upsampled.mif
-foreach * : dwiextract IN/dwi_den_deg_pp_unb_norm_upsamp.mif IN/mrtrix_proc/noB0s.mif
-foreach * : dwi2fod msmt_csd IN/mrtrix_proc/noB0s.mif "${PROC_DIR}"/group_average_response.txt IN/mrtrix_proc/wmfod.mif -mask IN/mrtrix_proc/dwi_mask_upsampled.mif 
-mkdir -p "${template_dir}"/fod_input
-mkdir "${template_dir}"/mask_input
-foreach * : ln -s IN/wmfod.mif "${template_dir}"/fod_input/PRE.mif
-foreach * : ln -s IN/dwi_mask_upsampled.mif "${template_dir}"/mask_input/PRE.mif
-population_template "${template_dir}"/fod_input -mask_dir "${template_dir}"/mask_input "${template_dir}"/wmfod_template.mif -voxel_size 1.3
-foreach * : mrregister IN/wmfod.mif -mask1 IN/dwi_mask_upsampled.mif "${template_dir}"/wmfod_template.mif -nl_warp IN/subject2template_warp.mif IN/template2subject_warp.mif
-foreach * : mrtransform IN/dwi_mask_upsampled.mif -warp IN/subject2template_warp.mif -interp nearest -datatype bit IN/dwi_mask_in_template_space.mif
-mrmath */dwi_mask_in_template_space.mif min "${template_dir}"/template_mask.mif -datatype bit
-fod2fixel -mask "${template_dir}"/template_mask.mif -fmls_peak_value 0.10 "${template_dir}"/wmfod_template.mif "${template_dir}"/fixel_mask
-foreach * : mrtransform IN/wmfod.mif -warp IN/subject2template_warp -noreorientation IN/FOD_in_template_space_NOT_REORIENTED.mif
-foreach * : fod2fixel -mask "${template_dir}"/template_mask.mif IN/FOD_in_template_space_NOT_REORIENTED.mif IN/fixel_in_template_space_NOT_REORIENTED -afd fd.mif
-foreach * : fixelreorient IN/fixel_in_template_space_NOT_REORIENTED IN/subject2template_warp.mif IN/fixel_in_template_space
-foreach * : rm -rf fixel_in_template_space_NOT_REORIENTED
-foreach * : fixelcorrespondence IN/fixel_in_template_space/fd.mif "${template_dir}"/fixel_mask "${template_dir}"/fd PRE.mif
-foreach * : warp2metric IN/subject2template_warp.mif -fc "${template_dir}"/fixel_mask "${template_dir}"/fc IN.mif
-mkdir "${template_dir}"/log_fc
-cp "${template_dir}"/fc/index.mif "${template_dir}"/fc/directions.mif "${template_dir}"/log_fc
-foreach * : mrcalc "${template_dir}"/fc/IN.mif -log "${template_dir}"/log_fc/IN.mif
-mkdir "${template_dir}"/fdc
-cp "${template_dir}"/fc/index.mif  "${template_dir}"/fdc
-cp "${template_dir}"/fc/directions.mif "${template_dir}"/fdc
-foreach * : mrcalc "${template_dir}"/fd/IN.mif "${template_dir}"/fc/IN.mif -mult "${template_dir}"/fdc/IN.mif
-cd "${template_dir}" || return
-tckgen -angle 22.5 -maxlen 250 -minlen 10 -power 1.0 wmfod_template.mif -seed_image template_mask.mif -mask template_mask -select 20000000 -cutoff 0.10 tracks_20_million.tck
-tcksift tracks_20_million.tck wmfod_template.mif tracks_2_million_sift.tck -term_number 2000000
-fixelcfestats fd files.txt design_matrix.txt contrast_matrix.txt tracks_2_million_sift.tck stats_fd
-fixelcfestats log_fc files.txt design_matrix.txt contrast_matrix.txt tracks_2_million_sift.tck stats_log_fc
-fixelcfestats fdc files.txt design_matrix.txt contrast_matrix.txt tracks_2_million_sift.tck stats_fdc
+cd "${PROC_DIR}" || return
+foreach * : mrconvert -json_import IN/DTI.json -fslgrad IN/DTI.bvec IN/DTI.bval IN/DTI.nii IN/dwi.mif
+foreach * : mrconvert IN/T1.nii IN/T1.mif
+foreach * : dwidenoise IN/dwi.mif IN/dwi_den.mif
+foreach * : mrdegibbs IN/dwi_den.mif IN/dwi_den_deg.mif -axes 0,1
+foreach * : dwipreproc IN/dwi_den_deg.mif IN/dwi_den_deg_pp.mif -rpe_none -pe_dir PA
+foreach * : dwi2mask IN/dwi_den_deg.mif IN/dwi_temp_mask.mif
+foreach * : dwibiascorrect -ants IN/dwi_den_deg_pp.mif IN/dwi_den_deg_pp_unb.mif
+# make_intnorm_dir
+# foreach * : ln -s IN/dwi_den_deg_pp_unb.mif "${INTNORM_DIR}"/dwi_input/IN.mif
+# foreach * : ln -s IN/dwi_temp_mask.mif "${INTNORM_DIR}"/mask_input/IN.mif
+# dwiintensitynorm "${INTNORM_DIR}"/dwi_input/ "${INTNORM_DIR}"/mask_input/ "${INTNORM_DIR}"/dwi_output/ "${INTNORM_DIR}"/fa_template.mif "${INTNORM_DIR}"/fa_template_wm_mask.mif
+# foreach "${INTNORM_DIR}"/dwi_output/* : ln -s IN PRE/dwi_den_deg_pp_unb_norm.mif
+# foreach * : dwi2response tournier IN/dwi_den_deg_pp_unb_norm.mif IN/response.txt
+# average_response */response.txt "${PROC_DIR}"/group_average_response.txt
+# foreach * : mrresize IN/dwi_den_deg_pp_unb_norm.mif -vox 1.3 IN/dwi_den_deg_pp_unb_norm_upsamp.mif
+# foreach * : dwi2mask IN/dwi_den_deg_pp_unb_norm_upsamp.mif IN/dwi_mask_upsampled.mif
+# foreach * : dwiextract IN/dwi_den_deg_pp_unb_norm_upsamp.mif IN/noB0s.mif
+# foreach * : dwi2fod msmt_csd IN/noB0s.mif "${PROC_DIR}"/group_average_response.txt IN/wmfod.mif -mask IN/dwi_mask_upsampled.mif 
+# make_template_dir
+# foreach * : ln -s IN/wmfod.mif "${TEMPLATE_DIR}"/fod_input/PRE.mif
+# foreach * : ln -s IN/dwi_mask_upsampled.mif "${TEMPLATE_DIR}"/mask_input/PRE.mif
+# population_template "${TEMPLATE_DIR}"/fod_input -mask_dir "${TEMPLATE_DIR}"/mask_input "${TEMPLATE_DIR}"/wmfod_template.mif -voxel_size 1.3
+# foreach * : mrregister IN/wmfod.mif -mask1 IN/dwi_mask_upsampled.mif "${TEMPLATE_DIR}"/wmfod_template.mif -nl_warp IN/subject2template_warp.mif IN/template2subject_warp.mif
+# foreach * : mrtransform IN/dwi_mask_upsampled.mif -warp IN/subject2template_warp.mif -interp nearest -datatype bit IN/dwi_mask_in_template_space.mif
+# mrmath */dwi_mask_in_template_space.mif min "${TEMPLATE_DIR}"/template_mask.mif -datatype bit
+# fod2fixel -mask "${TEMPLATE_DIR}"/template_mask.mif -fmls_peak_value 0.10 "${TEMPLATE_DIR}"/wmfod_template.mif "${TEMPLATE_DIR}"/fixel_mask
+# foreach * : mrtransform IN/wmfod.mif -warp IN/subject2template_warp -noreorientation IN/FOD_in_template_space_NOT_REORIENTED.mif
+# foreach * : fod2fixel -mask "${TEMPLATE_DIR}"/template_mask.mif IN/FOD_in_template_space_NOT_REORIENTED.mif IN/fixel_in_template_space_NOT_REORIENTED -afd fd.mif
+# foreach * : fixelreorient IN/fixel_in_template_space_NOT_REORIENTED IN/subject2template_warp.mif IN/fixel_in_template_space
+# foreach * : rm -rf fixel_in_template_space_NOT_REORIENTED
+# foreach * : fixelcorrespondence IN/fixel_in_template_space/fd.mif "${TEMPLATE_DIR}"/fixel_mask "${TEMPLATE_DIR}"/fd PRE.mif
+# foreach * : warp2metric IN/subject2template_warp.mif -fc "${TEMPLATE_DIR}"/fixel_mask "${TEMPLATE_DIR}"/fc IN.mif
+# cp "${TEMPLATE_DIR}"/fc/index.mif "${TEMPLATE_DIR}"/fc/directions.mif "${TEMPLATE_DIR}"/log_fc
+# foreach * : mrcalc "${TEMPLATE_DIR}"/fc/IN.mif -log "${TEMPLATE_DIR}"/log_fc/IN.mif
+# cp "${TEMPLATE_DIR}"/fc/index.mif  "${TEMPLATE_DIR}"/fdc
+# cp "${TEMPLATE_DIR}"/fc/directions.mif "${TEMPLATE_DIR}"/fdc
+# foreach * : mrcalc "${TEMPLATE_DIR}"/fd/IN.mif "${TEMPLATE_DIR}"/fc/IN.mif -mult "${TEMPLATE_DIR}"/fdc/IN.mif
+# cd "${TEMPLATE_DIR}" || return
+# tckgen -angle 22.5 -maxlen 250 -minlen 10 -power 1.0 wmfod_template.mif -seed_image template_mask.mif -mask template_mask -select 20000000 -cutoff 0.10 tracks_20_million.tck
+# tcksift tracks_20_million.tck wmfod_template.mif tracks_2_million_sift.tck -term_number 2000000
+# fixelcfestats fd files.txt design_matrix.txt contrast_matrix.txt tracks_2_million_sift.tck stats_fd
+# fixelcfestats log_fc files.txt design_matrix.txt contrast_matrix.txt tracks_2_million_sift.tck stats_log_fc
+# fixelcfestats fdc files.txt design_matrix.txt contrast_matrix.txt tracks_2_million_sift.tck stats_fdc
