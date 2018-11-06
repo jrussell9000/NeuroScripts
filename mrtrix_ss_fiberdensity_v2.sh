@@ -3,12 +3,12 @@
 # Single tissue fixel-based fibre density and cross section processing and analyses
 # https://mrtrix.readthedocs.io/en/latest/fixel_based_analysis/st_fibre_density_cross-section.html
 
-while getopts 'i::p:' args; do
+while getopts 'i:o:' args; do
 	case "${args}" in
   i)
     INPUT_DIR=${OPTARG}
     ;;
-	p)
+	o)
 		PROC_DIR=${OPTARG}
 		;;
 	esac
@@ -82,7 +82,7 @@ foreach * : mrconvert -json_import IN/DTI.json -fslgrad IN/DTI.bvec IN/DTI.bval 
 foreach * : mrconvert IN/T1.nii IN/T1.mif
 foreach * : dwidenoise IN/dwi.mif IN/dwi_den.mif
 foreach * : mrdegibbs IN/dwi_den.mif IN/dwi_den_deg.mif -axes 0,1
-foreach * : dwipreproc IN/dwi_den_deg.mif IN/dwi_den_deg_pp.mif -rpe_none -pe_dir PA
+foreach * : dwipreproc IN/dwi_den_deg.mif IN/dwi_den_deg_pp.mif -rpe_none -pe_dir PA -eddy_options "--slm=linear"
 foreach * : dwi2mask IN/dwi_den_deg.mif IN/dwi_temp_mask.mif
 foreach * : dwibiascorrect -ants IN/dwi_den_deg_pp.mif IN/dwi_den_deg_pp_unb.mif
 # make_intnorm_dir
