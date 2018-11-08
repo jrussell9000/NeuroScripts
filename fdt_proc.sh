@@ -106,6 +106,7 @@ main() {
     create_acqp_index
     make_mask
     eddy
+    dti_fit
   done
 }
 
