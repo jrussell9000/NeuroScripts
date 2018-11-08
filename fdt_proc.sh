@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 
-while getopts 'p:' args; do
+while getopts 'i:p:' args; do
 	case "${args}" in
-	p)
+  i)
+    INPUT_DIR=${OPTARG}
+    ;;
+	o)
 		PROC_DIR=${OPTARG}
 		;;
 	esac
@@ -43,7 +46,7 @@ make_proc_dir() {
   FSL_PROC="${SUBJ_PATH}"/fsl_proc
 }
 
-proc_prep() {
+copy_scanfiles() {
   cp "${SUBJ_PATH}"/DTI/* "${FSL_PROC}"
   cp "${SUBJ_PATH}"/FMAP/* "${FSL_PROC}"
 }
@@ -89,7 +92,8 @@ eddy() {
 }
 
 dti_fit() {
-  dtifit -k "${SUBJ}"_DTI_fm_den_deg_eddy -o "${SUBJ}"_dti_fit -m "${SUBJ}"_DTI_fm_mask.nii.gz -r "${SUBJ}"_DTI.bvec -b "${SUBJ}"_DTI.bval
+  # dtifit -k "${SUBJ}"_DTI_fm_den_deg_eddy -o "${SUBJ}"_dti_fit -m "${SUBJ}"_DTI_fm_mask.nii.gz -r "${SUBJ}"_DTI.bvec -b "${SUBJ}"_DTI.bval
+  dtifit -k "${SUBJ}"_DTI_fm_den_deg -o "${SUBJ}"_dti_fit -m "${SUBJ}"_DTI_fm_mask.nii.gz -r "${SUBJ}"_DTI.bvec -b "${SUBJ}"_DTI.bval
 }
 
 ######MAIN######
