@@ -1,0 +1,112 @@
+#!/bin/tcsh
+
+# this version now outputs the corrected dataset with same orientation as input
+
+if ($#argv < 6) then
+   echo "Usage: "
+   echo "@FieldmapCorrection <file> <fmap> <fmapmag> <file_out> <esp> <pepolar>"
+   echo "   <file>    = input file"
+   echo "   <fmap>    = field map"
+   echo "   <fmapmag> = magnitude associated with field map"
+   echo "   <esp>     = echo spacing (in seconds)"
+   echo "   <pepolar> = phase encode direction (from scanner)"
+   echo ""
+   echo "Input filenames can be either NIFTI or AFNI format"
+   echo "   if NIFTI: input filenames should have the suffix .nii"
+   echo "   if AFNI: input filenames should include the appropriate afni view (e.g. +orig)"
+   exit()
+endif
+
+set file     = $argv[1]
+set fmap     = $argv[2] #Fmap	#
+set fmapmag  = $argv[3] #FmapMag #
+set file_out = $argv[4] #$file.b #
+set esp      = $argv[5] #0.616	#
+set pepolar  = $argv[6] #1	#
+
+#--- check to see if file is NIFTI ---
+if (`3dinfo -is_nifti $file`) then
+   set nifti   = 1
+   set suffix  = ""
+   set view    = ""
+else
+   set nifti   = 0
+   set file    = `@GetAfniPrefix $file`
+   set fmap    = `@GetAfniPrefix $fmap`
+   set fmapmag = `@GetAfniPrefix $fmapmag`
+   set view    = `3dinfo -av_space $file`
+   set suffix  = ".nii"
+endif
+
+#--- convert esp to sec ---
+set check_ms = `ccalc -form int -expr "step($esp*1000-1)"`
+if ($check_ms) then
+   echo "Echo spacing appears to be in ms. Converting to sec."
+   set esp_sec = `ccalc "$esp/1000"`
+else
+   set esp_sec = $esp
+endif
+
+#--- Compute mask from FmapMag ---
+if (! -e Mask.${fmapmag}${suffix}) then
+3dAutomask -prefix Mask.${fmapmag}${suffix} ${fmapmag}${view}
+endif
+
+#--- convert Fmap to rad/s and mask ---
+if (! -e masked2pi.${fmap}${suffix}) then
+3dcalc -datum float -a ${fmap}${view} -b Mask.${fmapmag}${suffix} -expr "a*b*2*3.141592654" -prefix masked2pi.${fmap}${suffix}
+endif
+
+#--- save orientation info for later use ---
+set orient = `3dinfo -orient ${file}${view}`
+
+#--- resample to LPI (which FSL wants) ---
+if (! -e tmp.LPI.${file}${suffix}) then
+3dresample -orient LPI -inset ${file}${view} -prefix tmp.LPI.${file}${suffix}
+endif
+if (! -e tmp.LPI.masked2pi.${fmap}${suffix}) then
+3dresample -master tmp.LPI.${file}${suffix} -inset masked2pi.${fmap}${suffix} -prefix tmp.LPI.masked2pi.${fmap}${suffix}
+endif
+
+set fmap_use = tmp.LPI.masked2pi.${fmap}${suffix}
+set file_use = tmp.LPI.${file}${suffix}
+set tmp_out  = tmp.${file_out}${suffix}
+
+echo "Running FUGUE ..."
+if ($pepolar) then
+   echo "...with pepolar"
+   if (! -e $tmp_out) then
+   fugue -i $file_use --loadfmap=$fmap_use --dwell=${esp_sec} -u $tmp_out
+   endif
+else
+   if (! -e $tmp_out) then
+   fugue -i $file_use --loadfmap=$fmap_use --dwell=${esp_sec} --unwarpdir=y- -u $tmp_out
+   endif
+endif
+echo "...done"
+
+#--- Fix orientations to what they were ---
+if (! -e $file_out) then
+   echo "Resampling $tmp_out from LPI to $orient..."
+   3dresample -orient $orient -prefix $file_out -inset $tmp_out
+   echo "...done"
+else
+   echo "$file_out already exists. Output will not be written."
+endif
+
+if (-e $file_out.nii || -e $file_out) then
+   rm -f tmp.LPI.masked2pi.${fmap}${suffix}
+   rm -f tmp.LPI.${file}${suffix}
+   rm -f $tmp_out
+endif
+
+if (! $nifti) then
+   if (-e $file_out.nii) then
+      3dcopy $file_out.nii $file_out
+      rm -f $file_out.nii
+   else if (-e $file_out.nii.gz) then
+      3dcopy $file_out.nii.gz $file_out
+      rm -f $file_out.nii.gz
+   endif
+endif
+
