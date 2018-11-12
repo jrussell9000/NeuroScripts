@@ -1,5 +1,146 @@
 #!/usr/bin/env bash
 
+
+set -e 
+
+usage() {
+  cat << EOF
+    Usage: fdt_proc.sh PARAMETER
+
+    PARAMETERS:
+
+    --studydir=<study-dir>   path to read/write location where raw scans exist and processed output will be placed
+    --subject=<subject-id>  numeric subject ID. Should match the name of the directory containing the individual subject files
+  
+EOF
+}
+
+get_options() {
+  unset INPUT_DIR
+  unset OUTPUT_DIR
+
+  local index=0
+  local numargs=${#arguments[@]}
+  local argument
+
+  while [ ${index} -lt ${numargs} ] ; do
+    argument=${arguments[index]}
+
+    case ${argument} in
+      --help)
+        usage
+        exit 1
+        ;;
+      --studydir=*)
+        STUDY_DIR=${argument#*=}
+        index=$(( index + 1 ))
+        ;;
+      --subject=*)
+        SUBJECT=${argument#*=}
+        index=$(( index + 1 ))
+        ;;
+      *)
+        usage
+        echo "ERROR: Option ${argument} not recognized."
+        exit 1
+        ;;
+    esac
+  done
+
+  #Check for required variables, and echo an error message if they're missing
+  local error_msgs=""
+
+  if [ -z "${STUDY_DIR}" ] ; then
+    error_msgs+="\nERROR: <study-dir> not specified."
+  fi
+
+  if [ -z "${SUBJECT}" ] ; then
+    error_msgs+="\nERROR: <subject> not specified."
+  fi
+
+  if [ -z "${FSL_DIR}" ] ; then
+    error_msgs+="ERROR: FSLDIR environment variable not set.  Is FSL installed?"
+  fi
+
+  if [ -z "${error_msgs}" ] ; then
+    usage
+    echo -e "${error_msgs}"
+    exit 1
+  fi
+
+  echo "Location of study files: ${INPUT_DIR}"
+  echo "Performing operations for subjects: ${OUTPUT_DIR}"
+
+}
+tmp_dir() {
+  if [ -d "${TMP}" ]; then
+    rm -rf "${TMP}"
+  fi
+  unset "${rand}"
+  unset "${TMP}"
+  rand=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w 8 | head -n 1)
+  TMP=/tmp/fdt_proc-${rand}
+  mkdir "${TMP}"
+}
+
+parse_subjs() {
+	if [ -f subj_list.txt ]; then
+		while read -r subjects; do
+		  subj_array+=("$subjects")
+	  done <subj_list.txt
+  else
+    find /Volumes/Studies/Herringa/YouthPTSD -maxdepth 1 -mindepth 1 -type d -printf '%f\n' | sort -u | tr -d "_" >>subj_list.txt
+    while read -r subjects; do
+      subj_array+=("$subjects")
+	  done <subj_list.txt
+  fi
+}
+
+main() {
+
+  get_options $@
+  DWIPROC="DWI_processing"
+  INPUT_DIR="${STUDY_DIR}"/"${SUBJECT}"
+  OUTPUT_DIR=${STUDY_DIR}/${SUBJECT}/${DWIPROC}
+
+  if [ -d $OUTPUT_DIR ] ; then
+    rm -rf ${OUTPUT_DIR}
+  fi
+
+  mkdir -p ${OUTPUT_DIR}
+  mkdir -p ${OUTPUT_DIR}/original
+  mkdir -p ${OUTPUT_DIR}/raw
+
+  pepositive="pepolar0"
+  penegative="pepolar1"
+
+  for file in "$INPUT_DIR"/*.NODDI*.tgz; do
+    if [[ "$file" == *"$pepositive"* ]]; then
+      tmp_dir
+      cp "$file" "$TMP"
+      tar xvf "$TMP"/*.tgz
+      "${FSL_DIR}"/bin/imcp "$TMP"/*.nii "$OUTPUT_DIR"/raw/"$pepositive".nii
+      cp "$TMP"/*.bval "$OUTPUT_DIR"/raw/"$pepositive".bval
+      cp "$TMP"/*.bvec "$OUTPUT_DIR"/raw/"$pepositive".bvec
+    fi
+    if [[ "$file" == *"$penegative"* ]]; then
+      tmp_dir
+      cp "$file" "$TMP"
+      tar xvf "$TMP"/*.tgz
+      "${FSL_DIR}"/bin/imcp "$TMP"/*.nii "$OUTPUT_DIR"/raw/"$penegative".nii
+      cp "$TMP"/*.bval "$OUTPUT_DIR"/raw/"$penegative".bval
+      cp "$TMP"/*.bvec "$OUTPUT_DIR"/raw/"$penegative".bvec
+    fi
+  done
+}
+
+
+
+
+
+
+
+}
 while getopts 'p:' args; do
 	case "${args}" in
 	p)
