@@ -207,6 +207,6 @@ tmp_dir
     correct_dti
     rm -rf "${TMP_PATH}"
   } 2>&1 | tee -a "$LF"
-  mv_to_local
+ # mv_to_local
 done ) 
 rm -rf "${TMP}"
