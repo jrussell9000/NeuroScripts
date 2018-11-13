@@ -5,6 +5,7 @@ set -e
 
 usage() {
   cat << EOF
+
     Usage: fdt_proc.sh PARAMETER...
 
     PARAMETERS:
@@ -15,6 +16,12 @@ usage() {
                               directory containing the individual subject files
     --echospacing=<echo-spacing-in-ms>
                               echo spacing in milliseconds (e.g., .688)
+    --hyperband=<Y/N>         are we processing hyperband scans?
+
+    --bvecs=<bvecs-path>      location of original bvecs file from the scanner
+                              to be converted to FSL format
+    --bvals=<bvals-path>      location of original bvals file from the scanner
+                              to be converted to FSL format
   
 EOF
 }
@@ -49,6 +56,18 @@ get_options() {
         ECHOSPACING=${argument#*=}
         index=$(( index + 1 ))
         ;;
+      --hyperband=*)
+        HYPERBAND_OPT=${argument#*=}
+        index=$(( index + 1 ))
+        ;;
+      --bvecs=*)
+        BVEC_PATH=${argument#*=}
+        index=$(( index + 1))
+        ;;
+      --bvals=*)
+        BVAL_PATH=${argument#*=}
+        index=$(( index + 1 ))
+        ;;
       *)
         usage
         echo "ERROR: Option ${argument} not recognized."
@@ -75,6 +94,18 @@ get_options() {
     error_msgs+="ERROR: FSLDIR environment variable not set.  Is FSL installed?"
   fi
 
+  if [ -z "${HYPERBAND_OPT}" ] ; then
+    error_msgs+="ERROR: Hyperband option not defined.  Please indictate Y or N as to whether the scans were obtained using hyperband."
+  fi
+
+  if [ -z "${BVEC_PATH}" ] ; then
+    error_msgs+="ERROR: Location of original, unprocessed bvecs file (diffusion gradient vectors) not provided."
+  fi
+
+  if [ -z "${BVAL_PATH}" ] ; then
+    error_msgs+="ERROR: Location of original, unprocessed bvals file (diffusion gradient weights) not provided."
+  fi
+  
   if [ -n "${error_msgs}" ] ; then
     usage
     echo -e "${error_msgs}"
@@ -85,6 +116,7 @@ get_options() {
   echo "Performing operations for subjects: ${SUBJECT}"
 }
 
+# Make temporary directories for processing
 tmp_dir() {
   if [ -d "${TMP}" ]; then
     rm -rf "${TMP}"
@@ -96,6 +128,7 @@ tmp_dir() {
   mkdir "${TMP}"
 }
 
+# Parse provided subject lists
 parse_subjs() {
 	if [ -f subj_list.txt ]; then
 		while read -r subjects; do
@@ -116,7 +149,11 @@ main() {
   DWIPROC="DWI_processing"
   INPUT_DIR=$STUDY_DIR/$SUBJECT/dicoms
   OUTPUT_DIR=$STUDY_DIR/$SUBJECT/$DWIPROC
+  pepositive="pepolar0"
+  penegative="pepolar1"
+  hyperband="HB2"
 
+  # Making output directory and sub-directories.  If the specified output directory exists, remove it and make a new one.
   if [ -d "$OUTPUT_DIR" ] ; then
      rm -rf "$OUTPUT_DIR"
   fi
@@ -130,38 +167,68 @@ main() {
     exit 1
   fi
 
-  pepositive="pepolar0"
-  penegative="pepolar1"
+  # Finding compressed raw DWI scan files in the input directory, converting them, and copying the conversion output to the 
+  # "raw" subdirectory of the output directory.  Rename the scans according to their phase encoding direction (pepolar0 or pepolar1).
+  # If the scans were created using hyperband, label the conversion files as such.
 
-  for file in "$INPUT_DIR"/*.NODDI_pepolar*.tgz; do
-    if [[ "$file" == *"$pepositive"* ]]; then
-      tmp_dir
-      cp "$file" "$TMP"
-      tar xf "$TMP"/*.tgz -C "$TMP"
-      dcm2niix "$TMP"
-      "${FSL_DIR}"/bin/imcp "$TMP"/*.nii "$OUTPUT_DIR"/raw/"$pepositive".nii
-      cp "$TMP"/*.bval "$OUTPUT_DIR"/raw/"$pepositive".bval
-      cp "$TMP"/*.bvec "$OUTPUT_DIR"/raw/"$pepositive".bvec
-      cp "$TMP"/*.json "$OUTPUT_DIR"/raw/"$pepositive".json
-      rm -rf "$TMP"
+  for file in "$INPUT_DIR"/*.NODDI*.tgz; do
+    if [[ "$HYPERBAND_OPT" == "Y" ]]; then
+      if [[ "$file" == *"$pepositive"* && "$file" == *"$hyperband"* ]]; then
+        tmp_dir
+        cp "$file" "$TMP"
+        tar xf "$TMP"/"$file" -C "$TMP"
+        dcm2niix "$TMP"
+        "${FSL_DIR}"/bin/imcp "$TMP"/*.nii "$OUTPUT_DIR"/raw/"$hyperband"_"$pepositive".nii
+        cp "$TMP"/*.bval "$OUTPUT_DIR"/raw/"$hyperband"_"$pepositive".bval
+        cp "$TMP"/*.bvec "$OUTPUT_DIR"/raw/"$hyperband"_"$pepositive".bvec
+        cp "$TMP"/*.json "$OUTPUT_DIR"/raw/"$hyperband"_"$pepositive".json
+        rm -rf "$TMP"
+      fi
+
+      if [[ "$file" == *"$penegative"* && "$file" == *"$hyperband"* ]]; then
+        tmp_dir
+        cp "$file" "$TMP"
+        tar xf "$TMP"/"$file" -C "$TMP"
+        dcm2niix "$TMP"
+        "${FSL_DIR}"/bin/imcp "$TMP"/*.nii "$OUTPUT_DIR"/raw/"$hyperband"_"$penegative".nii
+        cp "$TMP"/*.bval "$OUTPUT_DIR"/raw/"$hyperband"_"$penegative".bval
+        cp "$TMP"/*.bvec "$OUTPUT_DIR"/raw/"$hyperband"_"$penegative".bvec
+        cp "$TMP"/*.json "$OUTPUT_DIR"/raw/"$hyperband"_"$penegative".json
+        rm -rf "$TMP"
+      fi
     fi
+    
+    if [[ "$HYPERBAND_OPT" == "N" ]]; then
+      if [[ "$file" == *"$pepositive"* ]]; then
+          tmp_dir
+          cp "$file" "$TMP"
+          tar xf "$TMP"/*.tgz -C "$TMP"
+          dcm2niix "$TMP"
+          "${FSL_DIR}"/bin/imcp "$TMP"/*.nii "$OUTPUT_DIR"/raw/"$pepositive".nii
+          cp "$TMP"/*.bval "$OUTPUT_DIR"/raw/"$pepositive".bval
+          cp "$TMP"/*.bvec "$OUTPUT_DIR"/raw/"$pepositive".bvec
+          cp "$TMP"/*.json "$OUTPUT_DIR"/raw/"$pepositive".json
+          rm -rf "$TMP"
+        fi
 
-    if [[ "$file" == *"$penegative"* ]]; then
-      tmp_dir
-      cp "$file" "$TMP"
-      tar xf "$TMP"/*.tgz -C "$TMP"
-      dcm2niix "$TMP"
-      "${FSL_DIR}"/bin/imcp "$TMP"/*.nii "$OUTPUT_DIR"/raw/"$penegative".nii
-      cp "$TMP"/*.bval "$OUTPUT_DIR"/raw/"$penegative".bval
-      cp "$TMP"/*.bvec "$OUTPUT_DIR"/raw/"$penegative".bvec
-      cp "$TMP"/*.json "$OUTPUT_DIR"/raw/"$penegative".json
-      rm -rf "$TMP"
+      if [[ "$file" == *"$penegative"* ]]; then
+        tmp_dir
+        cp "$file" "$TMP"
+        tar xf "$TMP"/*.tgz -C "$TMP"
+        dcm2niix "$TMP"
+        "${FSL_DIR}"/bin/imcp "$TMP"/*.nii "$OUTPUT_DIR"/raw/"$penegative".nii
+        cp "$TMP"/*.bval "$OUTPUT_DIR"/raw/"$penegative".bval
+        cp "$TMP"/*.bvec "$OUTPUT_DIR"/raw/"$penegative".bvec
+        cp "$TMP"/*.json "$OUTPUT_DIR"/raw/"$penegative".json
+        rm -rf "$TMP"
+      fi
     fi
   done
 
-  # Computing total readout time in seconds, and up to six decimal places
-
-  # Grab a scan in the raw directory and get the second dimension using fslval (if PA/AP)
+  # Computing the total readout time in seconds, and up to six decimal places. Grab any
+  # scan in the raw directory and get the second dimension (slice count if using PA/AP phase encoding)
+  # using fslval.  Compute total readout time as: echo spacing *(slice count - 1).  Divide by 1000
+  # to convert the value to seconds (from milliseconds )
   any_scan=$(find "${OUTPUT_DIR}"/raw/*.nii.gz | head -n 1)
   dims=$("${FSL_DIR}"/bin/fslval "${any_scan}" dim2)
   dimsmin1=$(awk "BEGIN {print $dims - 1; exit}" )
@@ -185,7 +252,18 @@ main() {
     done
   done
 
-  #
+  # Merge files
+  fslmerge -t "${OUTPUT_DIR}"/raw/Pos_Neg_b0 "${OUTPUT_DIR}"/raw/Pos_b0 "${OUTPUT_DIR}"/raw/Neg_b0
+  fslmerge -t "${OUTPUT_DIR}"/raw/Pos_Neg "${OUTPUT_DIR}"/raw/pepolar0 "${OUTPUT_DIR}"/raw/pepolar1
+
+  ###!!!!!!!!!!DELETE DCM2NIIX CREATED BVAL AND BVEC FILES - REMOVE THIS SECTION ONCE STEVE PUTS CORRECT VALUES IN THE DICOM!!!!###
+  rm "${OUTPUT_DIR}"/raw/*.bvec
+  rm "${OUTPUT_DIR}"/raw/*.bval
+  cp "${STUDY_DIR}"/"${SUBJECT}"/NODDI_pepolar0.bval "${OUTPUT_DIR}"/raw/"$pepositive".bval
+  cp "${STUDY_DIR}"/"${SUBJECT}"/NODDI_pepolar0.bvec "${OUTPUT_DIR}"/raw/"$pepositive".bvec
+  cp "${STUDY_DIR}"/"${SUBJECT}"/NODDI_pepolar1.bval "${OUTPUT_DIR}"/raw/"$penegative".bval
+  cp "${STUDY_DIR}"/"${SUBJECT}"/NODDI_pepolar1.bvec "${OUTPUT_DIR}"/raw/"$penegative".bvec
+
 }
 
 main "$@"
