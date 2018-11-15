@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-
 set -e 
 
 usage() {
@@ -75,10 +74,6 @@ get_options() {
   STUDY_DIR=${STUDY_DIR/#\~/$HOME}
   GRADINFO_PATH=${GRADINFO_PATH/#\~/$HOME}
 
-  #Local variables
-
-
-  
   #Check for required variables, and echo an error message if they're missing
   local error_msgs=""
 
@@ -176,7 +171,7 @@ main() {
   topup_dir=$OUTPUT_DIR/topup
   eddy_dir=$OUTPUT_DIR/eddy
 
-    #-Converting the crappy diffusion vector and diffusion weight files we get from the scanner
+  #-Converting the crappy diffusion vector and diffusion weight files we get from the scanner
   
   #--TRIMMING the names of each file in the GRADINFO_PATH directory to "mmhhyy.{bval/bvec}""
 
@@ -251,7 +246,6 @@ main() {
 
   printf "%s\\n\\n" "done"
 
-
   #-CONVERTING compressed raw DWI scan files in the input directory, and copying the conversion output to the 
   #-"raw" subdirectory of the output directory.  Rename the scans according to their phase encoding direction (pepolar0 or pepolar1).
   #-If the scans were created using hyperband, label the conversion files as such.
@@ -312,7 +306,7 @@ main() {
     fi
     mrdegibbs "${basename}"_den.nii.gz "${basename}"_den_deg.nii.gz
     if [[ $! = 1 ]]; then
-      echo "ERROR: Gibbs' ring removal on scan file ${basename}.nii.gz failed."
+      echo "ERROR: Gibbs ring removal on scan file ${basename}.nii.gz failed."
       exit 1
     else
       rm "${basename}".nii.gz
@@ -320,9 +314,6 @@ main() {
       mv "${basename}"_den_deg.nii.gz "${raw_dir}"/"$(basename "$file")"
     fi
   done
-
-  #TOPUP
-
 
   #-Extract b0's and make acqparms.txt for topup
 
@@ -356,24 +347,10 @@ main() {
   imcp "${raw_dir}"/pos_neg_b0 "${topup_dir}"
   cp "${raw_dir}"/acqparams.txt "${topup_dir}"
 
-  #-Run topup using the combined b0 file
+  #Call TOPUP script
 
-  topup -v --imain="${topup_dir}"/pos_neg_b0 --datain="${topup_dir}"/acqparams.txt --config=b02b0.cnf --out="${topup_dir}"/topup_pos_neg_b0
-
-  #-Per HCP script (run_topup.sh), run applytopup to first b0 from positive and negative phase encodings to generate a hifib0 which will
-  #-be used to create the brain mask.  
-
-  fslroi "${topup_dir}"/pos_b0 "${topup_dir}"/pos_b0_1st 0 1
-  fslroi "${topup_dir}"/neg_b0 "${topup_dir}"/neg_b0_1st 0 1
-
-  dimt=$(fslval "${topup_dir}"/pos_b0 dim4)
-  dimt=$(("${dimt}" + 1))
-
-  #-Running applytopup to create a hifi b0 image, then using that image to create a brain mask.
-  #-For applytopup, must use the jacobian modulation method (--method=jac) since the diffusion gradients do not match one-to-one across the phase encodings
-  applytopup --imain="${topup_dir}"/pos_b0_1st,"${topup_dir}"/neg_b0_1st --method=jac --topup="${topup_dir}"/topup_pos_neg_b0 --datain="${topup_dir}"/acqparams.txt --inindex=1,"${dimt}" --out="${topup_dir}"/hifib0
- 
-  bet "${topup_dir}"/hifib0 "${topup_dir}"/nodif_brain -m -f 0.2
+  scriptdir=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+  sh "${scriptdir}"/runtopup.sh "${topup_dir}"
 
   #EDDY
 
@@ -382,9 +359,8 @@ main() {
   immv "${topup_dir}"/pos_neg_b0 "${eddy_dir}"
   immv "${raw_dir}"/*"${pos_enc}".nii.gz "${eddy_dir}"
   immv "${raw_dir}"/*"${neg_enc}".nii.gz "${eddy_dir}"
-  immv "${topup_dir}"/nodif_brain_mask "${eddy_dir}"
   cp "${GRADINFO_PATH}"/*.bvec "${GRADINFO_PATH}"/*.bval "${eddy_dir}"
-  
+  cp "${topup_dir}"/topup_pos_neg_b0 "${eddy_dir}"
 }
 
 main "$@"
