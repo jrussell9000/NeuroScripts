@@ -18,10 +18,9 @@ usage() {
                               echo spacing in milliseconds (e.g., .688)
     --hyperband=<Y/N>         are we processing hyperband scans?
 
-    --bvecs=<bvecs-path>      location of original bvecs file from the scanner
-                              to be converted to FSL format
-    --bvals=<bvals-path>      location of original bvals file from the scanner
-                              to be converted to FSL format
+    --gradfiles=<gradfiles-path>      
+                              path to the original diffusion vector and diffusion weight (i.e., bvecs and bvals) 
+                              from the scanner to be converted to FSL format
   
 EOF
 }
@@ -60,13 +59,9 @@ get_options() {
         HYPERBAND_OPT=${argument#*=}
         index=$(( index + 1 ))
         ;;
-      --bvecs=*)
-        BVEC_PATH=${argument#*=}
+      --gradfiles=*)
+        GRADINFO_PATH=${argument#*=}
         index=$(( index + 1))
-        ;;
-      --bvals=*)
-        BVAL_PATH=${argument#*=}
-        index=$(( index + 1 ))
         ;;
       *)
         usage
@@ -98,8 +93,8 @@ get_options() {
     error_msgs+="ERROR: Hyperband option not defined.  Please indictate Y or N as to whether the scans were obtained using hyperband."
   fi
 
-  if [ -z "${BVEC_PATH}" ] ; then
-    error_msgs+="ERROR: Location of original, unprocessed bvecs file (diffusion gradient vectors) not provided."
+  if [ -z "${GRADINFO_PATH}" ] ; then
+    error_msgs+="ERROR: Location of original, unprocessed diffision gradient files not provided."
   fi
 
   if [ -z "${BVAL_PATH}" ] ; then
@@ -146,32 +141,41 @@ main() {
 
   get_options "$@"
 
+  #PREPARATION
+
+  #-Local variables
+
   DWIPROC="dwi_processing"
   INPUT_DIR=$STUDY_DIR/$SUBJECT/dicoms
   OUTPUT_DIR=$STUDY_DIR/$SUBJECT/$DWIPROC
-  raw_dir=$OUTPUT_DIR/raw
-  topup_dir=$OUTPUT_DIR/topup
-  pepositive="pepolar0"
-  penegative="pepolar1"
-  hyperband="HB2"
 
   # Making output directory and sub-directories.  If the specified output directory exists, remove it and make a new one.
+  
   if [ -d "$OUTPUT_DIR" ] ; then
      rm -rf "$OUTPUT_DIR"
   fi
 
   mkdir -p "$OUTPUT_DIR"
   mkdir "${OUTPUT_DIR}"/raw
+  mkdir "${OUTPUT_DIR}"/anat
   mkdir "${OUTPUT_DIR}"/topup
+  mkdir "${OUTPUT_DIR}"/eddy
 
   if [ ! -d "$OUTPUT_DIR" ]; then
     echo "ERROR: Failed to create output directory.  Do you have write permissions for the directory ${STUDY_DIR}/${SUBJECT}?"
     exit 1
   fi
 
-  # Finding compressed raw DWI scan files in the input directory, converting them, and copying the conversion output to the 
-  # "raw" subdirectory of the output directory.  Rename the scans according to their phase encoding direction (pepolar0 or pepolar1).
-  # If the scans were created using hyperband, label the conversion files as such.
+  #-Making variables to hold output path directories
+  
+  raw_dir=$OUTPUT_DIR/raw
+  anat_dir=$OUTPUT_DIR/anat
+  topup_dir=$OUTPUT_DIR/topup
+  eddy_dir=$OUTPUT_DIR/eddy
+
+  #-Finding compressed raw DWI scan files in the input directory, converting them, and copying the conversion output to the 
+  #-"raw" subdirectory of the output directory.  Rename the scans according to their phase encoding direction (pepolar0 or pepolar1).
+  #-If the scans were created using hyperband, label the conversion files as such.
 
   if [[ "$HYPERBAND_OPT" == "Y" ]]; then
     pos_enc="NODDI_HB2_pepolar0"
@@ -205,21 +209,44 @@ main() {
 
   #COMPUTE TOTAL READOUT TIME
 
-  # Computing the total readout time in seconds, and up to six decimal places. Grab any
-  # scan in the raw directory and get the second dimension (slice count if using PA/AP phase encoding)
-  # using fslval.  Compute total readout time as: echo spacing *(slice count - 1).  Divide by 1000
-  # to convert the value to seconds (from milliseconds )
+  #-Computing the total readout time in seconds, and up to six decimal places. Grab any
+  #-scan in the raw directory and get the second dimension (slice count if using PA/AP phase encoding)
+  #-using fslval.  Compute total readout time as: echo spacing *(slice count - 1).  Divide by 1000
+  #-to convert the value to seconds (from milliseconds )
+  
   any_scan=$(find "${OUTPUT_DIR}"/raw/*.nii.gz | head -n 1)
   dims=$("${FSL_DIR}"/bin/fslval "${any_scan}" dim2)
   dimsmin1=$(awk "BEGIN {print $dims - 1; exit}" )
   totalrotime=$(awk "BEGIN {print ${ECHOSPACING}*${dimsmin1}; exit}" )
   totalrotime=$(awk "BEGIN {print ${totalrotime} / 1000; exit}" )
 
+  #DENOISE & DEGIBBS
+
+  echo -e "\\nRemoving scan noise and Gibbs' rings using MRTrix3's dwidenoise and mrdegibbs tools...\\n"
+  for file in "${OUTPUT_DIR}"/raw/*.nii.gz; do
+    basename=$(imglob "${file}")
+    dwidenoise "${basename}".nii.gz "${basename}"_den.nii.gz
+    if [[ $! = 1 ]]; then
+      echo "ERROR: Denoising of scan file ${basename}.nii.gz failed."
+      exit 1
+    fi
+    mrdegibbs "${basename}"_den.nii.gz "${basename}"_den_deg.nii.gz
+    if [[ $! = 1 ]]; then
+      echo "ERROR: Gibbs ring removal on scan file ${basename}.nii.gz failed."
+      exit 1
+    else
+      rm "${basename}".nii.gz
+      rm "${basename}"_den.nii.gz
+      mv "${basename}"_den_deg.nii.gz "${raw_dir}"/"$(basename "$file")"
+    fi
+  done
 
   #TOPUP
 
   #-Extract b0's and make acqparms.txt for topup
-  for file in "${OUTPUT_DIR}"/raw/"${pos_enc}".nii.gz; do
+
+  echo -e "\\nExtracting b0 scans from positively encoded volume and adding info to acqparams.txt for topup...\\n"
+  for file in "${OUTPUT_DIR}"/raw/*"${pos_enc}".nii.gz; do
     fslroi "${file}" "${OUTPUT_DIR}"/raw/pos_b0 0 4
     b0vols=$(${FSL_DIR}/bin/fslval "${OUTPUT_DIR}"/raw/pos_b0 dim4)
     for (( i=1; i<=b0vols; i++ )); do
@@ -227,6 +254,7 @@ main() {
     done
   done
 
+  echo -e "\\nExtracting b0 scans from negatively encoded volume and adding info to acqparams.txt for topup...\\n"
   for file in "${OUTPUT_DIR}"/raw/"${neg_enc}".nii.gz; do
     fslroi "${file}" "${OUTPUT_DIR}"/raw/neg_b0 0 4
     b0vols=$(${FSL_DIR}/bin/fslval "${OUTPUT_DIR}"/raw/neg_b0 dim4)
@@ -235,28 +263,33 @@ main() {
     done
   done
 
+  echo -e "\\nMerging b0 scans from positive and negative phase encoding volumes...\\n"
+  
   #-Merge separate b0 files 
+
   fslmerge -t "${OUTPUT_DIR}"/raw/pos_neg_b0 "${OUTPUT_DIR}"/raw/pos_b0 "${OUTPUT_DIR}"/raw/neg_b0
 
-
-  #-copying necessary files to topup directory for further processing
+  #-Copying necessary files to topup directory for further processing
   imcp "${raw_dir}"/pos_b0 "${topup_dir}"
   imcp "${raw_dir}"/neg_b0 "${topup_dir}"
   imcp "${raw_dir}"/pos_neg_b0 "${topup_dir}"
   cp "${raw_dir}"/acqparams.txt "${topup_dir}"
 
   #-Run topup using the combined b0 file
+
   topup -v --imain="${topup_dir}"/pos_neg_b0 --datain="${topup_dir}"/acqparams.txt --config=b02b0.cnf --out="${topup_dir}"/topup_pos_neg_b0
 
   #-Per HCP script (run_topup.sh), run applytopup to first b0 from positive and negative phase encodings to generate a hifib0 which will
   #-be used to create the brain mask.  
+
   fslroi "${topup_dir}"/pos_b0 "${topup_dir}"/pos_b0_1st 0 1
   fslroi "${topup_dir}"/neg_b0 "${topup_dir}"/neg_b0_1st 0 1
 
   dimt=$(fslval "${topup_dir}"/Pos_b0 dim4)
   dimt=$(("${dimt}" + 1))
 
-  #-applytopup must use the jacobian modulation method (--method=jac) since the diffusion gradients do not match one-to-one across the phase encodings
+  #-Running applytopup to create a hifi b0 image, then using that image to create a brain mask.
+  #-For applytopup, must use the jacobian modulation method (--method=jac) since the diffusion gradients do not match one-to-one across the phase encodings
   applytopup --imain="${topup_dir}"/pos_b0_1st,"${topup_dir}"/neg_b0_1st --method=jac --topup="${topup_dir}"/topup_pos_neg_b0 --datain="${topup_dir}"/acqparams.txt --inindex=1,"${dimt}" --out="${topup_dir}"/hifib0
  
   bet "${topup_dir}"/hifib0 "${topup_dir}"/nodif_brain -m -f 0.2
@@ -267,15 +300,54 @@ main() {
   
   #--Starting with the vectors first....
   #---Getting the number of columns in the vector file as "numcols"
-  numcols=$(($(head -n 1 "$BVEC_PATH" | grep -o " " | wc -l) + 1))
+  #--=cleanup the unpacked files
 
-  #---Starting with the third column (the first containing coordinates), loop over the remaining columns, and for each one cut it, remove the last entry
-  #---(which is a volume that doesn't exist), then echo it into a new text file.  The last step will transpose it from a column to a space-delimited row) 
+  ##??? Do the files in this directory exist in a tar file that needs to be decompressed?
+
+  for file in "${GRADINFO_PATH}"/*.txt; do
+    echo $file
+    if [[ $file == *bvals2* || $file == *orientations2* || $file == *diff_amp* ]]; then
+      echo "Removing $file"
+      rm "${file}"
+    fi
+    if [[ $file == *bvals_* ]]; then
+      fname=$(basename "${file%.*}" | cut -c32- | sed -e 's/_m//' -e 's/_s//' -e 's/h//')
+      mv "${file}" "${GRADINFO_PATH}"/"${fname}".bval
+    elif [[ $file == *orientations_* ]]; then
+      fname=$(basename "${file%.*}" | cut -c39- | sed -e 's/_m//' -e 's/_s//' -e 's/h//')
+      mv "${file}" "${GRADINFO_PATH}"/"${fname}".bvec
+    fi
+  done
+
+parse_list=$(cat "${INPUT_DIR}"/info.*.txt | grep -A3 "NODDI")
+echo "$parse_list" | awk 'BEGIN {RS="--"} {print ($2" "$8)}' > seq_times.txt
+
+while read -r line; do
+    seq=$(echo "${line}" | cut -f1 -d" ")
+    time=$(echo "${line}" | cut -f2 -d" " | cut -c-4)
+    echo "$seq"
+    echo "$time"
+    for bvalfile in $(find "$GRADINFO_PATH" -name "*.bval" -printf '%P\n'); do
+        if [[ "${bvalfile}" == *"${time}"* ]]; then
+            mv "${bvalfile}" "${seq}".bval
+        fi
+    done
+    for bvecfile in $(find "$GRADINFO_PATH" -name "*.bvec" -printf '%P\n'); do
+        if [[ "${bvecfile}" == *"${time}"* ]]; then
+            mv "${bvecfile}" "${seq}".bvec
+        fi
+    done
+done < seq_times.txt
+
+rm seq_times.txt
   
-  for file in "${BVEC_PATH}"
+#Now we need to reformt each vector and weight file...
+numcols=$(($(head -n 1 "$BVEC_PATH" | grep -o " " | wc -l) + 1))
 
-  #???? How the fuck do I properly rename the files ????  Need to parse the info file for the scan, get the time value for each scan, reformat them,
-  #and then match them to each file.  FML.
+  # #---Starting with the third column (the first containing coordinates), loop over the remaining columns, and for each one cut it, remove the last entry
+  # #---(which is a volume that doesn't exist), then echo it into a new text file.  The last step will transpose it from a column to a space-delimited row) 
+  
+
 
   for ((i=3;i<="$NUMC";i++)); do 
       TEMP=$(cut -d" " -f"$i" "$BVEC_PATH")
