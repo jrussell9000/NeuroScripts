@@ -145,7 +145,7 @@ main() {
   INPUT_DIR=$STUDY_DIR/$SUBJECT/dicoms
   OUTPUT_DIR=$STUDY_DIR/$SUBJECT/$DWIPROC
 
-  info_file=$(find "${INPUT_DIR}" -maxdepth 1 -name "*.txt" -printf '%P\n')
+  
 
   # Making output directory and sub-directories.  If the specified output directory exists, remove it and make a new one.
   
@@ -176,9 +176,16 @@ main() {
   #--TRIMMING the names of each file in the GRADINFO_PATH directory to "mmhhyy.{bval/bvec}""
 
   ##??? Do the files in this directory exist in a tar file that needs to be decompressed?
-
+  if stat -t "${GRADINFO_PATH}"/info*.txt >/dev/null 2>&1 ; then
+    printf "\\n%s\\n" "Found scan info file in gradient files path."
+    info_file=$(find "${INPUT_DIR}" -maxdepth 1 -name "info*.txt" -printf '%P\n')
+  else
+    printf "ERROR: Scan info file (info.XXXXXX.txt) not found in gradient files path."
+    exit 1
+  fi
+  
   printf "\\nRenaming and reformatting raw diffusion gradient files from the scanner..."
-  for file in "${GRADINFO_PATH}"/*.txt; do
+  for file in "${GRADINFO_PATH}"/Research*.txt; do
     if [[ $file == *bvals2* || $file == *orientations2* || $file == *diff_amp* ]]; then
       rm "${file}"
     fi
@@ -218,7 +225,7 @@ main() {
     done
   done < seq_times.txt
 
-  rm seq_times.txt
+  #rm seq_times.txt
   
   #--REFORMATTING each file to the FSL scheme...
 
@@ -354,13 +361,36 @@ main() {
 
   #EDDY
 
-  #-Copy necessary files to eddy_dir
-  cp "${topup_dir}"/acqparams.txt "${eddy_dir}"
-  immv "${topup_dir}"/pos_neg_b0 "${eddy_dir}"
-  immv "${raw_dir}"/*"${pos_enc}".nii.gz "${eddy_dir}"
-  immv "${raw_dir}"/*"${neg_enc}".nii.gz "${eddy_dir}"
-  cp "${GRADINFO_PATH}"/*.bvec "${GRADINFO_PATH}"/*.bval "${eddy_dir}"
-  cp "${topup_dir}"/topup_pos_neg_b0 "${eddy_dir}"
+  #-Gathering and preparing the files necessary to run eddy
+
+  #--Moving the requires image inputs
+    immv "${topup_dir}"/pos_neg_b0 "${eddy_dir}"
+    immv "${raw_dir}"/*"${pos_enc}".nii.gz "${eddy_dir}"
+    immv "${raw_dir}"/*"${neg_enc}".nii.gz "${eddy_dir}"
+    immv "${topup_dir}"/nodif_brain_mask "${eddy_dir}"
+
+  #--Moving the parameter files and topup outputs    
+    cp "${topup_dir}"/acqparams.txt "${eddy_dir}"
+    cp "${GRADINFO_PATH}"/*.bvec "${GRADINFO_PATH}"/*.bval "${eddy_dir}"
+    cp "${topup_dir}"/topup_pos_neg_b0* "${eddy_dir}"
+
+  #--Creating the index files for eddy
+    posvolcnt=$(fslval "${eddy_dir}"/"${pos_enc}" dim4)
+    negvolcnt=$(fslval "${eddy_dir}"/"${neg_enc}" dim4)
+
+    for (( i=1; i<=posvolcnt; i++ )); do
+      echo "1" >> "${eddy_dir}"/index.txt
+    done
+
+    for (( i=1; i<=negvolcnt; i++ )); do
+      echo "2" >> "${eddy_dir}"/index.txt
+    done
+
+  #--Merging the positive and negative phase encoded scan series into one file
+    fslmerge -t "${eddy_dir}"/pos_neg "${eddy_dir}"/"${pos_enc}" "${eddy_dir}"/"${neg_enc}"
+
+  #--Merging the gradient files 
+    paste "${eddy_dir}"/*pepolar
 }
 
 main "$@"
