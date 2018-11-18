@@ -99,6 +99,10 @@ get_options() {
     error_msgs+="ERROR: Location of tar file containing original, unprocessed diffision gradient files not provided."
   fi
 
+  if [ ! -f "${GRADPACK}" ] ; then
+    error_msgs+="ERROR: Specified gradient file package is not a compressed file."
+  fi
+
   if [ -n "${error_msgs}" ] ; then
     usage
     echo -e "${error_msgs}"
@@ -112,9 +116,6 @@ get_options() {
 
 # Make temporary directories for processing
 tmp_dir() {
-  if [ -d "${TMP}" ]; then
-    rm -rf "${TMP}"
-  fi
   unset rand
   unset TMP
   rand=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w 8 | head -n 1)
@@ -177,11 +178,48 @@ main() {
     topup_dir=$OUTPUT_DIR/topup
     eddy_dir=$OUTPUT_DIR/eddy
 
+  #-CONVERTING compressed raw DWI scan files in the input directory, and copying the conversion output to the 
+  #-"raw" subdirectory of the output directory.  Rename the scans according to their phase encoding direction (pepolar0 or pepolar1).
+  #-If the scans were created using hyperband, label the conversion files as such.
+    printf "%s\\n\\n" "Beginning scan file conversion..."
+    if [[ "${HYPERBAND}" = 1 ]]; then
+      pos_enc="NODDI_HB2_pepolar0"
+      neg_enc="NODDI_HB2_pepolar1"
+    elif [[ "${HYPERBAND}" = 0 ]]; then
+      pos_enc="NODDI_pepolar0"
+      neg_enc="NODDI_pepolar1"
+    fi
+    
+    for file in "${INPUT_DIR}"/*"${pos_enc}"*.tgz; do
+      tmp_dir
+      cp "$file" "$TMP"
+      tar xf "$TMP"/"$(basename "${file}")" -C "$TMP" 
+      dcm2niix -z y "$TMP"
+      imcp "$TMP"/*.nii.gz "$OUTPUT_DIR"/raw/"$pos_enc".nii.gz
+      #cp "$TMP"/*.bval "$OUTPUT_DIR"/raw/"$pos_enc".bval - Must use the bval and bvec files from the scanner, values in dicoms are incorrect
+      #cp "$TMP"/*.bvec "$OUTPUT_DIR"/raw/"$pos_enc".bvec
+      cp "$TMP"/*.json "$OUTPUT_DIR"/raw/"$pos_enc".json
+      rm -rf "${TMP}"
+    done
+
+    for file in "${INPUT_DIR}"/*"${neg_enc}"*.tgz; do
+      tmp_dir
+      cp "${file}" "${TMP}"
+      tar xf "${TMP}"/"$(basename "${file}")" -C "${TMP}" 
+      dcm2niix -z y "$TMP"
+      imcp "$TMP"/*.nii.gz "$OUTPUT_DIR"/raw/"$neg_enc".nii.gz
+      #cp "$TMP"/*.bval "$OUTPUT_DIR"/raw/"$neg_enc".bval
+      #cp "$TMP"/*.bvec "$OUTPUT_DIR"/raw/"$neg_enc".bvec
+      cp "$TMP"/*.json "${OUTPUT_DIR}"/raw/"$neg_enc".json
+      rm -rf "${TMP}"
+    done
+
   #-CONVERTING the crappy diffusion vector and diffusion weight files we get from the scanner
 
   #--UNPACKING the tar file to a temporary directory
     tmp_dir
     graddir_tmp="${TMP}"
+
     tar xf "${GRADPACK}" -C "${graddir_tmp}"
     if [[ $? != 0 ]]; then
       printf "ERROR: Could not unpack the gradient tar file - %s" "${GRADPACK}"
@@ -191,7 +229,7 @@ main() {
   #--TRIMMING the names of each file in the unpacked directory to "mmhhyy.{bval/bvec}""
 
   #---Locating the info file
-      info_file=$(find "${INPUT_DIR}" -name "info*.txt" -printf '%P\n')
+      info_file=$(find "${INPUT_DIR}" -name "info*.txt" -printf '%P\n' | head -n 1)
       if [ -z "${info_file}" ]; then
         printf "ERROR: Scan info file (info.XXXXXX.txt) not found in gradient files path."
         exit 1
@@ -215,7 +253,7 @@ main() {
       done
 
   #---Parsing the info file and getting any lines containing "NODDI" and the three below them 
-  #---Then echo each pair of SeriesDescription and AcquisitionTime values to a file, 'seq_times.txt'
+  #---then echo each pair of SeriesDescription and AcquisitionTime values to a file, 'seq_times.txt'
       parse_list=$(grep -A3 "NODDI" "${INPUT_DIR}"/"${info_file}")
       echo "$parse_list" | awk 'BEGIN {RS="--"} {print ($2" "$8)}' > "${graddir_tmp}"/seq_times.txt
 
@@ -247,59 +285,22 @@ main() {
         numc=$(($(head -n 1 "$bvecfile" | grep -o " " | wc -l) + 1))
         for ((i=3;i<="$numc";i++)); do 
           TEMP=$(cut -d" " -f"$i" "$bvecfile")
-          TEMP=$(awk '{$NF=""}1' <(echo "${TEMP}"))
+          TEMP=$(awk '{$NF=""}1' <(echo ${TEMP} )) #Do NOT double quote
           echo "${TEMP}" >> temp.txt
         done
-        mv temp.txt "${bvecfile}"
-        cp "${bvecfile}" "${raw_dir}"
+        # mv temp.txt "${bvecfile}"
+        # cp "${bvecfile}" "${raw_dir}"
       done
 
   #---For each .bval file, grab the third column (first two are just labels), remove the last row (extra line of zeros)
   #---Echo it to tranpose from a column to a row, then export it to a temp file.  Rename the temp file with the original bval
       for bvalfile in "${graddir_tmp}"/*.bval; do
         TEMP=$(cut -d" " -f"3" "$bvalfile")
-        TEMP=$(awk -F" " '{NF--; print}' <(echo "${TEMP}"))
+        TEMP=$(awk -F" " '{NF--; print}' <(echo ${TEMP} )) #Do NOT double quote
         echo "${TEMP}" > temp.txt
         mv temp.txt "${bvalfile}"
         cp "${bvalfile}" "${raw_dir}"
       done
-
-      rm -rf "${graddir_tmp}"
-      printf "%s\\n\\n" "done"
-
-  #-CONVERTING compressed raw DWI scan files in the input directory, and copying the conversion output to the 
-  #-"raw" subdirectory of the output directory.  Rename the scans according to their phase encoding direction (pepolar0 or pepolar1).
-  #-If the scans were created using hyperband, label the conversion files as such.
-    printf "%s\\n\\n" "Beginning scan file conversion..."
-    if [[ "${HYPERBAND}" = 1 ]]; then
-      pos_enc="NODDI_HB2_pepolar0"
-      neg_enc="NODDI_HB2_pepolar1"
-    elif [[ "${HYPERBAND}" = 0 ]]; then
-      pos_enc="NODDI_pepolar0"
-      neg_enc="NODDI_pepolar1"
-    fi
-    
-    for file in "${INPUT_DIR}"/*"${pos_enc}"*.tgz; do
-      tmp_dir
-      cp "$file" "$TMP"
-      tar xf "$TMP"/"$(basename "${file}")" -C "$TMP" 
-      dcm2niix -z y "$TMP"
-      imcp "$TMP"/*.nii.gz "$OUTPUT_DIR"/raw/"$pos_enc".nii.gz
-      #cp "$TMP"/*.bval "$OUTPUT_DIR"/raw/"$pos_enc".bval - Must use the bval and bvec files from the scanner, values in dicoms are incorrect
-      #cp "$TMP"/*.bvec "$OUTPUT_DIR"/raw/"$pos_enc".bvec
-      cp "$TMP"/*.json "$OUTPUT_DIR"/raw/"$pos_enc".json
-    done
-
-    for file in "${INPUT_DIR}"/*"${neg_enc}"*.tgz; do
-      tmp_dir
-      cp "${file}" "${TMP}"
-      tar xf "${TMP}"/"$(basename "${file}")" -C "${TMP}" 
-      dcm2niix -z y "$TMP"
-      imcp "$TMP"/*.nii.gz "$OUTPUT_DIR"/raw/"$neg_enc".nii.gz
-      #cp "$TMP"/*.bval "$OUTPUT_DIR"/raw/"$neg_enc".bval
-      #cp "$TMP"/*.bvec "$OUTPUT_DIR"/raw/"$neg_enc".bvec
-      cp "$TMP"/*.json "${OUTPUT_DIR}"/raw/"$neg_enc".json
-    done
 
   #COMPUTING TOTAL READOUT TIME
 
@@ -315,7 +316,7 @@ main() {
 
   #DENOISE & DEGIBBS
 
-  echo -e "\\nRemoving scan noise and Gibbs' rings using MRTrix3's dwidenoise and mrdegibbs tools...\\n"
+  echo -e "Removing scan noise and Gibbs' rings using MRTrix3's dwidenoise and mrdegibbs tools...\\n"
   for file in "${OUTPUT_DIR}"/raw/*.nii.gz; do
     basename=$(imglob "${file}")
     dwidenoise "${basename}".nii.gz "${basename}"_den.nii.gz
@@ -337,7 +338,7 @@ main() {
   #TOPUP
 
   #-Extract b0's and make acqparms.txt for topup
-    echo -e "\\nExtracting b0 scans from positively encoded volume and adding info to acqparams.txt for topup...\\n"
+    echo -e "Extracting b0 scans from positively encoded volume and adding info to acqparams.txt for topup...\\n"
     for file in "${OUTPUT_DIR}"/raw/*"${pos_enc}".nii.gz; do
       fslroi "${file}" "${OUTPUT_DIR}"/raw/pos_b0 0 4
       b0vols=$("${FSL_DIR}"/bin/fslval "${OUTPUT_DIR}"/raw/pos_b0 dim4)
@@ -346,7 +347,7 @@ main() {
       done
     done
 
-    echo -e "\\nExtracting b0 scans from negatively encoded volume and adding info to acqparams.txt for topup...\\n"
+    echo -e "Extracting b0 scans from negatively encoded volume and adding info to acqparams.txt for topup...\\n"
     for file in "${OUTPUT_DIR}"/raw/*"${neg_enc}".nii.gz; do
       fslroi "${file}" "${OUTPUT_DIR}"/raw/neg_b0 0 4
       b0vols=$("${FSL_DIR}"/bin/fslval "${OUTPUT_DIR}"/raw/neg_b0 dim4)
@@ -355,7 +356,7 @@ main() {
       done
     done
 
-    echo -e "\\nMerging b0 scans from positive and negative phase encoding volumes...\\n"
+    echo -e "Merging b0 scans from positive and negative phase encoding volumes...\\n"
   
   #-Merge separate b0 files 
     fslmerge -t "${OUTPUT_DIR}"/raw/pos_neg_b0 "${OUTPUT_DIR}"/raw/pos_b0 "${OUTPUT_DIR}"/raw/neg_b0
@@ -384,7 +385,7 @@ main() {
     cp "${topup_dir}"/acqparams.txt "${eddy_dir}"
     cp "${raw_dir}"/"${pos_enc}".bvec "${raw_dir}"/"${pos_enc}".bval "${eddy_dir}"
     cp "${raw_dir}"/"${neg_enc}".bvec "${raw_dir}"/"${neg_enc}".bval "${eddy_dir}"
-    cp "${topup_dir}"/topup* "${eddy_dir}"
+    #cp "${topup_dir}"/topup* "${eddy_dir}"
 
   #--Creating the index files for eddy
     posvolcnt=$(fslval "${eddy_dir}"/"${pos_enc}" dim4)

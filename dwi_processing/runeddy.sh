@@ -9,7 +9,7 @@
 get_options()
 {
 
-	local arguments=("$@")
+	local arguments=($@)
 	
 
 	# parse arguments
