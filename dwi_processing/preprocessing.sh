@@ -288,8 +288,8 @@ main() {
           TEMP=$(awk '{$NF=""}1' <(echo ${TEMP} )) #Do NOT double quote
           echo "${TEMP}" >> temp.txt
         done
-        # mv temp.txt "${bvecfile}"
-        # cp "${bvecfile}" "${raw_dir}"
+        mv temp.txt "${bvecfile}"
+        cp "${bvecfile}" "${raw_dir}"
       done
 
   #---For each .bval file, grab the third column (first two are just labels), remove the last row (extra line of zeros)
@@ -392,11 +392,15 @@ main() {
     negvolcnt=$(fslval "${eddy_dir}"/"${neg_enc}" dim4)
 
     for (( i=1; i<=posvolcnt; i++ )); do
-      echo "1" >> "${eddy_dir}"/index.txt
+      echo "1" >> "${eddy_dir}"/index_temp1.txt
+      TEMP=$(cat index.txt)
+      echo "$TEMP" > "${eddy_dir}"/index.txt
     done
 
     for (( i=1; i<=negvolcnt; i++ )); do
-      echo "2" >> "${eddy_dir}"/index.txt
+      echo "2" >> "${eddy_dir}"/index_temp2.txt
+      TEMP=$(cat index_temp2.txt)
+      echo "$TEMP" >> "${eddy_dir}"/index.txt
     done
 
   #--Merging the positive and negative phase encoded scan series into one file
