@@ -18,8 +18,8 @@ usage() {
                               echo spacing in milliseconds (e.g., .688)
     --hyperband=<Y/N>         are we processing hyperband scans?
 
-    --gradfiles=<gradfiles-path>      
-                              path to the original diffusion vector and diffusion weight (i.e., bvecs and bvals) 
+    --gradpack=<gradpack-files>      
+                              path to the tar fild containing the original diffusion vector and diffusion weight (i.e., bvecs and bvals) 
                               from the scanner to be converted to FSL format
   
 EOF
@@ -59,8 +59,8 @@ get_options() {
         HYPERBAND_OPT=${argument#*=}
         index=$(( index + 1 ))
         ;;
-      --gradfiles=*)
-        GRADINFO_PATH=${argument#*=}
+      --gradpack=*)
+        GRADPACK=${argument#*=}
         index=$(( index + 1))
         ;;
       *)
@@ -98,7 +98,7 @@ get_options() {
     error_msgs+="ERROR: Hyperband option not defined.  Please indictate Y or N as to whether the scans were obtained using hyperband."
   fi
 
-  if [ -z "${GRADINFO_PATH}" ] ; then
+  if [ -z "${GRADPACK}" ] ; then
     error_msgs+="ERROR: Location of original, unprocessed diffision gradient files not provided."
   fi
 
@@ -112,6 +112,8 @@ get_options() {
   echo "Performing operations for subjects: ${SUBJECT}"
 }
 
+#UTILITY FUNCTIONS
+
 # Make temporary directories for processing
 tmp_dir() {
   if [ -d "${TMP}" ]; then
@@ -120,8 +122,9 @@ tmp_dir() {
   unset rand
   unset TMP
   rand=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w 8 | head -n 1)
-  TMP=/tmp/fdt_proc-${rand}
-  mkdir "${TMP}"
+  echo $rand
+  TMP=/tmp/${rand}
+  mkdir -v "${TMP}"
 }
 
 # Parse provided subject lists
@@ -176,30 +179,33 @@ main() {
   topup_dir=$OUTPUT_DIR/topup
   eddy_dir=$OUTPUT_DIR/eddy
 
-    #-Converting the crappy diffusion vector and diffusion weight files we get from the scanner
+  #-Converting the crappy diffusion vector and diffusion weight files we get from the scanner
+  
+  #---Unpacking the tar file to a temporary directory
+  tmp_dir
+  graddir_tmp=$TMP
+  echo "GRADDIR IS ${graddir_tmp}"
+  tar xvf "${GRADPACK}" -C ${graddir_tmp}
   
   #--TRIMMING the names of each file in the GRADINFO_PATH directory to "mmhhyy.{bval/bvec}""
-
-  ##??? Do the files in this directory exist in a tar file that needs to be decompressed?
-
   printf "\\nRenaming and reformatting raw diffusion gradient files from the scanner..."
-  for file in "${GRADINFO_PATH}"/*.txt; do
+  for file in "${graddir_tmp}"/*.txt; do
     if [[ $file == *bvals2* || $file == *orientations2* || $file == *diff_amp* ]]; then
       rm "${file}"
     fi
     if [[ $file == *bvals_* ]]; then
       fname=$(basename "${file%.*}" | cut -c32- | sed -e 's/_m//' -e 's/_s//' -e 's/h//')
-      mv "${file}" "${GRADINFO_PATH}"/"${fname}".bval
+      mv "${file}" "${raw_dir}"/"${fname}".bval
     elif [[ $file == *orientations_* ]]; then
       fname=$(basename "${file%.*}" | cut -c39- | sed -e 's/_m//' -e 's/_s//' -e 's/h//')
-      mv "${file}" "${GRADINFO_PATH}"/"${fname}".bvec
+      mv "${file}" "${raw_dir}"/"${fname}".bvec
     fi
   done
 
   #---Parsing the info file and getting any lines containing "NODDI" and the three below them 
   #---Then echo each pair of SeriesDescription and AcquisitionTime values to a file, 'seq_times.txt'
   parse_list=$(cat ${INPUT_DIR}/${info_file} | grep -A3 "NODDI")
-  echo "$parse_list" | awk 'BEGIN {RS="--"} {print ($2" "$8)}' > seq_times.txt
+  echo "$parse_list" | awk 'BEGIN {RS="--"} {print ($2" "$8)}' > "${raw_dir}"/seq_times.txt
 
   #---For each line of 'seq_times.txt', save the first field as variable $seq, 
   #---and the second field as variable $time (without the seconds, which don't always match)
@@ -208,22 +214,23 @@ main() {
     seq=$(echo "${line}" | cut -f1 -d" ")
     time=$(echo "${line}" | cut -f2 -d" " | cut -c-4)
     #----For each bval file, if the file name matches the $time variable, rename it as the $seq variable
-    for bvalfile in "${GRADINFO_PATH}"/*.bval; do
+    for bvalfile in "${raw_dir}"/*.bval; do
     #$(find "$GRADINFO_PATH" -name "*.bval" -printf '%P\n'); do
       if [[ "${bvalfile}" == *"${time}"* ]]; then
           mv "${bvalfile}" "${seq}".bval
       fi
     done
     #----For each bvec file, if the file name matches the $time variable, rename it as the $seq variable
-    for bvecfile in "${GRADINFO_PATH}"/*.bvec; do 
+    for bvecfile in "${raw_dir}"/*.bvec; do 
     #$(find "$GRADINFO_PATH" -name "*.bvec" -printf '%P\n'); do
       if [[ "${bvecfile}" == *"${time}"* ]]; then
           mv "${bvecfile}" "${seq}".bvec
       fi
     done
-  done < seq_times.txt
+  done < "${raw_dir}"/seq_times.txt
 
-  rm seq_times.txt
+  rm "${raw_dir}"/seq_times.txt
+  rm -rf $TMP
   
   #--REFORMATTING each file to the FSL scheme...
 
@@ -367,7 +374,7 @@ main() {
   fslroi "${topup_dir}"/neg_b0 "${topup_dir}"/neg_b0_1st 0 1
 
   dimt=$(fslval "${topup_dir}"/pos_b0 dim4)
-  dimt=$(("${dimt}" + 1))
+  dimt=$(( "$dimt" + 1))
 
   #-Running applytopup to create a hifi b0 image, then using that image to create a brain mask.
   #-For applytopup, must use the jacobian modulation method (--method=jac) since the diffusion gradients do not match one-to-one across the phase encodings

@@ -15,7 +15,7 @@ fslroi "${topup_dir}"/pos_b0 "${topup_dir}"/pos_b0_1st 0 1
 fslroi "${topup_dir}"/neg_b0 "${topup_dir}"/neg_b0_1st 0 1
 
 dimt=$(fslval "${topup_dir}"/pos_b0 dim4)
-dimt=$(( "$dimt" + 1 ))
+dimt=$(( dimt + 1 ))
 
 #-Running applytopup to create a hifi b0 image, then using that image to create a brain mask.
 #-For applytopup, must use the jacobian modulation method (--method=jac) since the diffusion gradients do not match one-to-one across the phase encodings

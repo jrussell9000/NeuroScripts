@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-<<<<<<< HEAD
 
 set -e 
 
@@ -143,9 +142,6 @@ main() {
 
 }
 while getopts 'p:' args; do
-=======
-while getopts 'i:p:' args; do
->>>>>>> 90942577c5a8a9d4458d9bef939103c93078a60a
 	case "${args}" in
   i)
     INPUT_DIR=${OPTARG}
