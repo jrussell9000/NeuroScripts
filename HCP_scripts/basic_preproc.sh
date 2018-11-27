@@ -27,7 +27,7 @@ if [[ ${PEdir} -ne 1 && ${PEdir} -ne 2 ]] ; then
 	echo -e "\n ${scriptName}: ERROR: basic_preproc: Unrecognized PEdir: ${PEdir}"
 	exit 1
 fi
-
+ 
 # Use same convention for basePos and baseNeg names as in DiffPreprocPipeline_PreEddy.sh
 basePos="Pos"
 baseNeg="Neg"

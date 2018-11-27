@@ -80,27 +80,27 @@ get_options() {
   local error_msgs=""
 
   if [ -z "${STUDY_DIR}" ] ; then
-    error_msgs+="\nERROR: <study-dir> not specified."
+    error_msgs+="\\nERROR: <study-dir> not specified."
   fi
 
   if [ -z "${SUBJECT}" ] ; then
-    error_msgs+="\nERROR: <subject> not specified."
+    error_msgs+="\\nERROR: <subject> not specified."
   fi
 
   if [ -z "${FSL_DIR}" ] ; then
-    error_msgs+="ERROR: FSLDIR environment variable not set.  Is FSL installed?"
+    error_msgs+="\\nERROR: FSLDIR environment variable not set.  Is FSL installed?"
   fi
 
   if [ -z "${HYPERBAND_OPT}" ] ; then
-    error_msgs+="ERROR: Hyperband option not defined.  Please indictate Y or N as to whether the scans were obtained using hyperband."
+    error_msgs+="\\nERROR: Hyperband option not defined.  Please indictate Y or N as to whether the scans were obtained using hyperband."
   fi
 
   if [ -z "${GRADPACK}" ] ; then
-    error_msgs+="ERROR: Location of tar file containing original, unprocessed diffision gradient files not provided."
+    error_msgs+="\\nERROR: Location of tar file containing original, unprocessed diffision gradient files not provided."
   fi
 
   if [ ! -f "${GRADPACK}" ] ; then
-    error_msgs+="ERROR: Specified gradient file package is not a compressed file."
+    error_msgs+="\\nERROR: Specified gradient file package is not a compressed file."
   fi
 
   if [ -n "${error_msgs}" ] ; then
@@ -145,7 +145,7 @@ main() {
 
   #-Local variables
     DWIPROC="dwi_processing"
-    INPUT_DIR=$STUDY_DIR/$SUBJECT/dicoms
+    INPUT_DIR="${STUDY_DIR}"/"${SUBJECT}"/dicoms
     OUTPUT_DIR=$STUDY_DIR/$SUBJECT/$DWIPROC
 
     if [[ "${HYPERBAND_OPT}" == "Y" || "${HYPERBAND_OPT}" == "y" ]]; then
@@ -153,7 +153,7 @@ main() {
     elif [[ "${HYPERBAND_OPT}" == "N" || "${HYPERBAND_OPT}" == "n" ]]; then
       HYPERBAND=0
     else
-      printf "ERROR: Hyperband flag value %s unrecognized.  Must be Y or N." "${HYPERBAND_OPT}" 
+      printf "\\nERROR: Hyperband flag value %s unrecognized.  Must be Y or N." "${HYPERBAND_OPT}" 
     fi
 
   #-Making output directory and sub-directories.  If the specified output directory exists, remove it and make a new one.
@@ -162,55 +162,67 @@ main() {
     fi
 
     mkdir -p "$OUTPUT_DIR"
-    mkdir "${OUTPUT_DIR}"/raw
     mkdir "${OUTPUT_DIR}"/anat
-    mkdir "${OUTPUT_DIR}"/topup
-    mkdir "${OUTPUT_DIR}"/eddy
+    mkdir "${OUTPUT_DIR}"/preproc
+    mkdir "${OUTPUT_DIR}"/mrtrixproc
 
     if [ ! -d "$OUTPUT_DIR" ]; then
-      echo "ERROR: Failed to create output directory.  Do you have write permissions for the directory ${STUDY_DIR}/${SUBJECT}?"
+      printf "\\nERROR: Failed to create output directory. Do you have write permissions for the directory %s/%s" "${STUDY_DIR}" "${SUBJECT}"
       exit 1
     fi
 
   #-Making variables to hold output path directories
-    raw_dir=$OUTPUT_DIR/raw
     anat_dir=$OUTPUT_DIR/anat
-    topup_dir=$OUTPUT_DIR/topup
-    eddy_dir=$OUTPUT_DIR/eddy
+    preproc_dir=$OUTPUT_DIR/preproc
+    mrtrixproc_dir=$OUTPUT_DIR/mrtrixproc
+
+  #-CONVERTING anatomical scan
+  for file in "${INPUT_DIR}"/*MPRAGE*.tgz; do
+    tmp_dir
+    cp "$file" "$TMP"
+    tar xf "$TMP"/"$(basename "${file}")" -C "$TMP" 
+    dcm2niix -z y "$TMP"
+    imcp "$TMP"/*.nii.gz "${anat_dir}"/T1.nii.gz
+    #cp "$TMP"/*.bval "$OUTPUT_DIR"/raw/"$pos_enc".bval - Must use the bval and bvec files from the scanner, values in dicoms are incorrect
+    #cp "$TMP"/*.bvec "$OUTPUT_DIR"/raw/"$pos_enc".bvec
+    cp "$TMP"/*.json "${anat_dir}"/T1.json
+    rm -rf "${TMP}"
+  done
 
   #-CONVERTING compressed raw DWI scan files in the input directory, and copying the conversion output to the 
   #-"raw" subdirectory of the output directory.  Rename the scans according to their phase encoding direction (pepolar0 or pepolar1).
   #-If the scans were created using hyperband, label the conversion files as such.
+  #- pepolar0 is P>>A encoding (+1 in acqparams), pepolar1 is A>>P (-1)
     printf "%s\\n\\n" "Beginning scan file conversion..."
     if [[ "${HYPERBAND}" = 1 ]]; then
-      pos_enc="NODDI_HB2_pepolar0"
-      neg_enc="NODDI_HB2_pepolar1"
+      PostAnt="NODDI_HB2_pepolar0"
+      AntPost="NODDI_HB2_pepolar1"
     elif [[ "${HYPERBAND}" = 0 ]]; then
-      pos_enc="NODDI_pepolar0"
-      neg_enc="NODDI_pepolar1"
+      PostAnt="NODDI_pepolar0"
+      AntPost="NODDI_pepolar1"
     fi
     
-    for file in "${INPUT_DIR}"/*"${pos_enc}"*.tgz; do
+    for file in "${INPUT_DIR}"/*"${PostAnt}"*.tgz; do
       tmp_dir
       cp "$file" "$TMP"
       tar xf "$TMP"/"$(basename "${file}")" -C "$TMP" 
       dcm2niix -z y "$TMP"
-      imcp "$TMP"/*.nii.gz "$OUTPUT_DIR"/raw/"$pos_enc".nii.gz
-      #cp "$TMP"/*.bval "$OUTPUT_DIR"/raw/"$pos_enc".bval - Must use the bval and bvec files from the scanner, values in dicoms are incorrect
-      #cp "$TMP"/*.bvec "$OUTPUT_DIR"/raw/"$pos_enc".bvec
-      cp "$TMP"/*.json "$OUTPUT_DIR"/raw/"$pos_enc".json
+      imcp "$TMP"/*.nii.gz "${preproc_dir}"/"$PostAnt".nii.gz
+      #cp "$TMP"/*.bval "$OUTPUT_DIR"/raw/"$PostAnt".bval - Must use the bval and bvec files from the scanner, values in dicoms are incorrect
+      #cp "$TMP"/*.bvec "$OUTPUT_DIR"/raw/"$PostAnt".bvec
+      cp "$TMP"/*.json "${preproc_dir}"/"$PostAnt".json
       rm -rf "${TMP}"
     done
 
-    for file in "${INPUT_DIR}"/*"${neg_enc}"*.tgz; do
+    for file in "${INPUT_DIR}"/*"${AntPost}"*.tgz; do
       tmp_dir
       cp "${file}" "${TMP}"
       tar xf "${TMP}"/"$(basename "${file}")" -C "${TMP}" 
       dcm2niix -z y "$TMP"
-      imcp "$TMP"/*.nii.gz "$OUTPUT_DIR"/raw/"$neg_enc".nii.gz
-      #cp "$TMP"/*.bval "$OUTPUT_DIR"/raw/"$neg_enc".bval
-      #cp "$TMP"/*.bvec "$OUTPUT_DIR"/raw/"$neg_enc".bvec
-      cp "$TMP"/*.json "${OUTPUT_DIR}"/raw/"$neg_enc".json
+      imcp "$TMP"/*.nii.gz "${preproc_dir}"/"$AntPost".nii.gz
+      #cp "$TMP"/*.bval "$OUTPUT_DIR"/raw/"$AntPost".bval
+      #cp "$TMP"/*.bvec "$OUTPUT_DIR"/raw/"$AntPost".bvec
+      cp "$TMP"/*.json "${preproc_dir}"/"$AntPost".json
       rm -rf "${TMP}"
     done
 
@@ -222,7 +234,7 @@ main() {
 
     tar xf "${GRADPACK}" -C "${graddir_tmp}"
     if [[ $? != 0 ]]; then
-      printf "ERROR: Could not unpack the gradient tar file - %s" "${GRADPACK}"
+      printf "\\nERROR: Could not unpack the gradient tar file - %s" "${GRADPACK}"
       exit 1
     fi
   
@@ -231,10 +243,10 @@ main() {
   #---Locating the info file
       info_file=$(find "${INPUT_DIR}" -name "info*.txt" -printf '%P\n' | head -n 1)
       if [ -z "${info_file}" ]; then
-        printf "ERROR: Scan info file (info.XXXXXX.txt) not found in gradient files path."
+        printf "\\nERROR: Scan info file (info.XXXXXX.txt) not found in gradient files path."
         exit 1
       else
-        printf "\\n%s\\n" "Found scan info file in gradient files path."
+        printf "\\nFound scan info file in gradient files path."
       fi
 
   #---Deleting unnecessary files, trimming the names of those we want to keep, and copying them to the raw_dir  
@@ -289,7 +301,7 @@ main() {
           echo "${TEMP}" >> temp.txt
         done
         mv temp.txt "${bvecfile}"
-        cp "${bvecfile}" "${raw_dir}"
+        cp "${bvecfile}" "${preproc_dir}"
       done
 
   #---For each .bval file, grab the third column (first two are just labels), remove the last row (extra line of zeros)
@@ -299,7 +311,7 @@ main() {
         TEMP=$(awk -F" " '{NF--; print}' <(echo ${TEMP} )) #Do NOT double quote
         echo "${TEMP}" > temp.txt
         mv temp.txt "${bvalfile}"
-        cp "${bvalfile}" "${raw_dir}"
+        cp "${bvalfile}" "${preproc_dir}"
       done
 
   #COMPUTING TOTAL READOUT TIME
@@ -308,7 +320,7 @@ main() {
   #-scan in the raw directory and get the second dimension (slice count if using PA/AP phase encoding)
   #-using fslval.  Compute total readout time as: echo spacing *(slice count - 1).  Divide by 1000
   #-to convert the value to seconds (from milliseconds )
-    any_scan=$(find "${OUTPUT_DIR}"/raw/*.nii.gz | head -n 1)
+    any_scan=$(find "${preproc_dir}"/*.nii.gz | head -n 1)
     dims=$("${FSL_DIR}"/bin/fslval "${any_scan}" dim2)
     dimsmin1=$(awk "BEGIN {print $dims - 1; exit}" )
     totalrotime=$(awk "BEGIN {print ${ECHOSPACING}*${dimsmin1}; exit}" )
@@ -316,8 +328,8 @@ main() {
 
   #DENOISE & DEGIBBS
 
-  echo -e "Removing scan noise and Gibbs' rings using MRTrix3's dwidenoise and mrdegibbs tools...\\n"
-  for file in "${OUTPUT_DIR}"/raw/*.nii.gz; do
+  printf "\\nRemoving scan noise and Gibbs' rings using MRTrix3's dwidenoise and mrdegibbs tools..."
+  for file in "${preproc_dir}"/*.nii.gz; do
     basename=$(imglob "${file}")
     dwidenoise "${basename}".nii.gz "${basename}"_den.nii.gz
     if [[ $! = 1 ]]; then
@@ -331,88 +343,94 @@ main() {
     else
       rm "${basename}".nii.gz
       rm "${basename}"_den.nii.gz
-      mv "${basename}"_den_deg.nii.gz "${raw_dir}"/"$(basename "$file")"
+      mv "${basename}"_den_deg.nii.gz "${preproc_dir}"/"$(basename "$file")"
     fi
   done
 
   #TOPUP
 
   #-Extract b0's and make acqparms.txt for topup
-    echo -e "Extracting b0 scans from positively encoded volume and adding info to acqparams.txt for topup...\\n"
-    for file in "${OUTPUT_DIR}"/raw/*"${pos_enc}".nii.gz; do
-      fslroi "${file}" "${OUTPUT_DIR}"/raw/pos_b0 0 4
-      b0vols=$("${FSL_DIR}"/bin/fslval "${OUTPUT_DIR}"/raw/pos_b0 dim4)
+    printf "\\nExtracting b0 scans from PA encoded volume and adding info to acqparams.txt for topup..."
+    for file in "${preproc_dir}"/*"${PostAnt}".nii.gz; do
+      fslroi "${file}" "${preproc_dir}"/PA_b0 0 1
+      b0vols=$("${FSL_DIR}"/bin/fslval "${preproc_dir}"/PA_b0 dim4)
       for (( i=1; i<=b0vols; i++ )); do
-        echo 0 1 0 "${totalrotime}" >> "${OUTPUT_DIR}"/raw/acqparams.txt
+        echo 0 1 0 "${totalrotime}" >> "${preproc_dir}"/acqparams.txt
       done
     done
 
-    echo -e "Extracting b0 scans from negatively encoded volume and adding info to acqparams.txt for topup...\\n"
-    for file in "${OUTPUT_DIR}"/raw/*"${neg_enc}".nii.gz; do
-      fslroi "${file}" "${OUTPUT_DIR}"/raw/neg_b0 0 4
-      b0vols=$("${FSL_DIR}"/bin/fslval "${OUTPUT_DIR}"/raw/neg_b0 dim4)
+    printf "\\nExtracting b0 scans from AP encoded volume and adding info to acqparams.txt for topup..."
+    for file in "${preproc_dir}"/*"${AntPost}".nii.gz; do
+      fslroi "${file}" "${preproc_dir}"/AP_b0 0 1
+      b0vols=$("${FSL_DIR}"/bin/fslval "${preproc_dir}"/AP_b0 dim4)
       for (( i=1; i<=b0vols; i++ )); do
-        echo 0 -1 0 "${totalrotime}" >> "${OUTPUT_DIR}"/raw/acqparams.txt
+        echo 0 -1 0 "${totalrotime}" >> "${preproc_dir}"/acqparams.txt
       done
     done
 
-    echo -e "Merging b0 scans from positive and negative phase encoding volumes...\\n"
+    printf "\\nMerging b0 scans from PA and PA phase encoding volumes..."
   
   #-Merge separate b0 files 
-    fslmerge -t "${OUTPUT_DIR}"/raw/pos_neg_b0 "${OUTPUT_DIR}"/raw/pos_b0 "${OUTPUT_DIR}"/raw/neg_b0
+    fslmerge -t "${preproc_dir}"/PA_AP_b0 "${preproc_dir}"/PA_b0 "${preproc_dir}"/AP_b0 
 
   #-Copying necessary files to topup directory for further processing
-    imcp "${raw_dir}"/pos_b0 "${topup_dir}"
-    imcp "${raw_dir}"/neg_b0 "${topup_dir}"
-    imcp "${raw_dir}"/pos_neg_b0 "${topup_dir}"
-    cp "${raw_dir}"/acqparams.txt "${topup_dir}"
+    # imcp "${preproc_dir}"/PA_b0 "${topup_dir}"
+    # imcp "${preproc_dir}"/AP_b0 "${topup_dir}"
+    # imcp "${raw_dir}"/PA_AP_b0 "${topup_dir}"
+    # cp "${raw_dir}"/acqparams.txt "${topup_dir}"
 
   #-Call TOPUP script
     scriptdir=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-    sh "${scriptdir}"/runtopup.sh "${topup_dir}"
+    sh "${scriptdir}"/runtopup.sh "${preproc_dir}"
 
   #EDDY
 
   #-Gathering and preparing the files necessary to run eddy
 
   #--Moving the requires image inputs
-    immv "${topup_dir}"/pos_neg_b0 "${eddy_dir}"
-    immv "${raw_dir}"/*"${pos_enc}".nii.gz "${eddy_dir}"
-    immv "${raw_dir}"/*"${neg_enc}".nii.gz "${eddy_dir}"
-    immv "${topup_dir}"/nodif_brain_mask "${eddy_dir}"
+  #   immv "${topup_dir}"/PA_AP_b0 "${eddy_dir}"
+  #   immv "${raw_dir}"/*"${PostAnt}".nii.gz "${eddy_dir}"
+  #   immv "${raw_dir}"/*"${AntPost}".nii.gz "${eddy_dir}"
+  #   immv "${topup_dir}"/nodif_brain_mask "${eddy_dir}"
 
   #--Moving the parameter files and topup outputs    
-    cp "${topup_dir}"/acqparams.txt "${eddy_dir}"
-    cp "${raw_dir}"/"${pos_enc}".bvec "${raw_dir}"/"${pos_enc}".bval "${eddy_dir}"
-    cp "${raw_dir}"/"${neg_enc}".bvec "${raw_dir}"/"${neg_enc}".bval "${eddy_dir}"
+    # cp "${topup_dir}"/acqparams.txt "${eddy_dir}"
+    # cp "${raw_dir}"/"${PostAnt}".bvec "${raw_dir}"/"${PostAnt}".bval "${eddy_dir}"
+    # cp "${raw_dir}"/"${AntPost}".bvec "${raw_dir}"/"${AntPost}".bval "${eddy_dir}"
     #cp "${topup_dir}"/topup* "${eddy_dir}"
 
   #--Creating the index files for eddy
-    posvolcnt=$(fslval "${eddy_dir}"/"${pos_enc}" dim4)
-    negvolcnt=$(fslval "${eddy_dir}"/"${neg_enc}" dim4)
+    PAvolcnt=$(fslval "${preproc_dir}"/"${PostAnt}" dim4)
+    APvolcnt=$(fslval "${preproc_dir}"/"${AntPost}" dim4)
 
-    for (( i=1; i<=posvolcnt; i++ )); do
-      echo "1" >> "${eddy_dir}"/index_temp1.txt
-      TEMP=$(cat index.txt)
-      echo "$TEMP" > "${eddy_dir}"/index.txt
+    for (( i=1; i<=PAvolcnt; i++ )); do
+      indcnt=1
+      echo $indcnt >> "${preproc_dir}"/index.txt
     done
 
-    for (( i=1; i<=negvolcnt; i++ )); do
-      echo "2" >> "${eddy_dir}"/index_temp2.txt
-      TEMP=$(cat index_temp2.txt)
-      echo "$TEMP" >> "${eddy_dir}"/index.txt
+    for (( i=1; i<=APvolcnt; i++ )); do
+      indcnt=2
+      echo $indcnt >> "${preproc_dir}"/index.txt
     done
 
-  #--Merging the positive and negative phase encoded scan series into one file
-    fslmerge -t "${eddy_dir}"/pos_neg "${eddy_dir}"/"${pos_enc}" "${eddy_dir}"/"${neg_enc}"
+  #--Merging the positive and APative phase encoded scan series into one file
+    fslmerge -t "${preproc_dir}"/PA_AP "${preproc_dir}"/"${PostAnt}" "${preproc_dir}"/"${AntPost}"
 
   #--Merging the gradient files 
-    paste "${eddy_dir}"/"${pos_enc}".bval "${eddy_dir}"/"${neg_enc}".bval > "${eddy_dir}"/pos_neg.bval
-    paste "${eddy_dir}"/"${pos_enc}".bvec "${eddy_dir}"/"${neg_enc}".bvec > "${eddy_dir}"/pos_neg.bvec
+    paste "${preproc_dir}"/"${PostAnt}".bval "${preproc_dir}"/"${AntPost}".bval > "${preproc_dir}"/PA_AP.bval
+    paste "${preproc_dir}"/"${PostAnt}".bvec "${preproc_dir}"/"${AntPost}".bvec > "${preproc_dir}"/PA_AP.bvec
   
   #-Calling EDDY script
 
-    sh "${scriptdir}"/runeddy.sh --eddy_dir "${eddy_dir}" --topup_dir "${topup_dir}"
+    sh "${scriptdir}"/runeddy.sh "${preproc_dir}"
+  
+  #BIAS CORRECTION
+  mrconvert -fslgrad PA_AP.bvec PA_AP.bval "${preproc_dir}"/eddy_unwarped_images.nii.gz "${preproc_dir}"/eddy_unwarped_images.mif
+  dwibiascorrect -ants "${preproc_dir}"/eddy_unwarped_images.mif "${mrtrixproc_dir}"/dwi.mif
+
+  #Hand off to MRTrix3 Processing
+  sh multifiber.sh "${mrtrixproc_dir}" "${anat_dir}"
+
 }
 
 main "$@"
