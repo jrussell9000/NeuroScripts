@@ -75,6 +75,7 @@ get_options() {
   # Replace '~' with $HOME
   STUDY_DIR=${STUDY_DIR/#\~/$HOME}
   GRADPACK=${GRADPACK/#\~/$HOME}
+  FSL_DIR=$FSLDIR #Freesurfer sets this one way, FSL another....poTAYto poTAHto
 
   #Check for required variables, and echo an error message if they're missing
   local error_msgs=""
@@ -87,7 +88,7 @@ get_options() {
     error_msgs+="\\nERROR: <subject> not specified."
   fi
 
-  if [ -z "${FSL_DIR}" ] ; then
+  if [ -z "${FSLDIR}" ] ; then
     error_msgs+="\\nERROR: FSLDIR environment variable not set.  Is FSL installed?"
   fi
 
@@ -229,6 +230,9 @@ main() {
 
   #-CONVERTING the crappy diffusion vector and diffusion weight files we get from the scanner
   if [ -n "${GRADPACK}" ]; then #----START raw gradient files conversion
+
+    printf "\\nConverting raw gradient files..."
+
   #--UNPACKING the tar file to a temporary directory
     tmp_dir
     graddir_tmp="${TMP}"
@@ -406,10 +410,10 @@ main() {
   
   #-Calling EDDY script
 
-    sh "${scriptdir}"/runeddy.sh "${preproc_dir}"
+    sh "${scriptdir}"/runeddy.sh ${preproc_dir}
 
   #BIAS CORRECTION
-  mrconvert -fslgrad PA_AP.bvec PA_AP.bval "${preproc_dir}"/eddy_unwarped_images.nii.gz "${preproc_dir}"/eddy_unwarped_images.mif
+  mrconvert -fslgrad "${preproc_dir}"/PA_AP.bvec "${preproc_dir}"/PA_AP.bval "${preproc_dir}"/eddy_unwarped_images.nii.gz "${preproc_dir}"/eddy_unwarped_images.mif
   dwibiascorrect -ants "${preproc_dir}"/eddy_unwarped_images.mif "${mrtrixproc_dir}"/dwi.mif
 
   #GO TO MRTRIX3

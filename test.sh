@@ -1,6 +1,2 @@
-while read -r subjects; do
-	subj_array+=("$subjects")
-done <subj_list.txt
-list=$(IFS=,; echo "${subj_array[*]}")
-ls ~/proc/( $list )
-# printf -v var "${subj_array[*]}"
+#!/usr/bin/env bash
+ "$(pwd)"/dwi_processing/runeddy.sh $HOME/ceda_scans/_9992/dwi_processing/preproc
