@@ -9,7 +9,7 @@
 PREPROC_DIR=$1
 
 main() {
-
+	FSL_DIR=$FSLDIR
 	verbose="--verbose"
 	ReplOutliers="--repol"
 	eddyExec="${FSL_DIR}/bin/eddy_cuda"
