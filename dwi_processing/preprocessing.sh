@@ -95,13 +95,13 @@ get_options() {
     error_msgs+="\\nERROR: Hyperband option not defined.  Please indictate Y or N as to whether the scans were obtained using hyperband."
   fi
 
-  if [ -z "${GRADPACK}" ] ; then
-    error_msgs+="\\nERROR: Location of tar file containing original, unprocessed diffision gradient files not provided."
-  fi
+  # if [ -z "${GRADPACK}" ] ; then
+  #   error_msgs+="\\nERROR: Location of tar file containing original, unprocessed diffision gradient files not provided."
+  # fi
 
-  if [ ! -f "${GRADPACK}" ] ; then
-    error_msgs+="\\nERROR: Specified gradient file package is not a compressed file."
-  fi
+  # if [ ! -f "${GRADPACK}" ] ; then
+  #   error_msgs+="\\nERROR: Specified gradient file package is not a compressed file."
+  # fi
 
   if [ -n "${error_msgs}" ] ; then
     usage
@@ -176,7 +176,7 @@ main() {
     preproc_dir=$OUTPUT_DIR/preproc
     mrtrixproc_dir=$OUTPUT_DIR/mrtrixproc
 
-  #-CONVERTING anatomical scan
+  #CONVERTING ANATOMICAL
   for file in "${INPUT_DIR}"/*MPRAGE*.tgz; do
     tmp_dir
     cp "$file" "$TMP"
@@ -193,41 +193,42 @@ main() {
   #-"raw" subdirectory of the output directory.  Rename the scans according to their phase encoding direction (pepolar0 or pepolar1).
   #-If the scans were created using hyperband, label the conversion files as such.
   #- pepolar0 is P>>A encoding (+1 in acqparams), pepolar1 is A>>P (-1)
-    printf "%s\\n\\n" "Beginning scan file conversion..."
-    if [[ "${HYPERBAND}" = 1 ]]; then
-      PostAnt="NODDI_HB2_pepolar0"
-      AntPost="NODDI_HB2_pepolar1"
-    elif [[ "${HYPERBAND}" = 0 ]]; then
-      PostAnt="NODDI_pepolar0"
-      AntPost="NODDI_pepolar1"
-    fi
-    
-    for file in "${INPUT_DIR}"/*"${PostAnt}"*.tgz; do
-      tmp_dir
-      cp "$file" "$TMP"
-      tar xf "$TMP"/"$(basename "${file}")" -C "$TMP" 
-      dcm2niix -z y "$TMP"
-      imcp "$TMP"/*.nii.gz "${preproc_dir}"/"$PostAnt".nii.gz
-      #cp "$TMP"/*.bval "$OUTPUT_DIR"/raw/"$PostAnt".bval - Must use the bval and bvec files from the scanner, values in dicoms are incorrect
-      #cp "$TMP"/*.bvec "$OUTPUT_DIR"/raw/"$PostAnt".bvec
-      cp "$TMP"/*.json "${preproc_dir}"/"$PostAnt".json
-      rm -rf "${TMP}"
-    done
+  if [[ "${HYPERBAND}" = 1 ]]; then
+    PostAnt="NODDI_HB2_pepolar0"
+    AntPost="NODDI_HB2_pepolar1"
+  elif [[ "${HYPERBAND}" = 0 ]]; then
+    PostAnt="NODDI_pepolar0"
+    AntPost="NODDI_pepolar1"
+  fi
+  
+  printf "%s\\n\\n" "Beginning scan file conversion..."
 
-    for file in "${INPUT_DIR}"/*"${AntPost}"*.tgz; do
-      tmp_dir
-      cp "${file}" "${TMP}"
-      tar xf "${TMP}"/"$(basename "${file}")" -C "${TMP}" 
-      dcm2niix -z y "$TMP"
-      imcp "$TMP"/*.nii.gz "${preproc_dir}"/"$AntPost".nii.gz
-      #cp "$TMP"/*.bval "$OUTPUT_DIR"/raw/"$AntPost".bval
-      #cp "$TMP"/*.bvec "$OUTPUT_DIR"/raw/"$AntPost".bvec
-      cp "$TMP"/*.json "${preproc_dir}"/"$AntPost".json
-      rm -rf "${TMP}"
-    done
+  for file in "${INPUT_DIR}"/*"${PostAnt}"*.tgz; do
+    tmp_dir
+    cp "$file" "$TMP"
+    tar xf "$TMP"/"$(basename "${file}")" -C "$TMP" 
+    dcm2niix -z y "$TMP"
+    imcp "$TMP"/*.nii.gz "${preproc_dir}"/"$PostAnt".nii.gz
+    #cp "$TMP"/*.bval "$OUTPUT_DIR"/raw/"$PostAnt".bval - Must use the bval and bvec files from the scanner, values in dicoms are incorrect
+    #cp "$TMP"/*.bvec "$OUTPUT_DIR"/raw/"$PostAnt".bvec
+    cp "$TMP"/*.json "${preproc_dir}"/"$PostAnt".json
+    rm -rf "${TMP}"
+  done
+
+  for file in "${INPUT_DIR}"/*"${AntPost}"*.tgz; do
+    tmp_dir
+    cp "${file}" "${TMP}"
+    tar xf "${TMP}"/"$(basename "${file}")" -C "${TMP}" 
+    dcm2niix -z y "$TMP"
+    imcp "$TMP"/*.nii.gz "${preproc_dir}"/"$AntPost".nii.gz
+    #cp "$TMP"/*.bval "$OUTPUT_DIR"/raw/"$AntPost".bval
+    #cp "$TMP"/*.bvec "$OUTPUT_DIR"/raw/"$AntPost".bvec
+    cp "$TMP"/*.json "${preproc_dir}"/"$AntPost".json
+    rm -rf "${TMP}"
+  done
 
   #-CONVERTING the crappy diffusion vector and diffusion weight files we get from the scanner
-
+  if [ -n "${GRADPACK}" ]; then #----START raw gradient files conversion
   #--UNPACKING the tar file to a temporary directory
     tmp_dir
     graddir_tmp="${TMP}"
@@ -313,6 +314,9 @@ main() {
         mv temp.txt "${bvalfile}"
         cp "${bvalfile}" "${preproc_dir}"
       done
+  else #If we don't need to convert the raw scan
+    cp "${STUDY_DIR}"/diff_files/"${PostAnt}".b* "${STUDY_DIR}"/diff_files/"${AntPost}".b* "${preproc_dir}"
+  fi #----END raw gradient files conversion
 
   #COMPUTING TOTAL READOUT TIME
 
@@ -373,31 +377,11 @@ main() {
   #-Merge separate b0 files 
     fslmerge -t "${preproc_dir}"/PA_AP_b0 "${preproc_dir}"/PA_b0 "${preproc_dir}"/AP_b0 
 
-  #-Copying necessary files to topup directory for further processing
-    # imcp "${preproc_dir}"/PA_b0 "${topup_dir}"
-    # imcp "${preproc_dir}"/AP_b0 "${topup_dir}"
-    # imcp "${raw_dir}"/PA_AP_b0 "${topup_dir}"
-    # cp "${raw_dir}"/acqparams.txt "${topup_dir}"
-
   #-Call TOPUP script
     scriptdir=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
     sh "${scriptdir}"/runtopup.sh "${preproc_dir}"
 
   #EDDY
-
-  #-Gathering and preparing the files necessary to run eddy
-
-  #--Moving the requires image inputs
-  #   immv "${topup_dir}"/PA_AP_b0 "${eddy_dir}"
-  #   immv "${raw_dir}"/*"${PostAnt}".nii.gz "${eddy_dir}"
-  #   immv "${raw_dir}"/*"${AntPost}".nii.gz "${eddy_dir}"
-  #   immv "${topup_dir}"/nodif_brain_mask "${eddy_dir}"
-
-  #--Moving the parameter files and topup outputs    
-    # cp "${topup_dir}"/acqparams.txt "${eddy_dir}"
-    # cp "${raw_dir}"/"${PostAnt}".bvec "${raw_dir}"/"${PostAnt}".bval "${eddy_dir}"
-    # cp "${raw_dir}"/"${AntPost}".bvec "${raw_dir}"/"${AntPost}".bval "${eddy_dir}"
-    #cp "${topup_dir}"/topup* "${eddy_dir}"
 
   #--Creating the index files for eddy
     PAvolcnt=$(fslval "${preproc_dir}"/"${PostAnt}" dim4)
@@ -413,7 +397,7 @@ main() {
       echo $indcnt >> "${preproc_dir}"/index.txt
     done
 
-  #--Merging the positive and APative phase encoded scan series into one file
+  #--Merging the PA and AP phase encoded scan series into one file
     fslmerge -t "${preproc_dir}"/PA_AP "${preproc_dir}"/"${PostAnt}" "${preproc_dir}"/"${AntPost}"
 
   #--Merging the gradient files 
@@ -423,13 +407,13 @@ main() {
   #-Calling EDDY script
 
     sh "${scriptdir}"/runeddy.sh "${preproc_dir}"
-  
+
   #BIAS CORRECTION
   mrconvert -fslgrad PA_AP.bvec PA_AP.bval "${preproc_dir}"/eddy_unwarped_images.nii.gz "${preproc_dir}"/eddy_unwarped_images.mif
   dwibiascorrect -ants "${preproc_dir}"/eddy_unwarped_images.mif "${mrtrixproc_dir}"/dwi.mif
 
-  #Hand off to MRTrix3 Processing
-  sh multifiber.sh "${mrtrixproc_dir}" "${anat_dir}"
+  #GO TO MRTRIX3
+  sh "${scriptdir}"/multifiber.sh "${mrtrixproc_dir}" "${anat_dir}"
 
 }
 
