@@ -7,12 +7,19 @@
 # -Check for cuda support
 
 PREPROC_DIR=$1
+USEGPUopt=$2
 
 main() {
-	FSL_DIR=$FSLDIR
+	FSL_DIR="$FSLDIR"
 	verbose="--verbose"
 	ReplOutliers="--repol"
-	eddyExec="${FSL_DIR}/bin/eddy_cuda"
+	if [[ "${USEGPUopt}" == "True" ]] ; then
+		eddyExec="${FSL_DIR}/bin/eddy_cuda"
+		printf "\\nGPU acceleration enabled.  Using eddy_cuda for eddy correction..."
+	else
+		eddyExec="${FSL_DIR}/bin/eddy_openmp"
+		printf "\\nGPU acceleration not enabled.  Using eddy_openmp for eddy correction..."
+	fi
 	eddy_command="${eddyExec}"
 	eddy_command="${eddy_command} ${verbose}"
 	eddy_command="${eddy_command} ${ReplOutliers}"
@@ -28,22 +35,3 @@ main() {
 }
 
 main $@
- 
-  # eddy_command="${eddy_exec} "
-  # eddy_command+="${outlierStatsOption} "
-	# eddy_command+="${replaceOutliersOption} "
-	# eddy_command+="${nvoxhpOption} "
-	# eddy_command+="${sep_offs_moveOption} "
-	# eddy_command+="${rmsOption} "
-	# eddy_command+="${ff_valOption} "
-  # eddy_command+="--imain=${PREPROC_DIR}/PA_AP "
-	# eddy_command+="--mask=${PREPROC_DIR}/nodif_brain_mask "
-	# eddy_command+="--index=${PREPROC_DIR}/index.txt "
-	# eddy_command+="--acqp=${PREPROC_DIR}/acqparams.txt "
-	# eddy_command+="--bvecs=${PREPROC_DIR}/PA_AP.bvecs "
-	# eddy_command+="--bvals=${PREPROC_DIR}/PA_AP.bvals "
-	# eddy_command+="--fwhm=${fwhm_value} "
-	# eddy_command+="--topup=${topupdir}/topup_Pos_Neg_b0 "
-	# eddy_command+="--out=${PREPROC_DIR}/eddy_unwarped_images "
-	# eddy_command+="--flm=quadratic "
-

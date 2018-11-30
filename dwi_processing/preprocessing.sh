@@ -9,6 +9,8 @@ usage() {
 
     PARAMETERS:
 
+    Required:
+
     --studydir=<study-dir>    path to read/write location where raw scans exist 
                               and processed output will be placed
     --subject=<subject-id>    numeric subject ID. Should match the name of the 
@@ -16,6 +18,10 @@ usage() {
     --echospacing=<echo-spacing-in-ms>
                               echo spacing in milliseconds (e.g., .688)
     --hyperband=<Y/N>         are we processing hyperband scans?
+
+    Optional:
+
+    --gpuassist               use the GPU-enable functions in FSL and Freesurfer?
 
     --gradpack=<gradients-tar-file>      
                               path to the tar file containing original 
@@ -58,6 +64,10 @@ get_options() {
         ;;
       --hyperband=*)
         HYPERBAND_OPT=${argument#*=}
+        index=$(( index + 1 ))
+        ;;
+      --gpuassist)
+        USEGPU="True"
         index=$(( index + 1 ))
         ;;
       --gradpack=*)
@@ -155,6 +165,11 @@ main() {
       HYPERBAND=0
     else
       printf "\\nERROR: Hyperband flag value %s unrecognized.  Must be Y or N." "${HYPERBAND_OPT}" 
+    fi
+
+    #--GPU acceleration is disabled by
+    if [ -z "${USEGPU}" ] ; then
+      USEGPU="False"
     fi
 
   #-Making output directory and sub-directories.  If the specified output directory exists, remove it and make a new one.
@@ -410,14 +425,14 @@ main() {
   
   #-Calling EDDY script
 
-    sh "${scriptdir}"/runeddy.sh ${preproc_dir}
+    sh "${scriptdir}"/runeddy.sh ${preproc_dir} ${USEGPU}
 
   #BIAS CORRECTION
   mrconvert -fslgrad "${preproc_dir}"/PA_AP.bvec "${preproc_dir}"/PA_AP.bval "${preproc_dir}"/eddy_unwarped_images.nii.gz "${preproc_dir}"/eddy_unwarped_images.mif
   dwibiascorrect -ants "${preproc_dir}"/eddy_unwarped_images.mif "${mrtrixproc_dir}"/dwi.mif
 
   #GO TO MRTRIX3
-  sh "${scriptdir}"/multifiber.sh "${mrtrixproc_dir}" "${anat_dir}"
+  sh "${scriptdir}"/multifiber.sh ${mrtrixproc_dir} ${anat_dir}
 
 }
 
