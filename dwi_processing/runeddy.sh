@@ -8,8 +8,32 @@
 
 PREPROC_DIR=$1
 USEGPUopt=$2
+PostAnt=$3
+AntPost=$4
 
 main() {
+
+	#--Creating the index files for eddy
+    PAvolcnt=$(fslval "${preproc_dir}"/"${PostAnt}" dim4)
+    APvolcnt=$(fslval "${preproc_dir}"/"${AntPost}" dim4)
+
+    for (( i=1; i<=PAvolcnt; i++ )); do
+      indcnt=1
+      echo $indcnt >> "${preproc_dir}"/index.txt
+    done
+
+    for (( i=1; i<=APvolcnt; i++ )); do
+      indcnt=2
+      echo $indcnt >> "${preproc_dir}"/index.txt
+    done
+
+  #--Merging the PA and AP phase encoded scan series into one file
+    fslmerge -t "${preproc_dir}"/PA_AP "${preproc_dir}"/"${PostAnt}" "${preproc_dir}"/"${AntPost}"
+
+  #--Merging the gradient files 
+    paste "${preproc_dir}"/"${PostAnt}".bval "${preproc_dir}"/"${AntPost}".bval > "${preproc_dir}"/PA_AP.bval
+    paste "${preproc_dir}"/"${PostAnt}".bvec "${preproc_dir}"/"${AntPost}".bvec > "${preproc_dir}"/PA_AP.bvec
+  
 	FSL_DIR="$FSLDIR"
 	verbose="--verbose"
 	ReplOutliers="--repol"
