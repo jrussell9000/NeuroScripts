@@ -45,7 +45,8 @@ fslmerge -t "${preproc_dir}"/PA_AP_b0 "${preproc_dir}"/PA_b0 "${preproc_dir}"/AP
 printf "\\n%s\\n\\n" "Decompressing the combined b0 scans and running topup..."
 gzip -d "${preproc_dir}"/PA_AP_b0.nii.gz
 
-topup -v --imain="${preproc_dir}"/PA_AP_b0 --datain="${preproc_dir}"/acqparams.txt --config=b02b0.cnf --out="${preproc_dir}"/topup_PA_AP_b0
+topup -v --imain="${preproc_dir}"/PA_AP_b0 --datain="${preproc_dir}"/acqparams.txt --config=b02b0.cnf --out="${preproc_dir}"/topup_PA_AP_b0.nii.gz \
+--fout="${preproc_dir}"/topup_PA_AP_b0_fieldimg --logout="${preproc_dir}"/topuplog.txt
 
 fslmaths "${preproc_dir}"/topup_PA_AP_b0 -Tmean "${preproc_dir}"/avg_topup_PA_AP_b0
 bet "${preproc_dir}"/avg_topup_PA_AP_b0 "${preproc_dir}"/nodif_brain -m -f 0.2

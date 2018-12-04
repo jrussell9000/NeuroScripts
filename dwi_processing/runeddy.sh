@@ -6,7 +6,7 @@
 # Need to do:
 # -Check for cuda support
 
-PREPROC_DIR=$1
+preproc_dir=$1
 USEGPUopt=$2
 PostAnt=$3
 AntPost=$4
@@ -37,6 +37,8 @@ main() {
 	FSL_DIR="$FSLDIR"
 	verbose="--verbose"
 	ReplOutliers="--repol"
+	Residuals="--residuals"
+	CNRMaps="--cnr_maps"
 	if [[ "${USEGPUopt}" == "True" ]] ; then
 		eddyExec="${FSL_DIR}/bin/eddy_cuda"
 		printf "\\nGPU acceleration enabled.  Using eddy_cuda for eddy correction..."
@@ -47,6 +49,8 @@ main() {
 	eddy_command="${eddyExec}"
 	eddy_command="${eddy_command} ${verbose}"
 	eddy_command="${eddy_command} ${ReplOutliers}"
+	eddy_command="${eddy_command} ${Residuals}"
+	eddy_command="${eddy_command} ${CNRMaps}"
 	eddy_command="${eddy_command} --imain=${PREPROC_DIR}/PA_AP"
 	eddy_command="${eddy_command} --mask=${PREPROC_DIR}/nodif_brain_mask"
 	eddy_command="${eddy_command} --index=${PREPROC_DIR}/index.txt"

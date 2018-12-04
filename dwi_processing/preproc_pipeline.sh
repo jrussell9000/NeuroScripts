@@ -355,13 +355,13 @@ main() {
 
   #-Call TOPUP script
     
-    sh "${scriptdir}"/runtopup.sh "${preproc_dir}" "${PostAnt}" "${AntPost}" "${ECHOSPACING}"
+    "${scriptdir}"/runtopup.sh "${preproc_dir}" "${PostAnt}" "${AntPost}" "${ECHOSPACING}"
 
   #EDDY
 
   #-Calling EDDY script
 
-    sh "${scriptdir}"/runeddy.sh ${preproc_dir} ${USEGPU} ${PostAnt} ${AntPost}
+    "${scriptdir}"/runeddy.sh ${preproc_dir} ${USEGPU} ${PostAnt} ${AntPost}
 
   # #BIAS CORRECTION
   # mrconvert -fslgrad "${preproc_dir}"/PA_AP.bvec "${preproc_dir}"/PA_AP.bval "${preproc_dir}"/eddy_unwarped_images.nii.gz "${preproc_dir}"/eddy_unwarped_images.mif
