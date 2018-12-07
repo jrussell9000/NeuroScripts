@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 
 # Need to get:
-# -PREPROC_DIR
+# -working_dir
 
 # Need to do:
 # -Check for cuda support
 
-preproc_dir=$1
+working_dir=$1
 USEGPUopt=$2
 PostAnt=$3
 AntPost=$4
@@ -14,25 +14,25 @@ AntPost=$4
 main() {
 
 	#--Creating the index files for eddy
-    PAvolcnt=$(fslval "${preproc_dir}"/"${PostAnt}" dim4)
-    APvolcnt=$(fslval "${preproc_dir}"/"${AntPost}" dim4)
+    PAvolcnt=$(fslval "${working_dir}"/"${PostAnt}" dim4)
+    APvolcnt=$(fslval "${working_dir}"/"${AntPost}" dim4)
 
     for (( i=1; i<=PAvolcnt; i++ )); do
       indcnt=1
-      echo $indcnt >> "${preproc_dir}"/index.txt
+      echo $indcnt >> "${working_dir}"/index.txt
     done
 
     for (( i=1; i<=APvolcnt; i++ )); do
       indcnt=2
-      echo $indcnt >> "${preproc_dir}"/index.txt
+      echo $indcnt >> "${working_dir}"/index.txt
     done
 
   #--Merging the PA and AP phase encoded scan series into one file
-    fslmerge -t "${preproc_dir}"/PA_AP "${preproc_dir}"/"${PostAnt}" "${preproc_dir}"/"${AntPost}"
+    fslmerge -t "${working_dir}"/PA_AP "${working_dir}"/"${PostAnt}" "${working_dir}"/"${AntPost}"
 
   #--Merging the gradient files 
-    paste "${preproc_dir}"/"${PostAnt}".bval "${preproc_dir}"/"${AntPost}".bval > "${preproc_dir}"/PA_AP.bval
-    paste "${preproc_dir}"/"${PostAnt}".bvec "${preproc_dir}"/"${AntPost}".bvec > "${preproc_dir}"/PA_AP.bvec
+    paste "${working_dir}"/"${PostAnt}".bval "${working_dir}"/"${AntPost}".bval > "${working_dir}"/PA_AP.bval
+    paste "${working_dir}"/"${PostAnt}".bvec "${working_dir}"/"${AntPost}".bvec > "${working_dir}"/PA_AP.bvec
   
 	FSL_DIR="$FSLDIR"
 	verbose="--verbose"
@@ -51,14 +51,14 @@ main() {
 	eddy_command="${eddy_command} ${ReplOutliers}"
 	eddy_command="${eddy_command} ${Residuals}"
 	eddy_command="${eddy_command} ${CNRMaps}"
-	eddy_command="${eddy_command} --imain=${PREPROC_DIR}/PA_AP"
-	eddy_command="${eddy_command} --mask=${PREPROC_DIR}/nodif_brain_mask"
-	eddy_command="${eddy_command} --index=${PREPROC_DIR}/index.txt"
-	eddy_command="${eddy_command} --acqp=${PREPROC_DIR}/acqparams.txt"
-	eddy_command="${eddy_command} --bvecs=${PREPROC_DIR}/PA_AP.bvec"
-	eddy_command="${eddy_command} --bvals=${PREPROC_DIR}/PA_AP.bval"
-	eddy_command="${eddy_command} --topup=${PREPROC_DIR}/topup_PA_AP_b0"
-	eddy_command="${eddy_command} --out=${PREPROC_DIR}/eddy_unwarped_images"
+	eddy_command="${eddy_command} --imain=${working_dir}/PA_AP"
+	eddy_command="${eddy_command} --mask=${working_dir}/nodif_brain_mask"
+	eddy_command="${eddy_command} --index=${working_dir}/index.txt"
+	eddy_command="${eddy_command} --acqp=${working_dir}/acqparams.txt"
+	eddy_command="${eddy_command} --bvecs=${working_dir}/PA_AP.bvec"
+	eddy_command="${eddy_command} --bvals=${working_dir}/PA_AP.bval"
+	eddy_command="${eddy_command} --topup=${working_dir}/topup_PA_AP_b0"
+	eddy_command="${eddy_command} --out=${working_dir}/eddy_unwarped_images"
 	${eddy_command}
 }
 

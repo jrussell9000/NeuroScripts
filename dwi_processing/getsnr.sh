@@ -100,6 +100,8 @@ main() {
 
   SNRVAL=$(fslstats wm_snrb0.nii.gz -M)
 
+  echo $SNRVAL >> snrval.txt
+
   printf "############################\\n"
   printf "SNR Value is: %s\\n" "$SNRVAL"
   printf "############################\\n"

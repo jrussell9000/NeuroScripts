@@ -332,24 +332,24 @@ main() {
 
   #DENOISE & DEGIBBS
 
-  printf "\\nRemoving scan noise and Gibbs' rings using MRTrix3's dwidenoise and mrdegibbs tools..."
-  for file in "${preproc_dir}"/*.nii.gz; do
-    basename=$(imglob "${file}")
-    dwidenoise "${basename}".nii.gz "${basename}"_den.nii.gz
-    if [[ $! = 1 ]]; then
-      echo "ERROR: Denoising of scan file ${basename}.nii.gz failed."
-      exit 1
-    fi
-    mrdegibbs "${basename}"_den.nii.gz "${basename}"_den_deg.nii.gz
-    if [[ $! = 1 ]]; then
-      echo "ERROR: Gibbs ring removal on scan file ${basename}.nii.gz failed."
-      exit 1
-    else
-      rm "${basename}".nii.gz
-      rm "${basename}"_den.nii.gz
-      mv "${basename}"_den_deg.nii.gz "${preproc_dir}"/"$(basename "$file")"
-    fi
-  done
+  # printf "\\nRemoving scan noise and Gibbs' rings using MRTrix3's dwidenoise and mrdegibbs tools..."
+  # for file in "${preproc_dir}"/*.nii.gz; do
+  #   basename=$(imglob "${file}")
+  #   dwidenoise "${basename}".nii.gz "${basename}"_den.nii.gz
+  #   if [[ $! = 1 ]]; then
+  #     echo "ERROR: Denoising of scan file ${basename}.nii.gz failed."
+  #     exit 1
+  #   fi
+  #   mrdegibbs "${basename}"_den.nii.gz "${basename}"_den_deg.nii.gz
+  #   if [[ $! = 1 ]]; then
+  #     echo "ERROR: Gibbs ring removal on scan file ${basename}.nii.gz failed."
+  #     exit 1
+  #   else
+  #     rm "${basename}".nii.gz
+  #     rm "${basename}"_den.nii.gz
+  #     mv "${basename}"_den_deg.nii.gz "${preproc_dir}"/"$(basename "$file")"
+  #   fi
+  # done
 
   #TOPUP
 
@@ -361,14 +361,14 @@ main() {
 
   #-Calling EDDY script
 
-    "${scriptdir}"/runeddy.sh ${preproc_dir} ${USEGPU} ${PostAnt} ${AntPost}
+    "${scriptdir}"/runeddy.sh "${preproc_dir}" "${USEGPU}" "${PostAnt}" "${AntPost}"
 
   # #BIAS CORRECTION
   # mrconvert -fslgrad "${preproc_dir}"/PA_AP.bvec "${preproc_dir}"/PA_AP.bval "${preproc_dir}"/eddy_unwarped_images.nii.gz "${preproc_dir}"/eddy_unwarped_images.mif
   # dwibiascorrect -ants "${preproc_dir}"/eddy_unwarped_images.mif "${mrtrixproc_dir}"/dwi.mif
 
   #GO TO MRTRIX3
-  sh "${scriptdir}"/multifiber.sh ${mrtrixproc_dir} ${anat_dir}
+    "${scriptdir}"/multifiber.sh ${mrtrixproc_dir} ${anat_dir}
 
 }
 
