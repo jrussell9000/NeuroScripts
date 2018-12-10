@@ -364,11 +364,13 @@ main() {
     "${scriptdir}"/runeddy.sh "${preproc_dir}" "${USEGPU}" "${PostAnt}" "${AntPost}"
 
   # #BIAS CORRECTION
-  # mrconvert -fslgrad "${preproc_dir}"/PA_AP.bvec "${preproc_dir}"/PA_AP.bval "${preproc_dir}"/eddy_unwarped_images.nii.gz "${preproc_dir}"/eddy_unwarped_images.mif
+  mrconvert -fslgrad "${preproc_dir}"/PA_AP.bvec "${preproc_dir}"/PA_AP.bval "${preproc_dir}"/eddy_unwarped_images.nii.gz "${mrtrixproc_dir}"/dwi.mif
   # dwibiascorrect -ants "${preproc_dir}"/eddy_unwarped_images.mif "${mrtrixproc_dir}"/dwi.mif
 
+
+
   #GO TO MRTRIX3
-    "${scriptdir}"/multifiber.sh ${mrtrixproc_dir} ${anat_dir}
+    "${scriptdir}"/multifiber.sh "${preproc_dir}" "${mrtrixproc_dir}" "${anat_dir}"
 
 }
 

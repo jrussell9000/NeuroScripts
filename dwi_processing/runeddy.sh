@@ -60,6 +60,8 @@ main() {
 	eddy_command="${eddy_command} --topup=${working_dir}/topup_PA_AP_b0"
 	eddy_command="${eddy_command} --out=${working_dir}/eddy_unwarped_images"
 	${eddy_command}
+
+	
 }
 
 main $@
