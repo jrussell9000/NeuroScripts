@@ -12,6 +12,13 @@ preproc_done_dir="/home/jdrussell3/ceda_scans/1000_C1/dwi_processing/preproc"
 working_dir="/home/jdrussell3/ceda_scans/1000_C1/dwi_processing/mrtrixproc"
 anat_dir="/home/jdrussell3/ceda_scans/1000_C1/dwi_processing/anat"
 
+mrtrix_dir=$(command -v mrview)
+if [ -z "${mrtrix_dir}" ]; then
+  printf "MRTrix3 not found. Verify that MRTrix3 is included in the path"
+else
+  mrtrix_dir=${mrtrix_dir%/*/*}
+fi
+
 # Make temporary directories for processing
 tmp_dir() {
   unset rand
@@ -112,7 +119,7 @@ mkdir ${fivettgen_dir}
 cp T1_registered.mif T1_mask_registered.mif "${fivettgen_dir}"
 cd "${fivettgen_dir}" || exit 1
 5ttgen fsl T1_registered.mif 5TT.mif -mask T1_mask_registered.mif 
-5tt2vis 5tt.mif vis.mif
+5tt2vis 5TT.mif vis.mif
 
 #PARCELLATE THE REGISTERED T1
 cp T1_registered.mif T1_mask_registered.mif "${anat_dir}"
@@ -122,8 +129,9 @@ ln -s "$SUBJECTS_DIR"/lh.EC_average "${recon_dir}"/lh.EC_average
 
 mrconvert T1_registered.mif T1_registered.nii
 recon-all -sd "${recon_dir}" -subjid freesurfer -i T1_registered.nii
-recon-all -sd "${recon_dir}" -subjid freesurfer -all -use-gpu
+time recon-all -sd "${recon_dir}" -subjid freesurfer -all -mprage
 
+#Does fsaverage containi the HCPMMP annotations, or do we need to get them?
 hemispheres="lh rh"
 for hemi in $hemispheres; do
     SUBJECTS_DIR="${recon_dir}"
@@ -131,25 +139,36 @@ for hemi in $hemispheres; do
     --tval "${SUBJECTS_DIR}"/freesurfer/label/"${hemi}".HCPMMP1.annot
 done
 
-mri_aparc2aseg --s freesurfer --old-ribbon --annot HCPMMP1 --o aparc.HCMMP1+aseg.mgz
+cd "${recon_dir}" || exit 1
 
-labelconvert "${recon_dir}"/aparc.HCPMMP1+aseg.mgz /home/jdrussell3/apps/mrtrix3/share/mrtrix3/labelconvert/hcpmmp1_original.txt \
-/home/jdrussell3/apps/mrtrix3/share/mrtrix3/labelconvert/hcpmmp1_ordered.txt parc_init.mif
+mri_aparc2aseg --s freesurfer --old-ribbon --annot HCPMMP1 --o aparc.HCPMMP1+aseg.mgz
 
-labelsgmfix parc_init.mif ../T1_registered.mif /home/jdrussell3/apps/mrtrix3/share/mrtrix3/labelconvert/hcpmmp1_ordered.txt parc.mif
+labelconvert "${recon_dir}"/aparc.HCPMMP1+aseg.mgz "${mrtrix_dir}"/share/mrtrix3/labelconvert/hcpmmp1_original.txt \
+"${mrtrix_dir}"/share/mrtrix3/labelconvert/hcpmmp1_ordered.txt parc_init.mif
+
+labelsgmfix parc_init.mif ../T1_registered.mif "${mrtrix_dir}"/share/mrtrix3/labelconvert/hcpmmp1_ordered.txt parc.mif
 
 n_nodes=$(mrstats parc.mif -output max)
-n_streamlines=$((500 * n_nodes * $((n_nodes -1)) ))
-cp 5tt.mif "${anat_dir}"
+#n_streamlines=$((500 * n_nodes * $((n_nodes -1)) ))
+cp 5TT.mif "${anat_dir}"
 
 cd "${working_dir}" || exit
+
+# trackproc_dir="${working_dir}"/trackproc
+# if [ -d "${trackproc_dir}" ]; then
+#   rm -rf "${trackproc_dir}"
+# fi
+# mkdir "${trackproc_dir}"
+# cd "${trackproc_dir}" || exit
+
+cp "${fivettgen_dir}"/5TT.mif "${working_dir}"
 tckgen FOD_WM.mif tractogram.tck -act 5TT.mif -backtrack -crop_at_gmwmi -maxlength 250 -power 0.33 -select 1000000 -seed_dynamic FOD_WM.mif
 
 tcksift2 tractogram.tck FOD_WM.mif weights.csv -act 5TT.mif -out_mu mu.txt -fd_scale_gm
 
 tckmap tractogram.tck -tck_weights_in weights.csv -template FOD_WM.mif -precise track.mif
 mu=$(cat mu.txt)
-mrcalc track.mif ${mu} -mult tdi_native.mif
+mrcalc track.mif "${mu}" -mult tdi_native.mif
 
 tckmap tractogram.tck -tck_weights_in weights.csv -template vis.mif -vox 1 -datatype uint16 tdi_highres.mif
 
