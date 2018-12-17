@@ -187,9 +187,9 @@ cd "${working_dir}" || exit
 # mkdir "${trackproc_dir}"
 # cd "${trackproc_dir}" || exit
 
-tckgen FOD_WM.mif tractogram.tck -act 5TT.mif -backtrack -crop_at_gmwmi -maxlength 250 -power 0.33 -select 10000000 -seed_dynamic FOD_WM.mif
+tckgen "${working_dir}"/FOD_WM.mif "${working_dir}"/tractogram.tck -act "${working_dir}"/5TT.mif -backtrack -crop_at_gmwmi -maxlength 250 -power 0.33 -select 10000000 -seed_dynamic "${working_dir}"/FOD_WM.mif
 
-tcksift2 tractogram.tck FOD_WM.mif weights.csv -act 5TT.mif -out_mu mu.txt -fd_scale_gm
+tcksift2 "${working_dir}"/tractogram.tck "${working_dir}"/FOD_WM.mif "${working_dir}"/weights.csv -act "${working_dir}"/5TT.mif -out_mu "${working_dir}"/mu.txt -fd_scale_gm
 
 tckmap tractogram.tck -tck_weights_in weights.csv -template FOD_WM.mif -precise track.mif
 mu=$(cat mu.txt)
