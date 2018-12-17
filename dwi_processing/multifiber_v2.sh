@@ -127,6 +127,7 @@ mrtransform -force "${working_dir}"/T1mask.mif "${working_dir}"/T1mask_registere
 
 #GENERATE 5TT IMAGE 
 5ttgen fsl "${working_dir}"/T1_registered.mif "${working_dir}"/5TT.mif -mask "${working_dir}"/T1_mask_registered.mif
+5tt2vis 5TT.mif vis.mif
 
 #PARCELLATE THE REGISTERED T1
 #-Make the recon_dir directory where recon-all will be run; delete and recreate it if it exists
@@ -191,14 +192,14 @@ tckgen "${working_dir}"/FOD_WM.mif "${working_dir}"/tractogram.tck -act "${worki
 
 tcksift2 "${working_dir}"/tractogram.tck "${working_dir}"/FOD_WM.mif "${working_dir}"/weights.csv -act "${working_dir}"/5TT.mif -out_mu "${working_dir}"/mu.txt -fd_scale_gm
 
-tckmap tractogram.tck -tck_weights_in weights.csv -template FOD_WM.mif -precise track.mif
-mu=$(cat mu.txt)
-mrcalc track.mif "${mu}" -mult tdi_native.mif
+# tckmap tractogram.tck -tck_weights_in weights.csv -template FOD_WM.mif -precise track.mif
+# mu=$(cat mu.txt)
+# mrcalc track.mif "${mu}" -mult tdi_native.mif
 
-tckmap tractogram.tck -tck_weights_in weights.csv -template vis.mif -vox 1 -datatype uint16 tdi_highres.mif
+# tckmap tractogram.tck -tck_weights_in weights.csv -template vis.mif -vox 1 -datatype uint16 tdi_highres.mif
 
-tck2connectome tractogram.tck parc.mif connectome.csv -tck_weights_in weights.csv -out_assignments assignments.csv
-tck2connectome tractogram.tck parc.mif meanlength.csv -tck_weights_in weights.csv -scale_length -stat_edge mean
+tck2connectome -force -symmetric -zero_diagonal -scale_invnodevol tractogram.tck parc.mif connectome.csv -tck_weights_in weights.csv -out_assignments assignments.csv
+#tck2connectome tractogram.tck parc.mif meanlength.csv -tck_weights_in weights.csv -scale_length -stat_edge mean
 connectome2tck tractogram.tck assignments.csv exemplars.tck -tck_weights_in weights.csv -exemplars parc.mif -files single
 label2mesh parc.mif nodes.obj
 meshfilter nodes.obj smooth nodes_smooth.obj
