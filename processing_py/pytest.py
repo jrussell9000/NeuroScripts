@@ -34,9 +34,18 @@ args = vars(ap.parse_args())
 
 dicompath = args["dicompath"]
 outputpath = args["outputpath"]
+<<<<<<< HEAD
 
 #with tempfile.TemporaryDirectory() as tmpdir:
 tmpdir = tempfile.mkdtemp()
+=======
+with tempfile.TemporaryDirectory() as tempdir:
+    for filename in os.listdir(dicompath):
+        if filename.endswith(".tgz"):
+            dicompack = os.path.join(args["dicompath"], filename)
+            with tarfile.open(dicompack, 'r:gz') as f:
+                f.extractall(path=tmpdir)  
+>>>>>>> aff4e4c05b255703be04b953a94706d02bb5be99
 
 for subjdir in os.listdir(dicompath):
     print(dicompath)
