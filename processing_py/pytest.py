@@ -10,6 +10,7 @@ from pathlib import Path
 import pydicom
 import subprocess
 from nipype.interfaces.dcm2nii import Dcm2niix
+import tempfile
 
 
 # Making an argument parser
@@ -33,12 +34,12 @@ args = vars(ap.parse_args())
 
 dicompath = args["dicompath"]
 outputpath = args["outputpath"]
-
-for filename in os.listdir(dicompath):
-    if filename.endswith(".tgz"):
-        dicompack = os.path.join(args["dicompath"], filename)
-        with tarfile.open(dicompack, 'r:gz') as f:
-            f.extractall(path=outputpath)
+with tempfile.TemporaryDirectory() as tempdir:
+    for filename in os.listdir(dicompath):
+        if filename.endswith(".tgz"):
+            dicompack = os.path.join(args["dicompath"], filename)
+            with tarfile.open(dicompack, 'r:gz') as f:
+                f.extractall(path=tmpdir)  
 
 
 # List all files in directory
