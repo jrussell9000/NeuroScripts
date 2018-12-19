@@ -34,35 +34,26 @@ args = vars(ap.parse_args())
 
 dicompath = args["dicompath"]
 outputpath = args["outputpath"]
-<<<<<<< HEAD
 
-#with tempfile.TemporaryDirectory() as tmpdir:
-tmpdir = tempfile.mkdtemp()
-=======
-with tempfile.TemporaryDirectory() as tempdir:
-    for filename in os.listdir(dicompath):
+for subjID_dir in os.listdir(dicompath):
+    subjID = subjID_dir
+    subjID_dir = os.path.join(dicompath, subjID_dir)
+    print("FOUND SUBJECT ID#:", subjID, "IN", dicompath, "\n")
+    tmpdir = tempfile.mkdtemp(suffix=subjID)
+    for filename in os.listdir(subjID_dir):
         if filename.endswith(".tgz"):
-            dicompack = os.path.join(args["dicompath"], filename)
-            with tarfile.open(dicompack, 'r:gz') as f:
-                f.extractall(path=tmpdir)  
->>>>>>> aff4e4c05b255703be04b953a94706d02bb5be99
-
-for subjdir in os.listdir(dicompath):
-    print(dicompath)
-    subjdir = os.path.join(dicompath, subjdir)
-    print(subjdir)
-    for filename in os.listdir(subjdir):
-        if filename.endswith(".tgz"):
-            dicompack = os.path.join(subjdir, filename)
+            dicompack = os.path.join(subjID_dir, filename)
             shutil.copy(dicompack, tmpdir)
             dicompack = os.path.join(tmpdir, filename)
-            print(dicompack)
             scanfile = tarfile.open(dicompack, 'r:gz')
             scanfile.extractall(path=tmpdir)
-            tmpsubjdir = os.path.join(tmpdir, os.path.commonprefix(f.getnames()))
+            
+            tmpsubjdir = os.path.join(tmpdir, os.path.commonprefix(scanfile.getnames()))
+            print(tmpsubjdir)
             outsubjdir = os.path.join(outputpath, tmpsubjdir)
-            print(outsubjdir)
-            subprocess.Popen(["dcm2niix", "-o", outputpath, outsubjdir])
+            #Scan String
+            
+            subprocess.Popen(["dcm2niix", "-f", "sub-" + subjID, "-o", outputpath, outsubjdir])
 
 
 # # List all files in directory
