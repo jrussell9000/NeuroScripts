@@ -34,26 +34,37 @@ args = vars(ap.parse_args())
 
 dicompath = args["dicompath"]
 outputpath = args["outputpath"]
-with tempfile.TemporaryDirectory() as tempdir:
-    for filename in os.listdir(dicompath):
+
+for subjID_dir in os.listdir(dicompath):
+    subjID = subjID_dir
+    subjID_dir = os.path.join(dicompath, subjID_dir)
+    print("FOUND SUBJECT ID#:", subjID, "IN", dicompath, "\n")
+    tmpdir = tempfile.mkdtemp(suffix=subjID)
+    for filename in os.listdir(subjID_dir):
         if filename.endswith(".tgz"):
-            dicompack = os.path.join(args["dicompath"], filename)
-            with tarfile.open(dicompack, 'r:gz') as f:
-                f.extractall(path=tmpdir)  
+            dicompack = os.path.join(subjID_dir, filename)
+            shutil.copy(dicompack, tmpdir)
+            dicompack = os.path.join(tmpdir, filename)
+            scanfile = tarfile.open(dicompack, 'r:gz')
+            scanfile.extractall(path=tmpdir)
+            
+            tmpsubjdir = os.path.join(tmpdir, os.path.commonprefix(scanfile.getnames()))
+            print(tmpsubjdir)
+            outsubjdir = os.path.join(outputpath, tmpsubjdir)
+            #Scan String
+            
+            subprocess.Popen(["dcm2niix", "-f", "sub-" + subjID, "-o", outputpath, outsubjdir])
 
 
-# List all files in directory
+# # List all files in directory
 
-for startdir, subdirs, files in os.walk(args["dicompath"], topdown=True):
-    for file_name in files:
-        if file_name.endswith(('.dcm')):
-            dcmdir=startdir
-            print(startdir)
-            subprocess.Popen(["dcm2niix", dcmdir])
-            break
-                # pa = os.path.split(os.path.abspath(file_name))[0]
-                # os.rmdir(pa)
-
+# for startdir, subdirs, files in os.walk(args["dicompath"], topdown=True):
+#     for file_name in files:
+#         if file_name.endswith(('.dcm')):
+#             dcmdir=startdir
+#             print(startdir)
+#             subprocess.Popen(["dcm2niix", dcmdir])
+#             break
 #
 # converter = Dcm2niix()
 # converter.inputs.source_dir = 's0003.MPRAGE'
