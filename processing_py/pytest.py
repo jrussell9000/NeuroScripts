@@ -52,7 +52,7 @@ for subjID_dir in os.listdir(dicompath):
             print(tmpsubjdir)
             outsubjdir = os.path.join(outputpath, tmpsubjdir)
             #Scan String
-            
+            #s
             subprocess.Popen(["dcm2niix", "-f", "sub-" + subjID, "-o", outputpath, outsubjdir])
 
 
