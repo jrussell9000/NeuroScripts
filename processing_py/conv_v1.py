@@ -61,15 +61,48 @@ class BidsConv():
                 returnkey = scan2bidsdir_dict[key]
         return(returnkey)
 
-    def scanprep(self, dicompath, filename, subjID, tmpdir):
+
+
+#Prepping the scan
+
+#1 Get the path to the dicom directory for this subject
+bc = BidsConv()
+for subjID_dir in os.listdir(bc.studypath):
+    def get_subj_dcms(self, subjID_dir):
+        self.subjID = subjID_dir
+        subjID_dir = os.path.join(bc.studypath, subjID_dir)
+        print("FOUND SUBJECT ID#:", self.subjID, "IN", bc.studypath, "\n")
+        self.dicompath = os.path.join(subjID_dir, "dicoms")
+        self.tmpdir = tempfile.mkdtemp(suffix=self.subjID)
+    
+    def unpack_dcms(self, dicompath, tmpdir):
+        for filename in sorted(os.listdir(dicompath)):
+            if filename.endswith(".tgz") and not "Screen_Save" in filename and not "SSFSE" in filename:
+                self.dcmpack.path = os.path.join(dicompath, filename)
+                shutil.copy(self.dcmpack.path, tmpdir)
+                self.dcmpack.path = os.path.join(tmpdir, filename)
+                self.dcmpack = tarfile.open(self.dcmpack.path, 'r:gz')
+                self.dcmpack.extractall(path=tmpdir)
+    
+    def organize_dcms(self, dcmpack, tmpdir):
+        self.rawscan.path = os.path.join(tmpdir, os.path.commonprefix(dcmpack.getnames()))
+        self.rawscan.dir = os.path.commonprefix(dcmpack.getnames())
+        self.rawscan.
+
+
+
+
+
+    def scanprep(self):
         for filename in sorted(os.listdir(self.dicompath)):
             if filename.endswith(".tgz") and \
                 not "Screen_Save" in filename and \
                 not "SSFSE" in filename:
+                    self.dcmscan.dicompack
                     dicompack = os.path.join(dicompath, filename)
                     shutil.copy(dicompack, tmpdir)
                     dicompack = os.path.join(tmpdir, filename)
-                    scanfile = tarfile.open(dicompack, 'r:gz')
+                    dcm.scanfile = tarfile.open(dicompack, 'r:gz')
                     scanfile.extractall(path=tmpdir)
                     scanpath = os.path.join(
                         tmpdir, os.path.commonprefix(scanfile.getnames()))
