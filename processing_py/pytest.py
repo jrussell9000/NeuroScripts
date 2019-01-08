@@ -92,7 +92,8 @@ for subjID_dir in os.listdir(studypath):
             # print("BIDS modality is " + bids_mode)
             # print("BIDS ACQ label is " + bids_acqlabel)
             os.makedirs(outsubjdir, exist_ok=True)
-            if scantype.__contains__('MPRAGE') or scantype.__contains__('BRAVO'): 
+            if any(x in scantype for x in ('MPRAGE','BRAVO')):
+                #if scantype.__contains__('MPRAGE') or scantype.__contains__('BRAVO'): 
                 if scantype.__contains__('DUAL_ECHO'):
                     dcm2niix_label = bids_subjID + scansession + bids_acqlabel + "_echo%e" + bids_mode
                     subprocess.run(["dcm2niix", "-f", dcm2niix_label, "-o", outsubjdir, scanpath])
