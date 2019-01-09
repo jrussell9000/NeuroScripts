@@ -1,0 +1,4 @@
+{
+  "python.linting.pylintEnabled": false,
+  "python.pythonPath": "/home/jdrussell3/.conda/envs/brave_env/bin/python"
+}
