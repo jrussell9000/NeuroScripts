@@ -1,6 +1,0 @@
-
-cp _147_s10_dti_eddy.nii /Volumes/Vol6/YouthPTSD/data/DTI/EDDY /Volumes/Vol6/YouthPTSD/data/DTI/CORRECTED/
-
-
-
-sh youthptsd_dti_processing.sh /Volumes/Studies/Herringa/YouthPTSD /Volumes/Vol6/YouthPTSD/data/DTI nomask 0 hp _127/ _128/ _129/ _131/ _132/ _133/ _134/ _135/ _138/ _139/ _140/ _141/ _142/ _145/ _146/ _147/    
