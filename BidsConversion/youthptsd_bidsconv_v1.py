@@ -11,6 +11,8 @@ import tempfile
 import json
 import bz2
 from distutils.dir_util import copy_tree
+import pandas as pe
+import re
 
 
 class BidsConv():
@@ -22,6 +24,12 @@ class BidsConv():
     fieldmapscans = ('fmap')
 
     bids_taskrun = 0
+
+    info_dict = {
+    'orig_path': re.compiler(r'Path = (?P<path>.*)\n'),
+    'series_desc': re.compile(r'Series Description = (?P<series_desc>.*)\n'),
+    }
+
 
     def __init__(self):
         self.verbose = False
@@ -80,6 +88,30 @@ class BidsConv():
         print("FOUND SUBJECT ID#:", self.subjID, "IN", self.studypath, "\n")
         self.dicomspath = Path(subjID_path, "dicoms")
         self.tmpdir = tempfile.mkdtemp(suffix=self.subjID)
+
+    def parse_info_line(self, line):
+
+        for key, rx in self.info_dict.items():
+            match = rx.search(line)
+            if match:
+                return key, match
+        #If there are no matches
+        return None, None
+
+    def parse_info_file(self, filepath):
+
+        data = []
+        #open the file and read through it line by line
+        with open(filepath, 'r') as file_object:
+            line = file_object.readline()
+            while line:
+                key, match = self.parse_info_line(line)
+
+                if key == 'orig_path':
+                    rawscan_origpath = match.group('orig_path')
+
+                if key == 'series_desc':
+                    rawscan_desc = match.group('series_desc')
 
     def unpack_dcms(self, fdir):
         self.rawscan_path = os.path.normpath(str(fdir))
