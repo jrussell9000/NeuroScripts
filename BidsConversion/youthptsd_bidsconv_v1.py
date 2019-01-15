@@ -1,35 +1,17 @@
 #!/usr/bin/env python3
-import os
-import sys
-import tarfile
-import glob
-import shutil
-import argparse
+import os, sys, tarfile, shutil, argparse, subprocess, tempfile, bz2
 from pathlib import Path, PurePath
-import subprocess
-import tempfile
-import json
-import bz2
 from distutils.dir_util import copy_tree
-import pandas as pe
-import re
-
 
 class BidsConv():
 
-    scanstoskip = ('cardiac', 'ssfse', 'ADC', 'FA', 'CMB', 'assetcal', '3dir')
+    scanstoskip = ('cardiac', 'ssfse', 'ADC', 'FA', 'CMB', 'assetcal', '3dir', 'epi')
     anatomicalscans = ('bravo', 'fse')
     functionalscans = ('epi')
     dwiscans = ('dwi')
     fieldmapscans = ('fmap')
 
     bids_taskrun = 0
-
-    info_dict = {
-    'orig_path': re.compiler(r'Path = (?P<path>.*)\n'),
-    'series_desc': re.compile(r'Series Description = (?P<series_desc>.*)\n'),
-    }
-
 
     def __init__(self):
         self.verbose = False
@@ -89,30 +71,6 @@ class BidsConv():
         self.dicomspath = Path(subjID_path, "dicoms")
         self.tmpdir = tempfile.mkdtemp(suffix=self.subjID)
 
-    def parse_info_line(self, line):
-
-        for key, rx in self.info_dict.items():
-            match = rx.search(line)
-            if match:
-                return key, match
-        #If there are no matches
-        return None, None
-
-    def parse_info_file(self, filepath):
-
-        data = []
-        #open the file and read through it line by line
-        with open(filepath, 'r') as file_object:
-            line = file_object.readline()
-            while line:
-                key, match = self.parse_info_line(line)
-
-                if key == 'orig_path':
-                    rawscan_origpath = match.group('orig_path')
-
-                if key == 'series_desc':
-                    rawscan_desc = match.group('series_desc')
-
     def unpack_dcms(self, fdir):
         self.rawscan_path = os.path.normpath(str(fdir))
         self.rawscan_dirname = os.path.basename(os.path.normpath(self.rawscan_path))
@@ -120,13 +78,13 @@ class BidsConv():
         self.tmpdest = os.path.join(self.tmpdir, self.rawscan_dirname)
         copy_tree(self.rawscan_path, self.tmpdest)
         bz2_list = (z for z in sorted(os.listdir(self.tmpdest)) if z.endswith('.bz2'))
-        for z in bz2_list:
-            z_path = os.path.join(self.tmpdest, z)
-            z_dest = os.path.join(self.tmpdest, z.replace(".bz2",""))
-            with open(z_path, 'rb') as source, open(z_dest, 'wb') as dest:
+        for filename in bz2_list:
+            filepath = os.path.join(self.tmpdest, filename)
+            newfilepath = os.path.join(self.tmpdest, filename.replace(".bz2",""))
+            with open(newfilepath, 'wb') as new_file, open(filepath, 'rb') as file:
                 decompressor = bz2.BZ2Decompressor()
-                dc = decompressor.decompress(source.read())
-                os.remove(z_path)
+                for data in iter(lambda : file.read(100 * 1024), b''):
+                    new_file.write(decompressor.decompress(data))
 
     def organize_dcms(self):
         # --Full path to the directory containing the raw dcm files - PASS TO dcm_conv
@@ -135,26 +93,41 @@ class BidsConv():
         self.rawscan_dirname = os.path.basename(os.path.normpath(self.rawscan_path))
         # --Grabbing the sequence number from the name of the directory holding the raw dcms
         rawscan_seqno = int(self.rawscan_dirname.split('_')[0][1:])
-        print(rawscan_seqno)
         # --Grabbing the type of scan from the name of the directory holding the raw dcms
         self.rawscan_type = self.rawscan_dirname.split('_')[1]
-        print(self.rawscan_type)
-
-        # Need to add converted bidsscan.session
-        # bidsscan.session = bc.scan2bidssession(rawscan.???)
+        bids_acqlabel = ""
+        bids_runno = ""
+        yamlfile = os.path.join(self.rawscan_path, self.rawscan_dirname + '.yaml')
+        with open(yamlfile, "r") as yfile:
+            for line in yfile:
+                if line.startswith("  SeriesDescription:"):
+                    bids_acqlabel = line.split(': ')[1]
+                    bids_acqlabel = bids_acqlabel.strip()
+                    bids_acqlabel = bids_acqlabel.replace(" ","_")
+                    bids_acqlabel = "_acq-" + bids_acqlabel
+                    break
+        with open(yamlfile, "r") as yfile2:
+            for line in yfile2:
+                if line.startswith("  SeriesNumber: "):
+                    bids_runno = line.split(': ')[1]
+                    bids_runno = "_run-" + bids_runno
+                    break
+                    
+        # Need to add converted bids_session
+        # bids_session = bc.scan2bidssession(rawscan.???)
 
         # --Creating common fields
-        # ---bidsscan.session: the wave of data collection formatted as a BIDS label string
-        bidsscan_session = "ses-" + str(self.wave_no)
-        # ---bidsscan.mode: the "modal" label for the scan per bids spec (e.g., anat, func, dwi)
-        bidsscan_mode = self.scan2bidsmode(self.rawscan_type)
-        # ---bidsscan.partlabel: the subject ID formatted as a BIDS label string
-        bidsscan_participantID = "sub-" + self.subjID
-        # ---bidsscan.outdir: the path where the converted scan files will be written
-        self.bidsscan_outdir = os.path.join(
-            self.outputpath, bidsscan_participantID, bidsscan_session, self.scan2bidsdir(self.rawscan_type))
-        # ---bidsscan.echo: if a multi-echo scan, the echo number in the volume formatted as a BIDS string and containing the dcm2niix echo flag
-        #bidsscan_echo = '_echo%e' if self.rawscan_type.__contains__(
+        # ---bids_scansession: the wave of data collection formatted as a BIDS label string
+        bids_scansession = "ses-" + str(self.wave_no)
+        # ---bids_scanmode: the "modal" label for the scan per bids spec (e.g., anat, func, dwi)
+        bids_scanmode = self.scan2bidsmode(self.rawscan_type)
+        # ---bids_participantID: the subject ID formatted as a BIDS label string
+        bids_participantID = "sub-" + self.subjID
+        # ---bids_outdir: the path where the converted scan files will be written
+        self.dcm2niix_outdir = os.path.join(
+            self.outputpath, bids_participantID, bids_scansession, self.scan2bidsdir(self.rawscan_type))
+        # ---bids_echo: if a multi-echo scan, the echo number in the volume formatted as a BIDS string and containing the dcm2niix echo flag
+        #bids_echo = '_echo%e' if self.rawscan_type.__contains__(
             #'DUAL_ECHO') else ''
 
         #!!!!!!!!FIX FOR FIELDMAPS
@@ -162,60 +135,69 @@ class BidsConv():
         # --Creating scan-type-specific fields
         # ---Anatomical scans
         # - nothing to do here
-        # ---Functional scans
-        # ----bidsscan_run_no: if a functional (EPI) scan, the run number (i.e., block) in the sequence
-        bidsscan_run_no = ""
-        # ----bidsscan_tasklabel: if a functional (EPI) scan, the BIDS formatted name of the task
-        bidsscan_tasklabel = ""
+
+        # ----bids_tasklabel: if a functional (EPI) scan, the BIDS formatted name of the task
+        # if bids_scanmode == '_bold':
+        #     rawscan_picklefname = str(self.rawscan_dirname) + '.pickle'
+        #     rawscan_picklefpath = os.path.join(self.rawscan_path,rawscan_picklefname)
+        #     rawscan_picklefile = open(rawscan_picklefpath, 'rb') 
+        #     rawscan_dict = pickle.load(rawscan_picklefile)
+        #     bids_epitasklabel = rawscan_dict(['native_header']['SeriesDescription'])
+        #     bids_epirun_no = rawscan_dict(['native_header']['SeriesNumber'])
+        # else:
+        #     bids_epitasklabel = ''
+        #     bids_epirun_no = ''
+
+             
         # A better fix to the run # problem would involve reading and processing the entire dicom
         # directory BEFORE the loop starts - would extract the number of EPI scans, the tasks names, and run #s
         # For now, we'll just use a global counter
         # if self.rawscan_type.__contains__('Perspective'):
-        #     bidsscan_tasklabel = '_task-Perspective'
-        #     bidsscan_run_no = "_run-" + str(self.bids_taskrun)
+        #     bids_tasklabel = '_task-Perspective'
+        #     bids_run_no = "_run-" + str(self.bids_taskrun)
         #     self.bids_taskrun = self.bids_taskrun + 1
         # elif self.rawscan_type.__contains__('n-Back'):
-        #     bidsscan_tasklabel = "_task-n-Back"
+        #     bids_tasklabel = "_task-n-Back"
         # elif self.rawscan_type.__contains__('Resting'):
-        #     bidsscan_tasklabel = '_task-RestingState'
+        #     bids_tasklabel = '_task-RestingState'
         # ---Diffusion-weighted scans
-        # ----bidsscan.dwi.pedir: if a diffusion-weighted scan, the (semi-)BIDS formattedphase encoding direction
-        # bidsscan_dwi_pedir = ""
+        # ----bids_dwi.pedir: if a diffusion-weighted scan, the (semi-)BIDS formattedphase encoding direction
+        # bids_dwi_pedir = ""
         # if self.rawscan_type.__contains__('pepolar0'):
-        #     bidsscan_dwi_pedir = "_dir-PA"
+        #     bids_dwi_pedir = "_dir-PA"
         # elif self.rawscan_type.__contains__('pepolar1'):
-        #     bidsscan_dwi_pedir = "_dir-AP"
+        #     bids_dwi_pedir = "_dir-AP"
         # ---Field maps
 
-        bidsscan_acqlabel = ""
-        # ---Anatomical: just replace the underscores
-        if any(x in self.rawscan_type for x in self.anatomicalscans):
-            bidsscan_acqlabel = "_acq-" + self.rawscan_type
-        # ---Functional: no acquisition label
-        elif self.rawscan_type.__contains__('epi'):
-            bidsscan_acqlabel = ""
-        # ---Diffusion Weighted: the acquisition type
-        elif self.rawscan_type.__contains__('dwi'):
-            bidsscan_acqlabel = "_acq-NODDI-singleband"
-        # ---Fieldmaps: just replace the underscores
-        elif self.rawscan_type.__contains__('fmap'):
-            bidsscan_acqlabel = ""
+        # bids_acqlabel = ""
+        # # ---Anatomical: just replace the underscores
+        # if any(x in self.rawscan_type for x in self.anatomicalscans):
+        #     bids_acqlabel = "_acq-" + self.rawscan_type
+        # # ---Functional: no acquisition label
+        # elif self.rawscan_type.__contains__('epi'):
+        #     bids_acqlabel = ""
+        # # ---Diffusion Weighted: the acquisition type
+        # elif self.rawscan_type.__contains__('dwi'):
+        #     bids_acqlabel = "_acq-dwi-singleband"
+        # # ---Fieldmaps: just replace the underscores
+        # elif self.rawscan_type.__contains__('fmap'):
+        #     bids_acqlabel = ""
 
         # --Setting the file label to be passed to dcm2niix (conv_dcms)
         self.dcm2niix_label = ''
-        self.dcm2niix_label = bidsscan_participantID + \
-            bidsscan_tasklabel + bidsscan_acqlabel + \
-            bidsscan_run_no + \
-            bidsscan_mode
+        self.dcm2niix_label = bids_participantID + \
+            bids_acqlabel + \
+            bids_scanmode + \
+            bids_runno
         print(self.dcm2niix_label + "\n")
 
     def conv_dcms(self):
-        os.makedirs(self.bidsscan_outdir, exist_ok=True)
+        os.makedirs(self.dcm2niix_outdir, exist_ok=True)
         print(self.rawscan_type)
         print("dcm2niix" + " -f " + self.dcm2niix_label + " -o " +
-              self.bidsscan_outdir + " " + self.rawscan_path)
+              self.dcm2niix_outdir + " " + self.rawscan_path)
         subprocess.run(["dcm2niix", "-f", self.dcm2niix_label,
-                        "-o", self.bidsscan_outdir, self.rawscan_path])
+                        "-o", self.dcm2niix_outdir, self.rawscan_path])
         print("\n")
         # Fix json bids file for fieldmaps here.
 
@@ -235,8 +217,7 @@ class BidsConv():
                 if not any(x in str(fdir) for x in self.scanstoskip):
                     self.unpack_dcms(fdir)
                     self.organize_dcms()
-                # print(fdir)
-            
+                    self.conv_dcms()
 
 if __name__ == '__main__':
 
