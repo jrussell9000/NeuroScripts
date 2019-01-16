@@ -187,7 +187,6 @@ class BidsConv():
             self.initialize()
         except:
             sys.exit(1)
-
         for self.subjID_dirname in os.listdir(self.studypath):
             self.get_subj_dcms()
             for filename in sorted(os.listdir(self.dicomspath)): 
