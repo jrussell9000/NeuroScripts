@@ -54,7 +54,6 @@ class BidsConv():
             "fse": "_T2w",
             "epi": "_bold",
             "dti": "_dwi",
-            "fmap": "_fieldmap"
         }
         returnkey = "nomatch"
         for key in scan2bidsmode_dict.keys():
@@ -162,12 +161,7 @@ class BidsConv():
                         bids_runno = line.split(': ')[1]
                         bids_runno = "_run-" + bids_runno
                         break
-        fmap_type = ''
-        if rawscan_type.__contains__('fmap'):
-            if bids_acqlabel.__contains__('EPI'):
-                fmap_type = "_epi"
-            elif bids_acqlabel.__contains__('DTI'):
-                fmap_type = "_dti"
+
 
         # --Creating common fields
         # ----bids_scanecho
@@ -176,7 +170,13 @@ class BidsConv():
         bids_scansession = "_ses-" + str(self.wave_no).zfill(2)
         self.bids_scansessiondir = "ses-" + str(self.wave_no).zfill(2)
         # ---bids_scanmode: the "modal" label for the scan per bids spec (e.g., anat, func, dwi)
-        bids_scanmode = self.scan2bidsmode(rawscan_type)
+        if rawscan_type.__contains__('fmap'):
+            if bids_acqlabel.__contains__('EPI'):
+                bids_scanmode = '_epirawfmap'
+            elif bids_acqlabel.__contains__('DTI'):
+                bids_scanmode = '_dtirawfmap'
+        else:
+            bids_scanmode = self.scan2bidsmode(rawscan_type)
         # ---bids_participantID: the subject ID formatted as a BIDS label string
         self.bids_participantID = "sub-" + self.subjID
         # ---bids_outdir: the path where the converted scan files will be written
@@ -189,8 +189,7 @@ class BidsConv():
             bids_scansession + \
             bids_tasklabel + \
             bids_acqlabel + \
-            bids_scanmode + \
-            fmap_type
+            bids_scanmode 
 
     def conv_dcms(self):
         os.makedirs(self.dcm2niix_outdir, exist_ok=True)
@@ -198,10 +197,10 @@ class BidsConv():
         subprocess.run(["dcm2niix", "-f", self.dcm2niix_label,
                         "-o", self.dcm2niix_outdir, self.rawscan_path])
 
-    def make_fmap(self):
+    def make_fmap(self, scantype):
         self.fmap_dir = os.path.join(
             self.outputpath, self.bids_participantID, self.bids_scansessiondir, 'fmap')
-        gen = (rawfmapfile for rawfmapfile in os.listdir(self.fmap_dir) if rawfmapfile.endswith('.nii') if rawfmapfile.__contains__('epi'))
+        gen = (rawfmapfile for rawfmapfile in os.listdir(self.fmap_dir) if rawfmapfile.endswith('.nii') if rawfmapfile.__contains__(scantype))
         
         for rawfmapfile in gen:
             if rawfmapfile.__contains__('_e1a.'):
@@ -216,12 +215,13 @@ class BidsConv():
         rawfmapfile_2v2 = str(rawfmapfile_2 + '[2]')
         rawfmapfile_2v3 = str(rawfmapfile_2 + '[3]')
 
-        fmapoutfile = rawfmapfile_1.replace('_epi_e1','')
+        fmapoutfile = rawfmapfile_1.replace('_' + scantype + '_e1','')
 
-        afni_expr = "atan2((b*c-d*a),(a*c+b*d))"
+        calc_expr = "atan2((b*c-d*a),(a*c+b*d))"
 
         subprocess.Popen(["3dcalc", "-a", rawfmapfile_1v2, "-b", rawfmapfile_1v3, "-c", rawfmapfile_2v2, "-d", rawfmapfile_2v3, \
-        "-expr", afni_expr, "-prefix", fmapoutfile])
+        "-expr", calc
+        _expr, "-prefix", fmapoutfile])
 
 
         #         COMPUTE_PHASE:
@@ -250,14 +250,6 @@ class BidsConv():
         # subprocess.call([makefmap_path, rawfmapfile_epi_1, rawfmapfile_epi_2, fmapoutfile])
         #-------------#
 
-
-
-        
-
-        
-        print(rawfmapfile_epi_1)
-        print(rawfmapfile_epi_2)
-        print(fmapoutfile)
         # fmap_outfile = rawfmapfile_epi_1.replace("epi_e1a", "")
         # scriptpath = os.getcwd()
         # print("CWD IS: ", os.getcwd())
@@ -332,7 +324,7 @@ class BidsConv():
                         "Step 3: Converting to NIFTI using dcm2niix and sorting into appropriate BIDS folder...")
                     self.conv_dcms()
                     print("\n" + "DONE!", "\n")
-            self.make_fmap()
+            #self.make_fmap()
         with open(os.path.join(self.outputpath, 'dataset_description.json'), 'w') as outfile:
             json.dump(self.data_description, outfile)
 
