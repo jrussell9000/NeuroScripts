@@ -16,8 +16,14 @@ from nipype.interfaces import afni
 
 class BidsConv():
 
+    def printu(self, string):
+        start = '\033[4m'
+        end = '\033[0m'
+        ustr = start + string + end
+        print(ustr)
+
     scanstoskip = ('cardiac', 'ssfse', 'ADC', 'FA', 'CMB',
-                   'assetcal', '3dir', 'epi', 'dti', 'fse', 'bravo')
+                   'assetcal', '3dir', 'dti', 'fse', 'bravo')
     anatomicalscans = ('bravo', 'fse')
     functionalscans = ('epi')
     dwiscans = ('dwi')
@@ -131,10 +137,10 @@ class BidsConv():
         # --Grabbing the sequence number from the name of the directory holding the raw dcms
         rawscan_seqno = int(self.rawscan_dirname.split('_')[0][1:])
         # --Grabbing the type of scan from the name of the directory holding the raw dcms
-        rawscan_type = self.rawscan_dirname.split('_')[1]
+        self.rawscan_type = self.rawscan_dirname.split('_')[1]
 
-        self.helptul_type = ''
-        self.helpful_type = self.scan2helpful(rawscan_type)
+        self.helpful_type = ''
+        self.helpful_type = self.scan2helpful(self.rawscan_type)
         yamlfile = os.path.join(
             self.rawscan_path, self.rawscan_dirname + '.yaml')
 
@@ -152,7 +158,7 @@ class BidsConv():
                     bids_acqlabel = bids_acqlabel.replace(" ", "")
                     bids_acqlabel = "_acq-" + bids_acqlabel
                     break
-        if rawscan_type.__contains__('epi'):
+        if self.rawscan_type.__contains__('epi'):
             bids_tasklabel = bids_acqlabel.replace("_acq-", "")
             bids_tasklabel = "_task-" + bids_tasklabel
             bids_acqlabel = ''
@@ -165,28 +171,29 @@ class BidsConv():
 
         # --Creating common fields
         # ----bids_scanecho
-        bids_scanecho = '_echo-%e' if rawscan_type.__contains__('fmap') else ''
+        bids_scanecho = '_echo-%e' if self.rawscan_type.__contains__(
+            'fmap') else ''
         # ---bids_scansession: the wave of data collection formatted as a BIDS label string
-        bids_scansession = "_ses-" + str(self.wave_no).zfill(2)
+        self.bids_scansession = "_ses-" + str(self.wave_no).zfill(2)
         self.bids_scansessiondir = "ses-" + str(self.wave_no).zfill(2)
         # ---bids_scanmode: the "modal" label for the scan per bids spec (e.g., anat, func, dwi)
-        if rawscan_type.__contains__('fmap'):
+        if self.rawscan_type.__contains__('fmap'):
             if bids_acqlabel.__contains__('EPI'):
                 self.bids_scanmode = '_epirawfmap'
             elif bids_acqlabel.__contains__('DTI'):
                 self.bids_scanmode = '_dtirawfmap'
         else:
-            self.bids_scanmode = self.scan2bidsmode(rawscan_type)
+            self.bids_scanmode = self.scan2bidsmode(self.rawscan_type)
         # ---bids_participantID: the subject ID formatted as a BIDS label string
         self.bids_participantID = "sub-" + self.subjID
         # ---bids_outdir: the path where the converted scan files will be written
         self.dcm2niix_outdir = os.path.join(
-            self.outputpath, self.bids_participantID, self.bids_scansessiondir, self.scan2bidsdir(rawscan_type))
+            self.outputpath, self.bids_participantID, self.bids_scansessiondir, self.scan2bidsdir(self.rawscan_type))
 
         # --Setting the file label to be passed to dcm2niix (conv_dcms)
         self.dcm2niix_label = ''
         self.dcm2niix_label = self.bids_participantID + \
-            bids_scansession + \
+            self.bids_scansession + \
             bids_tasklabel + \
             bids_acqlabel + \
             self.bids_scanmode
@@ -197,11 +204,11 @@ class BidsConv():
         subprocess.run(["dcm2niix", "-f", self.dcm2niix_label,
                         "-o", self.dcm2niix_outdir, self.rawscan_path])
 
-    def make_fmap(self, scantype):
+    def make_fmap(self, scan_type):
         self.fmap_dir = os.path.join(
             self.outputpath, self.bids_participantID, self.bids_scansessiondir, 'fmap')
         gen = (rawfmapfile for rawfmapfile in os.listdir(self.fmap_dir)
-               if rawfmapfile.endswith('.nii') if rawfmapfile.__contains__(scantype))
+               if rawfmapfile.endswith('.nii') if rawfmapfile.__contains__(scan_type))
 
         for rawfmapfile in gen:
             if rawfmapfile.__contains__('_e1a.'):
@@ -218,103 +225,108 @@ class BidsConv():
         rawfmapfile_2v2 = str(rawfmapfile_2 + '[2]')
         rawfmapfile_2v3 = str(rawfmapfile_2 + '[3]')
 
-        scantype = str(scantype)
-        if scantype.__contains__('epi'):
-            fmapoutfile = rawfmapfile_1.replace('_epirawfmap_e1', '_fieldmap')
-            magoutfile = rawfmapfile_1.replace('_epirawfmap_e1', '_magnitude')
-            phasediffile = rawfmapfile_1.replace(
-                '_epirawfmap_e1', '_phasedifference')
-        elif scantype.__contains__('dti'):
-            fmapoutfile = rawfmapfile_1.replace('_dtirawfmap_e1', '_fieldmap')
-            magoutfile = rawfmapfile_1.replace('_dtirawfmap_e1', '_magnitude')
-            phasediffile = rawfmapfile_1.replace(
-                '_dtirawfmap_e1', '_phasedifference')
+        scan_type = str(scan_type)
 
-        print("FMAP outfile is: " + fmapoutfile)
+        if scan_type.__contains__('epi'):
+            wrappedphasefile = rawfmapfile_1.replace(
+                '_epirawfmap_e1', '_wrapped_phasediff')
+            magoutfile1 = rawfmapfile_1.replace(
+                '_epirawfmap_e1', '_magnitude1')
+            magoutfile2 = rawfmapfile_1.replace(
+                '_epirawfmap_e1', '_magnitude2')
+            phasediffileRads = rawfmapfile_1.replace(
+                '_epirawfmap_e1', '_phasediff_rads')
+            phasediffileHz = rawfmapfile_1.replace(
+                '_epirawfmap_e1', '_phasediff')
+            # What scans does the field map go with?
+            fmap_intendedfor_path = os.path.join(
+                self.outputpath, self.bids_participantID, self.bids_scansessiondir, 'func')
+            print(fmap_intendedfor_path)
+            fmap_intendedfor = ''
+            for scan in os.listdir(fmap_intendedfor_path):
+                if scan.endswith('.nii'):
+                    print(scan)
+                    fmap_intendedfor += '"' + self.bids_scansessiondir + '/func/' + scan + '",' + '\n'
+            fmap_intendedfor = "[" + fmap_intendedfor[:-2] + "]"
+            print(fmap_intendedfor)
+            self.printu("\n" + "CREATING FIELD MAP FOR EPI SCANS:")
+        elif scan_type.__contains__('dti'):
+            wrappedphasefile = rawfmapfile_1.replace(
+                '_dtirawfmap_e1', '_wrapped_phasediff')
+            magoutfile1 = rawfmapfile_1.replace(
+                '_dtirawfmap_e1', '_magnitude1')
+            magoutfile2 = rawfmapfile_1.replace(
+                '_dtirawfmap_e1', '_magnitude2')
+            phasediffileRads = rawfmapfile_1.replace(
+                '_dtirawfmap_e1', '_phasediff_rads')
+            phasediffileHz = rawfmapfile_1.replace(
+                '_dtirawfmap_e1', '_phasediff')
+            # What scans does the field map go with?
+            fmap_intendedfor_path = os.path.join(
+                self.outputpath, self.bids_participantID, self.bids_scansessiondir, 'func')
+            print(fmap_intendedfor_path)
+            fmap_intendedfor = ''
+            for scan in os.listdir(fmap_intendedfor_path):
+                if scan.endswith('.nii'):
+                    fmap_intendedfor += '"' + self.bids_scansessiondir + '/func/' + scan + '",'
+            fmap_intendedfor = "[" + fmap_intendedfor[:-2] + "]"
+            self.printu("\n" + "CREATING FIELD MAP FOR DTI SCANS:")
 
-        calc_expr1 = "atan2((b*c-d*a),(a*c+b*d))"
-        calc_expr2 = "a"
+        calc_computephase = "atan2((b*c-d*a),(a*c+b*d))"
+        calc_extractmag = "a"
+        te_diff = 3
+        calc_rads2hz = "a*1000/" + str(te_diff)
 
-        subprocess.Popen(["3dcalc", "-a", rawfmapfile_1v2, "-b", rawfmapfile_1v3, "-c", rawfmapfile_2v2, "-d", rawfmapfile_2v3,
-                          "-expr", calc_expr1, "-prefix", fmapoutfile])
+        fmap_description = {
+            "EchoTime1": 7,
+            "EchoTime2": 10,
+            "IntendedFor": fmap_intendedfor
+        }
 
-        subprocess.Popen(["3dcalc", "-a", rawfmapfile_1v0,
-                         "-expr", calc_expr2, "-prefix", magoutfile])
+        # -Output the BIDS sidecar file describing this field map
+        json_phasediffile = phasediffileHz.replace(".nii",".json")
+        with open(json_phasediffile, 'w') as outfile:
+            json.dump(str(fmap_description), outfile)
 
-        subprocess.Popen(
+        self.printu(
+            "\n" + "  Computing phase difference from raw fieldmap volume:")
+        # -Computing the phase difference from the raw fieldmap volume
+        subprocess.call(["3dcalc", "-a", rawfmapfile_1v2, "-b", rawfmapfile_1v3, "-c", rawfmapfile_2v2, "-d", rawfmapfile_2v3,
+                         "-expr", calc_computephase, "-prefix", wrappedphasefile])
+
+        self.printu("\n" + "  Computing magnitude image #1:")
+        # -Extract magnitude image from first raw fieldmap volume
+        subprocess.call(["3dcalc", "-a", rawfmapfile_1v0,
+                         "-expr", calc_extractmag, "-prefix", magoutfile1])
+
+        self.printu("\n" + "  Computing magnitude image #2:")
+        # -Extract magnitude image from second raw fieldmap volume
+        subprocess.call(["3dcalc", "-a", rawfmapfile_2v0,
+                         "-expr", calc_extractmag, "-prefix", magoutfile2])
+
+        self.printu("\n" + "  Unwrapping the phase difference using FSL's 'prelude':")
+        # -Unwrap the phase difference file
+        subprocess.call(["prelude", "-v", "-p", wrappedphasefile,
+                         "-a", magoutfile1, "-o", phasediffileRads])
+        phasediffileRads = phasediffileRads + '.gz'
+
+        self.printu(
+            "\n" + "  Converting the phase difference from radians to Hz:")
+        # -Convert the phase difference file from rads to Hz
+        # -Formula for conversion: "a" x 1000 / x ; where x is the abs. value of the difference in TE between the two volumes
+        subprocess.call(["3dcalc", "-a", phasediffileRads,
+                         "-expr", calc_rads2hz, "-prefix", phasediffileHz])
 
 
 
-        #         COMPUTE_PHASE:
-        # 3dcalc -a $file1'[2]' -b $file1'[3]' -c $file2'[2]' -d $file2'[3]' \
-        #        -expr "atan2((b*c-d*a),(a*c+b*d))" \
-        #        -prefix tmp.phase_diff.$file_out
 
-        ###WORKING###
-        # self.fmap_dir = os.path.join(
-        #     self.outputpath, self.bids_participantID, self.bids_scansessiondir, 'fmap')
-        # gen_epi = (rawfmapfile_epi for rawfmapfile_epi in os.listdir(self.fmap_dir) if rawfmapfile_epi.endswith('.nii') if rawfmapfile_epi.__contains__('epi'))
-
-        # for rawfmapfile_epi in gen_epi:
-        #     if rawfmapfile_epi.__contains__('_e1a.'):
-        #         rawfmapfile_epi_1 = rawfmapfile_epi
-        #         print(rawfmapfile_epi_1)
-        #     elif rawfmapfile_epi.__contains__('_e1.'):
-        #         rawfmapfile_epi_2 = rawfmapfile_epi
-
-        # fmapoutfile = rawfmapfile_epi_1.replace('_epi_e1a','')
-        # scriptpath = os.getcwd()
-        # print("CWD IS: ", os.getcwd())
-        # makefmap_path = os.path.join(scriptpath, '@make_fmap')
-        # # os.chdir(self.fmap_dir)
-        # os.chdir(self.fmap_dir)
-        # subprocess.call([makefmap_path, rawfmapfile_epi_1, rawfmapfile_epi_2, fmapoutfile])
-        #-------------#
-
-        # fmap_outfile = rawfmapfile_epi_1.replace("epi_e1a", "")
-        # scriptpath = os.getcwd()
-        # print("CWD IS: ", os.getcwd())
-        # makefmap_path = os.path.join(scriptpath, '@make_fmap')
-        # os.chdir(self.fmap_dir)
-        # subprocess.call([makefmap_path, rawfmapfile_epi, rawfmapfile_epi, fmap_outfile])
-
-        # sorted(
-        #         self.dicomspath.iterdir()) if fdir.is_dir())
-        # for filename in os.listdir(self.fmap_dir):
-        #     filepath = os.path.join(self.fmap_dir, filename)
-        #     # newfilepath = os.path.join(self.fmap_dir, filename.replace('echo','run'))
-        #     if filename.__contains__('_e1a'):
-        #         newfilepath = filepath.replace(
-        #             '_fieldmap', '_fieldmap-2').replace('_e1a', '')
-        #         os.rename(filepath, newfilepath)
-        #     else:
-        #         newfilepath = filepath.replace(
-        #             '_fieldmap', '_fieldmap-1').replace('_e1', '')
-        #         os.rename(filepath, newfilepath)
-        #         # print("Renaming duplicate scan types to satisfy BIDS specs...")
-
-    # def make_fmap(self):
-    #     for filename in os.listdir(self.fmap_dir):
-    #         if filename.endswith('EPI_fieldmap-1.nii'):
-    #             fmap1 = filename
-    #             print("FMAP1 is:", fmap1)
-    #     for filename in os.listdir(self.fmap_dir):
-    #         if filename.endswith('EPI_fieldmap-2.nii'):
-    #             fmap2 = filename
-    #             print("FMAP2 is:", fmap2)
-    #     print("\n", "Making fieldmaps...")
-    #     print("\n", "Computing phase...")
-    #     fmap_outfile = fmap1.replace("-1", "")
-    #     print(os.getcwd())
-
-    #     #, '-b ' + fmap1 + '\'[3]\'', '-c' + fmap2 + '[2]', '-d' + fmap2 + '[3]','-expr \'atan2((b*c-d*a),(a*c+b*d))\'', '-prefix testtest'], shell=False)
-    #     #subprocess.call(['3dcalc', '-a', fmap1, '-expr',""" "sin(a)" """])
-    #     scriptpath = os.getcwd()
-    #     print("CWD IS: ", os.getcwd())
-    #     makefmap_path = os.path.join(scriptpath, '@make_fmap')
-    #     # os.chdir(self.fmap_dir)
-    #     os.chdir(self.fmap_dir)
-    #     subprocess.call([makefmap_path, fmap1, fmap2, fmap_outfile])
+        # Cleanup unnecessary fieldmap files and old sidecar files
+        os.remove(wrappedphasefile)
+        os.remove(phasediffileRads)
+        os.remove(rawfmapfile_1)
+        os.remove(rawfmapfile_1.replace('.nii', '.json'))
+        os.remove(rawfmapfile_2)
+        os.remove(rawfmapfile_2.replace('.nii', '.json'))
 
     def cleanup(self):
         shutil.rmtree(self.outputpath)
@@ -330,28 +342,30 @@ class BidsConv():
             self.get_subj_dcms()
             print(
                 "\n".join(['#'*23, "FOUND SUBJECT ID#: " + self.subjID, '#'*23]))
-            gen=(fdir for fdir in sorted(
+            gen = (fdir for fdir in sorted(
                 self.dicomspath.iterdir()) if fdir.is_dir())
             for fdir in gen:
                 if not any(x in str(fdir) for x in self.scanstoskip):
                     self.unpack_dcms(fdir)
                     self.organize_dcms()
-                    print("\n" + "#"*3, "IDENTIFIED SCAN IN DIRECTORY: " +
-                          self.orig_path + " AS " + self.helpful_type + " " + "#"*3)
-                    print("Step 1: Decompressing the raw DICOM archive file...", "\n")
-                    print("Step 2: Extracting the relevant BIDS parameters...", "\n")
-                    print(
-                        "Step 3: Converting to NIFTI using dcm2niix and sorting into appropriate BIDS folder...")
+                    self.printu("\n" + "FOUND A " + self.helpful_type +
+                                " SCAN: " + self.orig_path + "\n")
+                    self.printu(
+                        "  Step 1: Decompressing the raw DICOM archive file..." + "\n")
+                    self.printu(
+                        "  Step 2: Extracting the relevant BIDS parameters..." + "\n")
+                    self.printu(
+                        "  Step 3: Converting to NIFTI using dcm2niix and sorting into appropriate BIDS folder..." + "\n")
                     self.conv_dcms()
-                    print("\n" + "DONE!", "\n")
             self.make_fmap('epi')
+            self.make_fmap('dti')
+            print("\n" + "#"*40 + "\n" + "CONVERSION AND PROCESSING FOR " +
+                  self.subjID + " DONE!" + "\n" + "#"*40 + "\n")
         with open(os.path.join(self.outputpath, 'dataset_description.json'), 'w') as outfile:
             json.dump(self.data_description, outfile)
-
-        # self.cleanup()
 
 
 if __name__ == '__main__':
 
-    bc=BidsConv()
+    bc = BidsConv()
     bc.main()
