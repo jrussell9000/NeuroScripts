@@ -16,7 +16,8 @@ from nipype.interfaces import afni
 
 class BidsConv():
 
-    scanstoskip = ('cardiac', 'ssfse', 'ADC', 'FA', 'CMB', 'assetcal', '3dir', 'epi', 'dti', 'fse','bravo')
+    scanstoskip = ('cardiac', 'ssfse', 'ADC', 'FA', 'CMB',
+                   'assetcal', '3dir', 'epi', 'dti', 'fse', 'bravo')
     anatomicalscans = ('bravo', 'fse')
     functionalscans = ('epi')
     dwiscans = ('dwi')
@@ -125,7 +126,7 @@ class BidsConv():
     def organize_dcms(self):
         # --Full path to the directory containing the raw dcm files - PASS TO dcm_conv
         self.rawscan_path = ''
-        
+
         self.rawscan_path = self.tmpdest
         # --Grabbing the sequence number from the name of the directory holding the raw dcms
         rawscan_seqno = int(self.rawscan_dirname.split('_')[0][1:])
@@ -162,7 +163,6 @@ class BidsConv():
                         bids_runno = "_run-" + bids_runno
                         break
 
-
         # --Creating common fields
         # ----bids_scanecho
         bids_scanecho = '_echo-%e' if rawscan_type.__contains__('fmap') else ''
@@ -172,11 +172,11 @@ class BidsConv():
         # ---bids_scanmode: the "modal" label for the scan per bids spec (e.g., anat, func, dwi)
         if rawscan_type.__contains__('fmap'):
             if bids_acqlabel.__contains__('EPI'):
-                bids_scanmode = '_epirawfmap'
+                self.bids_scanmode = '_epirawfmap'
             elif bids_acqlabel.__contains__('DTI'):
-                bids_scanmode = '_dtirawfmap'
+                self.bids_scanmode = '_dtirawfmap'
         else:
-            bids_scanmode = self.scan2bidsmode(rawscan_type)
+            self.bids_scanmode = self.scan2bidsmode(rawscan_type)
         # ---bids_participantID: the subject ID formatted as a BIDS label string
         self.bids_participantID = "sub-" + self.subjID
         # ---bids_outdir: the path where the converted scan files will be written
@@ -189,7 +189,7 @@ class BidsConv():
             bids_scansession + \
             bids_tasklabel + \
             bids_acqlabel + \
-            bids_scanmode 
+            self.bids_scanmode
 
     def conv_dcms(self):
         os.makedirs(self.dcm2niix_outdir, exist_ok=True)
@@ -200,8 +200,9 @@ class BidsConv():
     def make_fmap(self, scantype):
         self.fmap_dir = os.path.join(
             self.outputpath, self.bids_participantID, self.bids_scansessiondir, 'fmap')
-        gen = (rawfmapfile for rawfmapfile in os.listdir(self.fmap_dir) if rawfmapfile.endswith('.nii') if rawfmapfile.__contains__(scantype))
-        
+        gen = (rawfmapfile for rawfmapfile in os.listdir(self.fmap_dir)
+               if rawfmapfile.endswith('.nii') if rawfmapfile.__contains__(scantype))
+
         for rawfmapfile in gen:
             if rawfmapfile.__contains__('_e1a.'):
                 rawfmapfile_2 = rawfmapfile
@@ -210,18 +211,38 @@ class BidsConv():
                 rawfmapfile_1 = rawfmapfile
 
         os.chdir(self.fmap_dir)
+        rawfmapfile_1v0 = str(rawfmapfile_1 + '[0]')
         rawfmapfile_1v2 = str(rawfmapfile_1 + '[2]')
         rawfmapfile_1v3 = str(rawfmapfile_1 + '[3]')
+        rawfmapfile_2v0 = str(rawfmapfile_2 + '[0]')
         rawfmapfile_2v2 = str(rawfmapfile_2 + '[2]')
         rawfmapfile_2v3 = str(rawfmapfile_2 + '[3]')
 
-        fmapoutfile = rawfmapfile_1.replace('_' + scantype + '_e1','')
+        scantype = str(scantype)
+        if scantype.__contains__('epi'):
+            fmapoutfile = rawfmapfile_1.replace('_epirawfmap_e1', '_fieldmap')
+            magoutfile = rawfmapfile_1.replace('_epirawfmap_e1', '_magnitude')
+            phasediffile = rawfmapfile_1.replace(
+                '_epirawfmap_e1', '_phasedifference')
+        elif scantype.__contains__('dti'):
+            fmapoutfile = rawfmapfile_1.replace('_dtirawfmap_e1', '_fieldmap')
+            magoutfile = rawfmapfile_1.replace('_dtirawfmap_e1', '_magnitude')
+            phasediffile = rawfmapfile_1.replace(
+                '_dtirawfmap_e1', '_phasedifference')
 
-        calc_expr = "atan2((b*c-d*a),(a*c+b*d))"
+        print("FMAP outfile is: " + fmapoutfile)
 
-        subprocess.Popen(["3dcalc", "-a", rawfmapfile_1v2, "-b", rawfmapfile_1v3, "-c", rawfmapfile_2v2, "-d", rawfmapfile_2v3, \
-        "-expr", calc
-        _expr, "-prefix", fmapoutfile])
+        calc_expr1 = "atan2((b*c-d*a),(a*c+b*d))"
+        calc_expr2 = "a"
+
+        subprocess.Popen(["3dcalc", "-a", rawfmapfile_1v2, "-b", rawfmapfile_1v3, "-c", rawfmapfile_2v2, "-d", rawfmapfile_2v3,
+                          "-expr", calc_expr1, "-prefix", fmapoutfile])
+
+        subprocess.Popen(["3dcalc", "-a", rawfmapfile_1v0,
+                         "-expr", calc_expr2, "-prefix", magoutfile])
+
+        subprocess.Popen(
+
 
 
         #         COMPUTE_PHASE:
@@ -233,14 +254,14 @@ class BidsConv():
         # self.fmap_dir = os.path.join(
         #     self.outputpath, self.bids_participantID, self.bids_scansessiondir, 'fmap')
         # gen_epi = (rawfmapfile_epi for rawfmapfile_epi in os.listdir(self.fmap_dir) if rawfmapfile_epi.endswith('.nii') if rawfmapfile_epi.__contains__('epi'))
-        
+
         # for rawfmapfile_epi in gen_epi:
         #     if rawfmapfile_epi.__contains__('_e1a.'):
         #         rawfmapfile_epi_1 = rawfmapfile_epi
         #         print(rawfmapfile_epi_1)
         #     elif rawfmapfile_epi.__contains__('_e1.'):
         #         rawfmapfile_epi_2 = rawfmapfile_epi
-        
+
         # fmapoutfile = rawfmapfile_epi_1.replace('_epi_e1a','')
         # scriptpath = os.getcwd()
         # print("CWD IS: ", os.getcwd())
@@ -257,7 +278,6 @@ class BidsConv():
         # os.chdir(self.fmap_dir)
         # subprocess.call([makefmap_path, rawfmapfile_epi, rawfmapfile_epi, fmap_outfile])
 
-        
         # sorted(
         #         self.dicomspath.iterdir()) if fdir.is_dir())
         # for filename in os.listdir(self.fmap_dir):
@@ -295,7 +315,7 @@ class BidsConv():
     #     # os.chdir(self.fmap_dir)
     #     os.chdir(self.fmap_dir)
     #     subprocess.call([makefmap_path, fmap1, fmap2, fmap_outfile])
-    
+
     def cleanup(self):
         shutil.rmtree(self.outputpath)
 
@@ -310,7 +330,7 @@ class BidsConv():
             self.get_subj_dcms()
             print(
                 "\n".join(['#'*23, "FOUND SUBJECT ID#: " + self.subjID, '#'*23]))
-            gen = (fdir for fdir in sorted(
+            gen=(fdir for fdir in sorted(
                 self.dicomspath.iterdir()) if fdir.is_dir())
             for fdir in gen:
                 if not any(x in str(fdir) for x in self.scanstoskip):
@@ -324,14 +344,14 @@ class BidsConv():
                         "Step 3: Converting to NIFTI using dcm2niix and sorting into appropriate BIDS folder...")
                     self.conv_dcms()
                     print("\n" + "DONE!", "\n")
-            #self.make_fmap()
+            self.make_fmap('epi')
         with open(os.path.join(self.outputpath, 'dataset_description.json'), 'w') as outfile:
             json.dump(self.data_description, outfile)
 
-        #self.cleanup()
+        # self.cleanup()
 
 
 if __name__ == '__main__':
 
-    bc = BidsConv()
+    bc=BidsConv()
     bc.main()
