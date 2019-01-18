@@ -12,6 +12,7 @@ from pathlib import Path, PurePath
 from distutils.dir_util import copy_tree
 import nipype
 from nipype.interfaces import afni
+from ast import literal_eval
 
 
 class BidsConv():
@@ -246,8 +247,8 @@ class BidsConv():
             for scan in os.listdir(fmap_intendedfor_path):
                 if scan.endswith('.nii'):
                     print(scan)
-                    fmap_intendedfor += '"' + self.bids_scansessiondir + '/func/' + scan + '",' + '\n'
-            fmap_intendedfor = "[" + fmap_intendedfor[:-2] + "]"
+                    fmap_intendedfor += '"' + self.bids_scansessiondir + '/func/' + scan + '"' + ','
+            fmap_intendedfor = "[" + fmap_intendedfor[:-1] + "]"
             print(fmap_intendedfor)
             self.printu("\n" + "CREATING FIELD MAP FOR EPI SCANS:")
         elif scan_type.__contains__('dti'):
@@ -268,7 +269,7 @@ class BidsConv():
             fmap_intendedfor = ''
             for scan in os.listdir(fmap_intendedfor_path):
                 if scan.endswith('.nii'):
-                    fmap_intendedfor += '"' + self.bids_scansessiondir + '/func/' + scan + '",'
+                    fmap_intendedfor += '\"' + self.bids_scansessiondir + '/func/' + scan + '\"'
             fmap_intendedfor = "[" + fmap_intendedfor[:-2] + "]"
             self.printu("\n" + "CREATING FIELD MAP FOR DTI SCANS:")
 
@@ -278,20 +279,21 @@ class BidsConv():
         calc_rads2hz = "a*1000/" + str(te_diff)
 
         fmap_description = {
-            "EchoTime1": 7,
-            "EchoTime2": 10,
-            "IntendedFor": fmap_intendedfor
+            "EchoTime1": "7", 
+            "EchoTime2": "10"
         }
+
+        fmap_description['IntendedFor:'] = fmap_intendedfor
 
         # -Output the BIDS sidecar file describing this field map
         json_phasediffile = phasediffileHz.replace(".nii",".json")
         with open(json_phasediffile, 'w') as outfile:
-            json.dump(str(fmap_description), outfile)
+            json.dump(json.loads(str(fmap_description)), outfile)
 
         self.printu(
             "\n" + "  Computing phase difference from raw fieldmap volume:")
         # -Computing the phase difference from the raw fieldmap volume
-        subprocess.call(["3dcalc", "-a", rawfmapfile_1v2, "-b", rawfmapfile_1v3, "-c", rawfmapfile_2v2, "-d", rawfmapfile_2v3,
+        subprocess.call(["3dcalc", "-float", "-a", rawfmapfile_1v2, "-b", rawfmapfile_1v3, "-c", rawfmapfile_2v2, "-d", rawfmapfile_2v3,
                          "-expr", calc_computephase, "-prefix", wrappedphasefile])
 
         self.printu("\n" + "  Computing magnitude image #1:")
@@ -316,9 +318,6 @@ class BidsConv():
         # -Formula for conversion: "a" x 1000 / x ; where x is the abs. value of the difference in TE between the two volumes
         subprocess.call(["3dcalc", "-a", phasediffileRads,
                          "-expr", calc_rads2hz, "-prefix", phasediffileHz])
-
-
-
 
         # Cleanup unnecessary fieldmap files and old sidecar files
         os.remove(wrappedphasefile)
