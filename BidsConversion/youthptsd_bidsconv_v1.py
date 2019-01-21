@@ -95,13 +95,13 @@ class BidsConv():
         return(returnkey)
 
     def get_subj_dcms(self):
-        self.subjID = self.subjID_dirname.replace("_", "")
+        self.subjID = str(self.subjID_dirname).replace("_", "")
         if self.subjID.__contains__('rescan'):
             self.wave_no = 2
             self.subjID = self.subjID.replace("rescan", "")
         else:
             self.wave_no = 1
-        subjID_path = os.path.join(self.studypath, self.subjID_dirname)
+        subjID_path = Path(self.studypath, self.subjID_dirname)
         self.dicomspath = Path(subjID_path, "dicoms")
         self.subjID_tmpdir = tempfile.mkdtemp(suffix=self.subjID)
 
@@ -340,9 +340,7 @@ class BidsConv():
             self.initialize()
         except:
             sys.exit(1)
-
-        for self.subjID_dirname in os.listdir(self.studypath):
-
+        for self.subjID_dirname in sorted(os.listdir(self.studypath)):
             self.get_subj_dcms()
             print(
                 "\n".join(['#'*23, "FOUND SUBJECT ID#: " + self.subjID, '#'*23]))
@@ -356,6 +354,7 @@ class BidsConv():
             #self.addtasknames
             self.make_fmap('epi')
             self.make_fmap('dwi')
+            self.cleanuip()
             print("\n" + "#"*40 + "\n" + "CONVERSION AND PROCESSING FOR " +
                   self.subjID + " DONE!" + "\n" + "#"*40 + "\n")
         with open(os.path.join(self.outputpath, 'dataset_description.json'), 'w') as outfile:
