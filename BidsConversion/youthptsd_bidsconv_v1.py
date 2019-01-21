@@ -9,11 +9,8 @@ import bz2
 import json
 from pathlib import Path
 from distutils.dir_util import copy_tree
-import yaml
-import numpy
-from numpy import ndarray
-import pydicom as dicom
-import _pickle as cPickle
+
+
 
 # - Utility function to underline strings
 def stru(string):
@@ -136,7 +133,6 @@ class BidsConv():
                 decompressor = bz2.BZ2Decompressor()
                 for data in iter(lambda: file.read(100 * 1024), b''):
                     new_file.write(decompressor.decompress(data))
-                    sys.stdout.write('.')
 
         self.rawscan_path = self.tmpdest
         self.rawscan_dirname = os.path.basename(
