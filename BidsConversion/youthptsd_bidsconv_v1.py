@@ -32,6 +32,8 @@ class BidsConv():
     scanstoskip = ('cardiac', 'ssfse', 'ADC', 'FA', 'CMB',
                    'assetcal', '3dir')
 
+    subjectstoskip = ('EyeTrackTest', '_Rachael')
+
     data_description = {
         "Name": "Youth PTSD",
         "BIDSVersion": "1.1.1",
@@ -340,21 +342,23 @@ class BidsConv():
             self.initialize()
         except:
             sys.exit(1)
-        for self.subjID_dirname in sorted(os.listdir(self.studypath)):
+        subjs = (sid_dir for sid_dir in sorted(os.listdir(self.studypath)) if not any(x in str(sid_dir) for x in self.subjectstoskip))
+        for sid_dir in subjs:
+            self.subjID_dirname = sid_dir
             self.get_subj_dcms()
             print(
                 "\n".join(['#'*23, "FOUND SUBJECT ID#: " + self.subjID, '#'*23]))
-            gen = (fdir for fdir in sorted(
-                self.dicomspath.iterdir()) if fdir.is_dir())
-            for fdir in gen:
-                if not any(x in str(fdir) for x in self.scanstoskip):
+            scandirs = (fdir for fdir in sorted(
+                self.dicomspath.iterdir()) if fdir.is_dir() if not any (x in str(fdir) for x in self.scanstoskip))
+            for fdir in scandirs:
+                #if not any(x in str(fdir) for x in self.scanstoskip):
                     self.unpack_dcms(fdir)
                     self.organize_dcms()
                     self.conv_dcms()
             #self.addtasknames
             self.make_fmap('epi')
             self.make_fmap('dwi')
-            self.cleanuip()
+            self.cleanup()
             print("\n" + "#"*40 + "\n" + "CONVERSION AND PROCESSING FOR " +
                   self.subjID + " DONE!" + "\n" + "#"*40 + "\n")
         with open(os.path.join(self.outputpath, 'dataset_description.json'), 'w') as outfile:
