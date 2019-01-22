@@ -224,12 +224,13 @@ class BidsConv():
         gen = (rawfmapfile for rawfmapfile in os.listdir(self.fmap_dir)
                if rawfmapfile.endswith('.nii') if rawfmapfile.__contains__(scan_type))
 
-        for rawfmapfile in gen:
-            if rawfmapfile.__contains__('_e1a.'):
-                rawfmapfile_2 = rawfmapfile
+        if len(gen) > 0:
+            for rawfmapfile in gen:
+                if rawfmapfile.__contains__('_e1a.'):
+                    rawfmapfile_2 = rawfmapfile
 
-            elif rawfmapfile.__contains__('_e1.'):
-                rawfmapfile_1 = rawfmapfile
+                elif rawfmapfile.__contains__('_e1.'):
+                    rawfmapfile_1 = rawfmapfile
 
         os.chdir(self.fmap_dir)
         rawfmapfile_1v0 = str(rawfmapfile_1 + '[0]')
