@@ -157,7 +157,7 @@ class BidsConv():
                     bids_acqlabel = line.split(': ')[1]
                     self.bids_sidecar_taskname = bids_acqlabel.replace("\n", "")
                     bids_acqlabel = bids_acqlabel.strip()
-                    for c in ['(', ')', '-', ' ']:
+                    for c in ['(', ')', '-', ' ', '/']:
                         if c in bids_acqlabel:
                             bids_acqlabel = bids_acqlabel.replace(c, '')
                     bids_acqlabel = bids_acqlabel.replace(" ", "")
