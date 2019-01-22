@@ -340,7 +340,7 @@ class BidsConv():
         os.remove(rawfmapfile_2.replace('.nii', '.json'))
 
     def cleanup(self):
-        shutil.rmtree(self.outputpath)
+        shutil.rmtree(self.tmpdest)
 
     def main(self):
         try:
