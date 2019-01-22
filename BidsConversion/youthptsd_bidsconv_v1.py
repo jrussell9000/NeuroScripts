@@ -11,7 +11,6 @@ from pathlib import Path
 from distutils.dir_util import copy_tree
 
 
-
 # - Utility function to underline strings
 def stru(string):
     start = '\033[4m'
