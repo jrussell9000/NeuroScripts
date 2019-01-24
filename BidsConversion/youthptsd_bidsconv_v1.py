@@ -228,9 +228,10 @@ class BidsConv():
             gentest = True
             if rawfmapfile.__contains__('_e1a.'):
                 rawfmapfile_2 = rawfmapfile
-
             elif rawfmapfile.__contains__('_e1.'):
                 rawfmapfile_1 = rawfmapfile
+            else:
+                return None
 
         if not gentest:
             return None
