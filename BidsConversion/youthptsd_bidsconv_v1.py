@@ -231,7 +231,7 @@ class BidsConv():
             elif rawfmapfile.__contains__('_e1.'):
                 rawfmapfile_1 = rawfmapfile
             else:
-                return None
+                next
 
         if not gentest:
             return None
@@ -304,40 +304,49 @@ class BidsConv():
         with open(json_phasediffile, 'w') as outfile:
             json.dump(fmap_description, outfile)
 
-        print("\n" + stru("Step 1") + ": Computing phase difference from raw fieldmap volume")
-        # -Computing the phase difference from the raw fieldmap volume
-        subprocess.call(["3dcalc", "-float", "-a", rawfmapfile_1v2, "-b", rawfmapfile_1v3, "-c", rawfmapfile_2v2, "-d", rawfmapfile_2v3,
-                         "-expr", calc_computephase, "-prefix", wrappedphasefile])
+        try:
+            print("\n" + stru("Step 1") + ": Computing phase difference from raw fieldmap volume")
+            # -Computing the phase difference from the raw fieldmap volume
+            subprocess.call(["3dcalc", "-float", "-a", rawfmapfile_1v2, "-b", rawfmapfile_1v3, "-c", rawfmapfile_2v2, "-d", rawfmapfile_2v3,
+                            "-expr", calc_computephase, "-prefix", wrappedphasefile])
 
-        print("\n" + stru("Step 2") + ": Computing magnitude image #1")
-        # -Extract magnitude image from first raw fieldmap volume
-        subprocess.call(["3dcalc", "-a", rawfmapfile_1v0,
-                         "-expr", calc_extractmag, "-prefix", magoutfile1])
+            print("\n" + stru("Step 2") + ": Computing magnitude image #1")
+            # -Extract magnitude image from first raw fieldmap volume
+            subprocess.call(["3dcalc", "-a", rawfmapfile_1v0,
+                            "-expr", calc_extractmag, "-prefix", magoutfile1])
 
-        print("\n" + stru("Step 3") + ": Computing magnitude image #2")
-        # -Extract magnitude image from second raw fieldmap volume
-        subprocess.call(["3dcalc", "-a", rawfmapfile_2v0,
-                         "-expr", calc_extractmag, "-prefix", magoutfile2])
+            print("\n" + stru("Step 3") + ": Computing magnitude image #2")
+            # -Extract magnitude image from second raw fieldmap volume
+            subprocess.call(["3dcalc", "-a", rawfmapfile_2v0,
+                            "-expr", calc_extractmag, "-prefix", magoutfile2])
 
-        print("\n" + stru("Step 4") + ": Unwrapping the phase difference using FSL's 'prelude'")
-        # -Unwrap the phase difference file
-        subprocess.call(["prelude", "-v", "-p", wrappedphasefile,
-                         "-a", magoutfile1, "-o", phasediffileRads])
-        phasediffileRads = phasediffileRads + '.gz'
+            print("\n" + stru("Step 4") + ": Unwrapping the phase difference using FSL's 'prelude'")
+            # -Unwrap the phase difference file
+            subprocess.call(["prelude", "-v", "-p", wrappedphasefile,
+                            "-a", magoutfile1, "-o", phasediffileRads])
+            phasediffileRads = phasediffileRads + '.gz'
 
-        print("\n" + stru("Step 5") + ": Converting the phase difference from radians to Hz")
-        # -Convert the phase difference file from rads to Hz
-        # -Formula for conversion: "a" x 1000 / x ; where x is the abs. value of the difference in TE between the two volumes
-        subprocess.call(["3dcalc", "-a", phasediffileRads,
-                         "-expr", calc_rads2hz, "-prefix", phasediffileHz])
+            print("\n" + stru("Step 5") + ": Converting the phase difference from radians to Hz")
+            # -Convert the phase difference file from rads to Hz
+            # -Formula for conversion: "a" x 1000 / x ; where x is the abs. value of the difference in TE between the two volumes
+            subprocess.call(["3dcalc", "-a", phasediffileRads,
+                            "-expr", calc_rads2hz, "-prefix", phasediffileHz])
+        
+        except OSError as e:
+            print("ERROR MAKING FIELDMAPS: " + e)
+            pass
 
         # Cleanup unnecessary fieldmap files and old sidecar files
-        os.remove(wrappedphasefile)
-        os.remove(phasediffileRads)
-        os.remove(rawfmapfile_1)
-        os.remove(rawfmapfile_1.replace('.nii', '.json'))
-        os.remove(rawfmapfile_2)
-        os.remove(rawfmapfile_2.replace('.nii', '.json'))
+        try:
+            os.remove(wrappedphasefile)
+            os.remove(phasediffileRads)
+            os.remove(rawfmapfile_1)
+            os.remove(rawfmapfile_1.replace('.nii', '.json'))
+            os.remove(rawfmapfile_2)
+            os.remove(rawfmapfile_2.replace('.nii', '.json'))
+        except OSError as e:
+            print(e)
+            pass
 
     def cleanup(self):
         shutil.rmtree(self.tmpdest)
