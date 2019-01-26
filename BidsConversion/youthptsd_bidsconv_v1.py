@@ -225,15 +225,15 @@ class BidsConv():
 
         gentest = False
         for rawfmapfile in gen:
-            gentest = True
             if rawfmapfile.__contains__('_e1a.'):
+                gentest = True
                 rawfmapfile_2 = rawfmapfile
             elif rawfmapfile.__contains__('_e1.'):
                 rawfmapfile_1 = rawfmapfile
             else:
                 next
 
-        if not gentest:
+        if not('rawfmapfile_2' in locals() and 'rawfmapfile_1' in locals()):
             return None
 
         os.chdir(self.fmap_dir)
@@ -363,12 +363,12 @@ class BidsConv():
             print(
                 "\n".join(['#'*23, "FOUND SUBJECT ID#: " + self.subjID, '#'*23]))
             scandirs = (fdir for fdir in sorted(
-                self.dicomspath.iterdir()) if fdir.is_dir() if not any (x in str(fdir) for x in self.scanstoskip))
+                self.dicomspath.iterdir()) if fdir.is_dir() if not any(x in str(fdir) for x in self.scanstoskip))
             for fdir in scandirs:
                 #if not any(x in str(fdir) for x in self.scanstoskip):
-                    self.unpack_dcms(fdir)
-                    self.organize_dcms()
-                    self.conv_dcms()
+                self.unpack_dcms(fdir)
+                self.organize_dcms()
+                self.conv_dcms()
             #self.addtasknames
             self.make_fmap('epi')
             self.make_fmap('dwi')

@@ -1,4 +1,5 @@
 {
   "python.linting.pylintEnabled": false,
-  "python.pythonPath": "/home/jdrussell3/.conda/envs/brave_env/bin/python"
+  "python.pythonPath": "/home/justin/.conda/envs/brave_env/bin/python",
+  "python.linting.banditEnabled": false
 }
