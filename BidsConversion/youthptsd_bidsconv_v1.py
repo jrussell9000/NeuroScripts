@@ -49,8 +49,8 @@ class BidsConv():
                         expected to be contained in a reflectively named \
                         directory (e.g., s04_bravo). Raw scan files are dcm \
                         series files compressed into a multiple file bz2 archive.")
-        ap.add.argument("-i", "--ids", required=False,
-        help="Optional path to a text file listing the subject IDs to be processed")
+        ap.add.argument("-i", "--ids", required=False, help="Optional path to \
+        a text file listing the subject IDs to be processed")
         ap.add_argument("-o", "--outputpath", required=True)
         args = vars(ap.parse_args())
 
