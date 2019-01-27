@@ -55,6 +55,7 @@ class BidsConv():
         args = vars(ap.parse_args())
 
         self.studypath = args["studypath"]
+        self.inputidfile = args["ids"]
         self.outputpath = args["outputpath"]
 
     def scan2bidsmode(self, modstring):
