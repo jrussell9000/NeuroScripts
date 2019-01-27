@@ -9,6 +9,7 @@ import bz2
 import json
 from pathlib import Path
 from distutils.dir_util import copy_tree
+import fnmatch
 
 
 # - Utility function to underline strings
@@ -48,6 +49,8 @@ class BidsConv():
                         expected to be contained in a reflectively named \
                         directory (e.g., s04_bravo). Raw scan files are dcm \
                         series files compressed into a multiple file bz2 archive.")
+        ap.add.argument("-i", "--ids", required=False,
+        help="Optional path to a text file listing the subject IDs to be processed")
         ap.add_argument("-o", "--outputpath", required=True)
         args = vars(ap.parse_args())
 
@@ -108,7 +111,7 @@ class BidsConv():
 
     # Copying the bzip files to /tmp/<scan_type> and decompressing there (faster)
     def unpack_dcms(self, fdir):
-        
+       
         # Getting info about the scan we're working with...
         self.rawscan_path = os.path.normpath(fdir)
         self.rawscan_dirname = os.path.basename(
@@ -354,7 +357,13 @@ class BidsConv():
             self.initialize()
         except:
             sys.exit(1)
-        subjs = (sid_dir for sid_dir in sorted(os.listdir(self.studypath)) if not any(x in str(sid_dir) for x in self.subjectstoskip))
+        
+        if len(self.inputidfile) > 0:
+            with open(self.inputidfile, 'r') as idfile:
+                sids = idfile.readlines().replace("_","")
+                subjs = (sid_dir for sid_dir in sorted(os.listdir(self.studypath)) if fnmatch.fnmatch(sid_dir, sids)))
+        else:
+            subjs = (sid_dir for sid_dir in sorted(os.listdir(self.studypath)) if not any(x in str(sid_dir) for x in self.subjectstoskip))
         for sid_dir in subjs:
             self.subjID_dirname = sid_dir
             self.get_subj_dcms()
