@@ -38,7 +38,7 @@ class BidsConv():
         "Name": "Youth PTSD",
         "BIDSVersion": "1.1.1",
         "License": "None",
-    }  
+    }
 
     def initialize(self):
         ap = argparse.ArgumentParser()
@@ -49,8 +49,8 @@ class BidsConv():
                         expected to be contained in a reflectively named \
                         directory (e.g., s04_bravo). Raw scan files are dcm \
                         series files compressed into a multiple file bz2 archive.")
-        ap.add.argument("-i", "--ids", required=False, help="Optional path to \
-        a text file listing the subject IDs to be processed")
+        ap.add_argument("-i", "--ids", required=False, help="Optional path to \
+        a text file listing the subject IDs to be processed.")
         ap.add_argument("-o", "--outputpath", required=True)
         args = vars(ap.parse_args())
 
@@ -356,6 +356,7 @@ class BidsConv():
         try:
             self.initialize()
         except:
+            print("ERROR!")
             sys.exit(1)
         
         if len(self.inputidfile) > 0:
