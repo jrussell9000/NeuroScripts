@@ -356,7 +356,6 @@ class BidsConv():
         try:
             self.initialize()
         except:
-            print("ERROR!")
             sys.exit(1)
         
         if len(self.inputidfile) > 0:
