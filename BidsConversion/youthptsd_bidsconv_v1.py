@@ -362,7 +362,7 @@ class BidsConv():
         if len(self.inputidfile) > 0:
             with open(self.inputidfile, 'r') as idfile:
                 sids = idfile.readlines()
-                subjs = (sid_dir for sid_dir in sorted(os.listdir(self.studypath)) if fnmatch.fnmatch(sid_dir, sids))
+                subjs = (sid_dir for sid_dir in sorted(os.listdir(self.studypath)) if any (x in str(sid_dir) for x in sids))
         else:
             subjs = (sid_dir for sid_dir in sorted(os.listdir(self.studypath)) if not any(x in str(sid_dir) for x in self.subjectstoskip))
         for sid_dir in subjs:
