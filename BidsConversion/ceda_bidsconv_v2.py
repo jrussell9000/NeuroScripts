@@ -38,49 +38,12 @@ class BidsConv():
         self.studypath = args["studypath"]
         self.outputpath = args["outputpath"]
 
-    def scan2bidsmode(self, modstring):
-        scan2bidsmode_dict = {
-            "MPRAGE": "_T1w",
-            "BRAVO": "_T1w",
-            "NODDI": "_dwi",
-            "EPI": "_bold",
-            "Fieldmap": "_fmap"
-        }
-        returnkey = "nomatch"
-        for key in scan2bidsmode_dict.keys():
-            if key in modstring:
-                returnkey = scan2bidsmode_dict[key]
-        return(returnkey)
-
-    def scan2bidsdir(self, typestring):
-        scan2bidsdir_dict = {
-            "MPRAGE": "anat",
-            "BRAVO": "anat",
-            "NODDI": "dwi",
-            "EPI": "func",
-            "Fieldmap": "fmap"
-        }
-        returnkey = "nomatch"
-        for key in scan2bidsdir_dict.keys():
-            if key in typestring:
-                returnkey = scan2bidsdir_dict[key]
-        return(returnkey)
-
     def get_subj_dcms(self):
         self.subjID = self.subjID_dirname
         subjID_path = os.path.join(bc.studypath, self.subjID_dirname)
         print("FOUND SUBJECT ID#:", self.subjID, "IN", bc.studypath, "\n")
         self.dicomspath = os.path.join(subjID_path, "dicoms")
         self.tmpdir = tempfile.mkdtemp(suffix=self.subjID)
-
-    def unpack_dcms(self, filename):
-        # for filename in sorted(os.listdir(self.dicomspath)):
-        self.dicomtgz_path = os.path.join(self.dicomspath, filename)
-        shutil.copy(self.dicomtgz_path, self.tmpdir)
-        self.dicomtgz_path = os.path.join(self.tmpdir, filename)
-        self.dicomtgz_file = tarfile.open(self.dicomtgz_path, 'r:gz')
-        print("Decompressing DICOM archive file " + filename + "...")
-        self.dicomtgz_file.extractall(path=self.tmpdir)
 
     def organize_dcms(self):
         # --Full path to the directory containing the raw dcm files - PASS TO dcm_conv

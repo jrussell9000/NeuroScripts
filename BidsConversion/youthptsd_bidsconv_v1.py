@@ -9,24 +9,7 @@ import bz2
 import json
 from pathlib import Path
 from distutils.dir_util import copy_tree
-
-
-# UTILITY FUNCTIONS #
-
-# Underline strings
-def stru(string):
-    start = '\033[4m'
-    end = '\033[0m'
-    ustr = start + string + end
-    return(ustr)
-
-
-# Underline all strings in a print command
-def printu(self, string):
-    start = '\033[4m'
-    end = '\033[0m'
-    ustr = start + string + end
-    print(ustr)
+import Local.Utils as u
 
 
 class BidsConv():
@@ -128,7 +111,7 @@ class BidsConv():
             os.path.normpath(self.rawscan_path))
         self.rawscan_type = self.rawscan_dirname.split('_')[1]
         self.helpful_type = self.scan2helpful(self.rawscan_type)
-        print("\n" + stru(str("FOUND " + self.helpful_type + " SCAN")) + ": " + self.rawscan_path + "\n")
+        print("\n" + u.stru(str("FOUND " + self.helpful_type + " SCAN")) + ": " + self.rawscan_path + "\n")
 
         # Copying the scan's bzip files to /tmp/<scan_type> and decompressing there (time saver)
         os.mkdir(os.path.join(self.subjID_tmpdir, self.rawscan_dirname))
@@ -136,7 +119,7 @@ class BidsConv():
         copy_tree(self.rawscan_path, self.tmpdest)
 
         # Decompressing scan files
-        print(stru("Step 1") + ": Decompressing the raw DICOM archive files...\n")
+        print(u.stru("Step 1") + ": Decompressing the raw DICOM archive files...\n")
         bz2_list = (z for z in sorted(os.listdir(
             self.tmpdest)) if z.endswith('.bz2'))
         for filename in bz2_list:
@@ -154,7 +137,7 @@ class BidsConv():
 
     # Extracting all the info we'll need to name the file accordings to BIDS and create the JSON sidecar
     def organize_dcms(self):
-        print(stru("Step 2") + ": Extracting the relevant BIDS parameters...\n")
+        print(u.stru("Step 2") + ": Extracting the relevant BIDS parameters...\n")
 
         # Each scan folder should contain a YAML file with the scan info
         yaml_filepath = Path(self.rawscan_path, self.rawscan_dirname + '.yaml')
@@ -225,7 +208,7 @@ class BidsConv():
 
     # Converting the raw scan files to NIFTI format using the parameters previously specified
     def conv_dcms(self):
-        print(stru("Step 3") + ": Converting to NIFTI using dcm2niix and sorting into appropriate BIDS folder...\n")
+        print(u.stru("Step 3") + ": Converting to NIFTI using dcm2niix and sorting into appropriate BIDS folder...\n")
 
         # Making the output directory and overwritting it if it exists
         os.makedirs(self.dcm2niix_outdir, exist_ok=True)
@@ -296,7 +279,7 @@ class BidsConv():
                 if scan.endswith('.nii'):
                     fmap_intendedfor_dict.setdefault("IntendedFor", []).append(
                         self.bids_scansessiondir + '/func/' + scan)
-            print("\n" + stru("CREATING FIELD MAP FOR EPI SCANS:"))
+            print("\n" + u.stru("CREATING FIELD MAP FOR EPI SCANS:"))
         elif scan_type.__contains__('dwi'):
             wrappedphasefile = rawfmapfile_1.replace(
                 '_dwirawfmap_e1', '_wrapped_phasediff')
@@ -316,7 +299,7 @@ class BidsConv():
                 if scan.endswith('.nii'):
                     fmap_intendedfor_dict.setdefault("IntendedFor", []).append(
                         self.bids_scansessiondir + '/dwi/' + scan)
-            print("\n" + stru("CREATING FIELD MAP FOR DTI SCANS:"))
+            print("\n" + u.stru("CREATING FIELD MAP FOR DTI SCANS:"))
 
         # Set the formulas and parameters to be passed to 3DCalc
         calc_computephase = "atan2((b*c-d*a),(a*c+b*d))"
@@ -337,28 +320,28 @@ class BidsConv():
         # Run the fieldmap conversion using Rasmus' method (3DCalc, FSL Prelude, then convert from rads to Hz)
         # If any process fails, print an error to the console and go next
         try:
-            print("\n" + stru("Step 1") + ": Computing the phase difference from the raw fieldmap volumes")
+            print("\n" + u.stru("Step 1") + ": Computing the phase difference from the raw fieldmap volumes")
             # -Computing the phase difference from the raw fieldmap volume
             subprocess.call(["3dcalc", "-float", "-a", rawfmapfile_1v2, "-b", rawfmapfile_1v3, "-c", rawfmapfile_2v2, "-d", rawfmapfile_2v3,
                             "-expr", "atan2((b*c-d*a),(a*c+b*d))", "-prefix", wrappedphasefile])
 
-            print("\n" + stru("Step 2") + ": Extracting magnitude image #1")
+            print("\n" + u.stru("Step 2") + ": Extracting magnitude image #1")
             # -Extract magnitude image from first raw fieldmap volume
             subprocess.call(["3dcalc", "-a", rawfmapfile_1v0,
                             "-expr", calc_extractmag, "-prefix", magoutfile1])
 
-            print("\n" + stru("Step 3") + ": Extracting magnitude image #2")
+            print("\n" + u.stru("Step 3") + ": Extracting magnitude image #2")
             # -Extract magnitude image from second raw fieldmap volume
             subprocess.call(["3dcalc", "-a", rawfmapfile_2v0,
                             "-expr", calc_extractmag, "-prefix", magoutfile2])
 
-            print("\n" + stru("Step 4") + ": Unwrapping the phase difference using FSL's 'prelude'")
+            print("\n" + u.stru("Step 4") + ": Unwrapping the phase difference using FSL's 'prelude'")
             # -Unwrap the phase difference file
             subprocess.call(["prelude", "-v", "-p", wrappedphasefile,
                             "-a", magoutfile1, "-o", phasediffileRads])
             phasediffileRads = phasediffileRads + '.gz'
 
-            print("\n" + stru("Step 5") + ": Converting the phase difference from radians to Hz")
+            print("\n" + u.stru("Step 5") + ": Converting the phase difference from radians to Hz")
             # -Convert the phase difference file from rads to Hz
             # -Formula for conversion: "a" x 1000 / x ; where x is the abs. value of the difference in TE between the two volumes
             subprocess.call(["3dcalc", "-a", phasediffileRads,
