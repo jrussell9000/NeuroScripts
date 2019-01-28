@@ -126,6 +126,9 @@ class BidsConv():
         self.rawscan_path = os.path.normpath(fdir)
         self.rawscan_dirname = os.path.basename(
             os.path.normpath(self.rawscan_path))
+
+        # The second part of the scan file parent directory name (e.g., s03_'ANAT') will
+        # be used to determine the 'raw' scan type
         self.rawscan_type = self.rawscan_dirname.split('_')[1]
         self.helpful_type = self.scan2helpful(self.rawscan_type)
         print("\n" + stru(str("FOUND " + self.helpful_type + " SCAN")) + ": " + self.rawscan_path + "\n")
@@ -182,7 +185,7 @@ class BidsConv():
         # If the raw scan is an fmri (i.e., 'epi') get the value of the 'SeriesNumber' field from the yaml file /
         # and use it to set bids_runno: the BIDS run number field (i.e., block trial number). If the scan is an fmri /
         # use the acquisition label to set the BIDS task label, which describes the nature of the functional paradigm
-        if self.rawscan_type.__contains__('epi'):
+        if self.rawscan_type == 'epi':
             bids_tasklabel = bids_acqlabel.replace("_acq-", "")
             bids_tasklabel = "_task-" + bids_tasklabel
             bids_acqlabel = ''
@@ -200,7 +203,7 @@ class BidsConv():
         self.bids_scansessiondir = "ses-" + str(self.wave_no).zfill(2)
 
         # bids_scanmode: the BIDS data type of the scan (e.g., func)
-        if self.rawscan_type.__contains__('fmap'):
+        if self.rawscan_type == 'fmap':
             if bids_acqlabel.__contains__('EPI'):
                 self.bids_scanmode = '_epirawfmap'
             elif bids_acqlabel.__contains__('DTI'):
@@ -235,13 +238,21 @@ class BidsConv():
                         "-o", self.dcm2niix_outdir, self.rawscan_path])
 
         # If the scan is an fmri, append the taskname to the BIDS sidecar file
-        if self.rawscan_type.__contains__('epi'):
+        if self.rawscan_type == 'epi':
             jsonfilepath = os.path.join(self.dcm2niix_outdir, self.dcm2niix_label + '.json')
             with open(jsonfilepath) as jsonfile:
                 sidecar = json.load(jsonfile)
             sidecar['TaskName'] = self.bids_sidecar_taskname
             with open(jsonfilepath, 'w') as f:
                 json.dump(sidecar, f)
+
+        # dcm2niix creates bvecs and bval files for the 'AxT2FLAIRCOPYDTI' (T2w) scans (likely because they include 'DTI'?)
+        # Delete these extraneous files for BIDS compliance
+        if self.rawscan_type == 'fse':
+            for file in os.listdir(self.dcm2niix_outdir):
+                if file.endswith(".bvec") or file.endswith(".bval"):
+                    os.remove(os.path.join(self.dcm2niix_outdir, file))
+
 
     # Generating usable fieldmaps from the raw fieldmap images
     def make_fmap(self, scan_type):
