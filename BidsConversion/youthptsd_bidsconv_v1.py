@@ -169,8 +169,7 @@ class BidsConv():
         # and use it to set bids_runno: the BIDS run number field (i.e., block trial number). If the scan is an fmri /
         # use the acquisition label to set the BIDS task label, which describes the nature of the functional paradigm
         if self.rawscan_type == 'epi':
-            bids_tasklabel = bids_acqlabel.replace("_acq-", "")
-            bids_tasklabel = "_task-" + bids_tasklabel
+            bids_tasklabel = bids_acqlabel.replace("_acq-", "_task-")
             bids_acqlabel = ''
             with open(yaml_filepath, "r") as yfile2:
                 for line in yfile2:
@@ -235,7 +234,6 @@ class BidsConv():
             for file in os.listdir(self.dcm2niix_outdir):
                 if file.endswith(".bvec") or file.endswith(".bval"):
                     os.remove(os.path.join(self.dcm2niix_outdir, file))
-
 
     # Generating usable fieldmaps from the raw fieldmap images
     def make_fmap(self, scan_type):
