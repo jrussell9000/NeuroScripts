@@ -30,12 +30,12 @@ class tgz2NIFTI():
                 returnkey = scan2bidsdir_dict[key]
         return(returnkey)
 
-    def unpack_tgz(input_tgz_filepath):
+    def unpack_tgz(self):
         tgz_fpath = pathlib.PurePath(input_tgz_filepath)
         tgz_fname = tgz_fpath.name
         fullid = tgz_fpath.parents[1]
-        timept = fullid.split('_')[0].replace('C', '')
-        subjid = fullid.split('_')[1]
+        self.timept = fullid.split('_')[0].replace('C', '')
+        self.subjid = fullid.split('_')[1]
         tmpdir = tempfile.mkdtemp(dir='/tmp')
         shutil.copy(tgz_fpath, tmpdir)
         tgz_file_tmp = pathlib.PurePath(tmpdir, tgz_fname)
@@ -43,14 +43,13 @@ class tgz2NIFTI():
         print("Decompressing DICOM archive file", tgz_fname, "...")
         tgz_file_open.extractall(path=tmpdir)
         tgz_dcm_dirname = os.path.commonprefix(tgz_file_open.getnames())
-        tgz_dcm_dirpath = pathlib.PurePath(tmpdir, tgz_dcm_dirname)
-        return(subjid, timept, tgz_dcm_dirpath)
+        self.tgz_dcm_dirpath = pathlib.PurePath(tmpdir, tgz_dcm_dirname)
 
-    def getbidsparams(inputdcmdir, subjid, timept):
+    def getbidsparams(self):
         raw_scandirname = inputdcmdir.parents[0]
         raw_scantype = inputdcmdir.split('.')[1]
         raw_seqno = int(inputdcmdir.split('.')[0][1:])
-        raw_timept = int(timept)
+        raw_timept = int(self.timept)
         firstdcm = [x[0] for x in os.walk(inputdcmdir)]
         dcm = pydicom.dcmread(pathlib.Path(inputdcmdir, 'i.000001.dcm'))
         bids_acqlabel = dcm.SeriesDescription
@@ -59,7 +58,7 @@ class tgz2NIFTI():
                 bids_acqlabel = bids_acqlabel.replace(c, '')
         bids_acqlabel = "_acq-" + bids_acqlabel
         if raw_scantype.__contains__('EPI'):
-            bids_tasklabel = bids_acqlabel.replace("_acq-","_task-").replace("EPI","")
+            bids_tasklabel = bids_acqlabel.replace("_acq-", "_task-").replace("EPI", "")
             bids_acqlabel = ""
         else:
             bids_tasklabel = ""
@@ -73,13 +72,24 @@ class tgz2NIFTI():
         bids_participantid = "sub-" + subjid
         bids_scansession = "ses-" + timept
         bids_scanmode = scan2bidsmode(raw_scantype)
-        bids_scanecho
+        #bids_scanecho
         printu("BIDS PARAMETERS")
         print("Participant ID:", bids_participantid)
         print("Wave:", bids_scansession)
         print("ACQ Label:", bids_acqlabel)
-        return(bids_acqlabel, bids_participantid, bids_scansession, bids_scanmode, bids_scanecho)
+        self.dcm2niix_label = bids_participantID + bids_tasklabel + bids_acqlabel + \
+            bids_run_no + bids_echo + bids_pedir + bids_scanmode
+        self.bids_outdir = Path(self.outputpath, bids_participantID, bids_scansession, self.scan2bidsdir(raw_scandirname))
 
+    def conv_dcms(self):       
+        os.makedirs(self.bids_outdir, exist_ok=True)
+        subprocess.run(["dcm2niix", "-f", self.dcm2niix_label,
+                        "-o", self.bidsscan_outdir, self.rawscan_path])
+        print("\n")
+        # Fix json bids file for fieldmaps here.
+
+    def cleanup(self):
+        shutil.rmtree(self.tmpdir)
     def run_conv():
 
 
