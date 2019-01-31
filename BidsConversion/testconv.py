@@ -2,10 +2,11 @@
 import sys
 import os
 from lib.Converters import converters
+from lib.Converters import makefmaps
 import pathlib
 import argparse
 
-scanstoskip = ('Screen_Save', 'SSFSE', 'FASep', 'AvDCSep', 'TraceSep')
+scanstoskip = ('Screen_Save', 'SSFSE', '.FA', '.AvDC', '.Trace', 'B1_Cali')
 subjectstoskip = ('')
 p = pathlib.Path('/home/justin/1111_C1/dicoms')
 
@@ -31,25 +32,39 @@ class run():
    
 
     def convertscans_tgz(self):
-        # if not self.inputidfile == None:
-        #     with open(self.inputidfile, 'r') as idfile:
-        #         sids = idfile.readlines()
-        #         sids = [s.strip('\n') for s in sids]
-        #         subjs = (sid_dir for sid_dir in sorted(os.listdir(self.studypath)) if any(x in str(sid_dir) for x in sids))
-        # else:
-        # subjs = (sid_dir for sid_dir in sorted(os.listdir(self.studypath)) if not any(x in str(sid_dir) for x in subjectstoskip))
-        dcm_path = pathlib.PosixPath(self.studypath, "dicoms")
         self.studypath = pathlib.PosixPath(self.studypath)
-        for subjdir in sorted(self.studypath.iterdir()):
-            dcm_path = pathlib.PosixPath(subjdir, "dicoms")
-            for filename in sorted(dcm_path.glob('*.tgz')):
-                if not any(x in filename.name for x in scanstoskip):
-                    conv = converters.tgz2NIFTI(filename, '/home/justin/pyout')
+        self.outputpath = pathlib.PosixPath(self.outputpath)
+        if self.inputidfile == None:
+            for subjdir in sorted(self.studypath.iterdir()):
+                print("\n" + "*"*35 + "STARTING PARTICIPANT: " + subjdir.parts[-1] + "\n" + "*"*35)
+                dcm_path = pathlib.PosixPath(subjdir, "dicoms")
+                for filename in sorted(dcm_path.glob('*.tgz')):
+                    if not any(x in filename.name for x in scanstoskip):
+                        conv = converters.tgz2NIFTI(filename, self.outputpath)
+        else:
+            with open(self.inputidfile, 'r') as idfile:
+                sids = idfile.readlines()
+                sids = [s.strip('\n') for s in sids]
+                subjdirs = (subjdir for subjdir in sorted(self.studypath.iterdir()) if any(x in str(subjdir) for x in sids))             
+                for subjdir in subjdirs:
+                    print("\n" + "*"*35 + "\n" + "STARTING PARTICIPANT: " + subjdir.parts[-1] + "\n" + "*"*35)
+                    dcm_path = pathlib.PosixPath(subjdir, "dicoms")
+                    bids_participantID, bids_scansession = converters.tgz2NIFTI.getfmapinfo(subjdir)
+                    fmapdir = pathlib.PosixPath(self.outputpath, bids_participantID, bids_scansession, 'fmap')
+                    for filename in sorted(dcm_path.glob('*.tgz')):
+                        if not any(x in filename.name for x in scanstoskip):                  
+                            converters.tgz2NIFTI(filename, self.outputpath)
+                    makefmaps.make_fmaps('EPI', fmapdir, self.outputpath, bids_participantID, bids_scansession)
+                    makefmaps.make_fmaps('DTI', fmapdir, self.outputpath, bids_participantID, bids_scansession)
+                    print("\n" + "#"*35 + "\n" + "COMPLETED PARTICIPANT: " + subjdir.parts[-1] + "\n" + "#"*35)
+                    #fmapdir = pathlib.PurePath(self.outputpath, bids_participantID, bids_scansession, 'fmap')
+                    #makefmap = makefmaps.make_fmaps('epi', fmapdir)
+                    
 
     def convertscans_bz2(self):
-        self.studypath = pathlib.PosixPath(self.studypath)
+        self.studypath = pathlib.PurePath(self.studypath)
         for subjdir in sorted(self.studypath.iterdir()):
-            dicomspath = pathlib.PosixPath(subjdir, "dicoms")
+            dicomspath = pathlib.PurePath(subjdir, "dicoms")
             scandirs = (scandir for scandir in sorted(dicomspath.iterdir()) if scandir.is_dir() \
             if not any(x in str(scandir) for x in scanstoskip))
             for scandir in scandirs:
@@ -58,4 +73,5 @@ class run():
 if __name__ == '__main__':
     r = run()
     r.initialize()
-    r.convertscans()
+    r.convertscans_tgz()
+

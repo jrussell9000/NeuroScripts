@@ -21,10 +21,12 @@ def scan2bidsmode(modstring):
     scan2bidsmode_dict = {
         "MPRAGE": "T1w",
         "BRAVO": "T1w",
+        "AxT2FLAIR": "T2w",
         "NODDI": "dwi",
-        "EPI": "bold",
-        "Fieldmap": "fmap",
-        "DTI": "dwi"
+        "EPI_": "bold",
+        "Fieldmap_EPI": "epirawfmap",
+        "Fieldmap_DTI": "dwirawfmap",
+        "Ax_DTI": "dwi"
     }
     returnkey = "nomatch"
     for key in scan2bidsmode_dict.keys():
@@ -37,9 +39,12 @@ def scan2bidsdir(typestring):
     scan2bidsdir_dict = {
         "MPRAGE": "anat",
         "BRAVO": "anat",
+        "AxT2FLAIR": "anat",
         "NODDI": "dwi",
         "EPI": "func",
-        "Fieldmap": "fmap"
+        "Fieldmap_EPI": "fmap",
+        "Fieldmap_DTI": "fmap",
+        "Ax_DTI": "dwi"
     }
     returnkey = "nomatch"
     for key in scan2bidsdir_dict.keys():
