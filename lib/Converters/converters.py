@@ -92,7 +92,7 @@ class tgz2NIFTI():
         else:
             bids_pedir = ""
         self.bids_participantID = "sub-" + self.subjid
-        self.bids_scansession = "ses-" + str(self.timept)
+        self.bids_scansession = "ses-" + str(self.timept).zfill(2)
         bids_scanmode = tools.scan2bidsmode(self.raw_scantype)
         print(tools.stru("Parsing BIDS parameters") + "...")
         print("Participant:", self.bids_participantID)
@@ -125,10 +125,10 @@ class tgz2NIFTI():
 
     def conv_dcms(self):
         os.makedirs(self.bids_outdir, exist_ok=True)
-        print("\n" + tools.stru("Beginning scan conversion") + "..." + "\n")
+        print("\n" + tools.stru("Beginning scan conversion") + "...")
         subprocess.run(["dcm2niix", "-f", self.dcm2niix_label,
                         "-o", self.bids_outdir, self.tgz_dcm_dirpath])
-        # If the scan is an fmri, append the taskname to the BIDS sidecar file
+        # If the scan is an fmri ('EPI'), append the taskname to the BIDS sidecar file
         if self.raw_scantype.__contains__('EPI_'):
             jsonfilepath = pathlib.PosixPath(self.bids_outdir, self.dcm2niix_label + '.json')
             with open(jsonfilepath) as jsonfile:
@@ -137,8 +137,7 @@ class tgz2NIFTI():
             with open(jsonfilepath, 'w') as f:
                 json.dump(sidecar, f)
         print("-"*35)
-
-    
+ 
     def getfmapinfo(input_subjdir):
         subjdir = pathlib.PosixPath(input_subjdir)
         fullid = subjdir.parts[-1]
@@ -152,7 +151,7 @@ class tgz2NIFTI():
             timept = 2
             subjid = fullid[1:4]
         bids_participantID = "sub-" + subjid
-        bids_scansession = "ses-" + str(timept)
+        bids_scansession = "ses-" + str(timept).zfill(2)
         return bids_participantID, bids_scansession
 
     def cleanup(self):

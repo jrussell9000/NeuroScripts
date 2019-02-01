@@ -29,7 +29,6 @@ class run():
         self.studypath = args["studypath"]
         self.inputidfile = args["ids"]
         self.outputpath = args["outputpath"]
-   
 
     def convertscans_tgz(self):
         self.studypath = pathlib.PosixPath(self.studypath)
@@ -57,9 +56,6 @@ class run():
                     makefmaps.make_fmaps('EPI', fmapdir, self.outputpath, bids_participantID, bids_scansession)
                     makefmaps.make_fmaps('DTI', fmapdir, self.outputpath, bids_participantID, bids_scansession)
                     print("\n" + "#"*35 + "\n" + "COMPLETED PARTICIPANT: " + subjdir.parts[-1] + "\n" + "#"*35)
-                    #fmapdir = pathlib.PurePath(self.outputpath, bids_participantID, bids_scansession, 'fmap')
-                    #makefmap = makefmaps.make_fmaps('epi', fmapdir)
-                    
 
     def convertscans_bz2(self):
         self.studypath = pathlib.PurePath(self.studypath)
