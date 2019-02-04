@@ -116,23 +116,23 @@ class make_fmaps():
             subprocess.call(["3dcalc", "-float", "-a", rawfmapfile_1v2, "-b", rawfmapfile_1v3, "-c", rawfmapfile_2v2, "-d", rawfmapfile_2v3,
                             "-expr", "atan2((b*c-d*a),(a*c+b*d))", "-prefix", wrappedphasefile])
 
-            print("\n" + tools.stru("Step 2") + ": Extracting magnitude image #1")
+            print("\n" + tools.stru("Step 2") + ": Extracting magnitude image")
             # -Extract magnitude image from first raw fieldmap volume
             subprocess.call(["3dcalc", "-a", rawfmapfile_1v0,
                             "-expr", calc_extractmag, "-prefix", magoutfile1])
 
-            print("\n" + tools.stru("Step 3") + ": Extracting magnitude image #2")
-            # -Extract magnitude image from second raw fieldmap volume
-            subprocess.call(["3dcalc", "-a", rawfmapfile_2v0,
-                            "-expr", calc_extractmag, "-prefix", magoutfile2])
+            # print("\n" + tools.stru("Step 3") + ": Extracting magnitude image #2")
+            # # -Extract magnitude image from second raw fieldmap volume
+            # subprocess.call(["3dcalc", "-a", rawfmapfile_2v0,
+            #                 "-expr", calc_extractmag, "-prefix", magoutfile2])
 
-            print("\n" + tools.stru("Step 4") + ": Unwrapping the phase difference using FSL's 'prelude'")
+            print("\n" + tools.stru("Step 3") + ": Unwrapping the phase difference using FSL's 'prelude'")
             # -Unwrap the phase difference file
             subprocess.call(["prelude", "-v", "-p", wrappedphasefile,
                             "-a", magoutfile1, "-o", phasediffileRads])
             phasediffileRads = phasediffileRads + '.gz'
 
-            print("\n" + tools.stru("Step 5") + ": Converting the phase difference from radians to Hz")
+            print("\n" + tools.stru("Step 4") + ": Converting the phase difference from radians to Hz")
             # -Convert the phase difference file from rads to Hz
             # -Formula for conversion: "a" x 1000 / x ; where x is the abs. value of the difference in TE between the two volumes
             subprocess.call(["3dcalc", "-a", phasediffileRads,
