@@ -33,21 +33,29 @@ def makesubjprocdirs(sourcedir, procdir):
         shutil.copy(file, procdir)
     
 #makesubjprocdirs(sourcedir, procdir)  
-inputdwi='/Users/jdrussell3/youthptsd/dwiproc/sub-001/ses-01/sub-001_ses-01_acq-AxDTIASSET_dwi.nii'
-fieldmap='/Users/jdrussell3/youthptsd/dwiproc/sub-001/ses-01/sub-001_ses-01_acq-FieldmapDTI_phasediff.nii'
-fieldmapmag='/Users/jdrussell3/youthptsd/dwiproc/sub-001/ses-01/sub-001_ses-01_acq-FieldmapDTI_magnitude1.nii'
-outputdwi='/Users/jdrussell3/youthptsd/dwiproc/sub-001/ses-01/sub-001_ses-01_acq-FieldmapDTI_dwi_fmapcorr.nii'
+origdwi=Path('/Users/jdrussell3/youthptsd/dwiproc/sub-001/ses-01/sub-001_ses-01_acq-AxDTIASSET_dwi.nii')
+bvecfile=Path('/Users/jdrussell3/youthptsd/dwiproc/sub-001/ses-01/sub-001_ses-01_acq-AxDTIASSET_dwi.bvec')
+bvalfile=Path('/Users/jdrussell3/youthptsd/dwiproc/sub-001/ses-01/sub-001_ses-01_acq-AxDTIASSET_dwi.bval')
+jsonfile=Path('/Users/jdrussell3/youthptsd/dwiproc/sub-001/ses-01/sub-001_ses-01_acq-AxDTIASSET_dwi.json')
+fieldmap=Path('/Users/jdrussell3/youthptsd/dwiproc/sub-001/ses-01/sub-001_ses-01_acq-FieldmapDTI_phasediff.nii')
+fieldmapmag=Path('/Users/jdrussell3/youthptsd/dwiproc/sub-001/ses-01/sub-001_ses-01_acq-FieldmapDTI_magnitude1.nii')
 
-def fieldmapcorrection(inputdwi, fieldmap, fieldmapmag, outputdwi):
+fmapcorr_nii_dwi=origdwi.parent / Path('fmapcorr.' + origdwi.parts[-1])
+fmapcorr_mif_dwi=origdwi.parent / Path(origdwi.parts[-1].replace('.nii','.mif'))
+denoise_dwi=origdwi.parent / Path('den.' + origdwi.parts[-1])
+degibbs_dwi=origdwi.parent / Path('deg.' + origdwi.parts[-1])
+preproc_dwi=origdwi.parent / Path('preproc.' + origdwi.parts[-1])
+
+def fieldmapcorrection(inputdwi, fieldmap, fieldmapmag, fmapcorr_nii_dwi):
     inputdwi = Path(inputdwi)
     fieldmap = Path(fieldmap)
     fieldmapmag = Path(fieldmapmag)
-    outputdwi = Path(outputdwi)
+    fmapcorr_dwi_nii = Path(fmapcorr_dwi_nii)
     masked_fmapmag = fieldmapmag.parent / Path('mask.' + fieldmapmag.parts[-1])
     masked2pi_fmap = fieldmap.parent / Path('masked2pi' + fieldmap.parts[-1])
     tmpLPI_inputdwi = inputdwi.parent / Path('tmp.LPI.' + inputdwi.parts[-1])
     tmpLPImasked2pi_fmap = fieldmap.parent / Path('tmp.LPI.masked2pi.' + fieldmap.parts[-1])
-    tmpLPI_outputdwi = outputdwi.parent / ('tmp.LPI.' + outputdwi.parts[-1])
+    tmpLPI_fmapcorr_dwi = fmapcorr_nii_dwi.parent / ('tmp.LPI.' + fmapcorr_nii_dwi.parts[-1])
     subprocess.run(['3dAutomask','-prefix', masked_fmapmag, fieldmapmag])
     subprocess.run(['3dcalc', '-datum', 'float', '-a', fieldmap, '-b', masked_fmapmag, '-expr', 'a*b*2*PI',
     '-prefix', masked2pi_fmap])
@@ -55,10 +63,36 @@ def fieldmapcorrection(inputdwi, fieldmap, fieldmapmag, outputdwi):
     orient = getorient.stdout.read()
     subprocess.run(['3dresample', '-orient', 'LPI', '-inset', inputdwi, '-prefix', tmpLPI_inputdwi])
     subprocess.run(['3dresample', '-master', tmpLPI_inputdwi, '-inset', masked2pi_fmap, '-prefix', tmpLPImasked2pi_fmap])
-    subprocess.run(['fugue', '-v','-i', tmpLPI_inputdwi, '--loadfmap='+ str(tmpLPImasked2pi_fmap), '--dwell=.000568', '-u', tmpLPI_outputdwi])
-    subprocess.run(['3dresample', '-orient', orient, '-prefix', outputdwi, '-inset', tmpLPI_outputdwi])
-    
-fieldmapcorrection(inputdwi, fieldmap, fieldmapmag, outputdwi) 
+    subprocess.run(['fugue', '-v','-i', tmpLPI_inputdwi, '--loadfmap='+ str(tmpLPImasked2pi_fmap), '--dwell=.000568', '-u', tmpLPI_fmapcorr_dwi])
+    subprocess.run(['3dresample', '-orient', orient, '-prefix', fmapcorr_dwi_nii, '-inset', tmpLPI_fmapcorr_dwi])
+
+def mrconvert(inputdwi):
+    inputdwi = Path(inputdwi)
+    subprocess.call(['mrconvert', '-json_import', jsonfile, '-fslgrad', bvecfile, bvalfile, fmapcorr_nii_dwi, fmapcorr_mif_dwi])
+
+def denoise(inputdwi):
+    inputdwi = Path(inputdwi)
+    #outputdwi = origdwi.parent / Path('den.' + origdwi.parts[-1])
+    subprocess.call(['dwidenoise', '-force', inputdwi, denoise_dwi])
+
+def degibbs(inputdwi):
+    inputdwi = Path(inputdwi)
+    #outputdwi= origdwi.parent / Path('deg.' + origdwi.parts[-1])
+    subprocess.call(['mrdegibbs', '-force', inputdwi, degibbs_dwi])
+
+def dwipreproc(inputdwi):
+    inputdwi = Path(inputdwi)
+    subprocess.call(['dwipreproc', inputdwi, preproc_dwi, '-debug', '-json', jsonfile, '-fslgrad', bvecfile, bvalfile, '-rpe_none', '-pe_dir', 'PA', '-eddy_option', '"--slm=linear"'])
+    # foreach * : dwipreproc IN/dwi_den_deg.mif IN/dwi_den_deg_pp.mif -rpe_none -pe_dir PA -eddy_options " --slm=linear"
+
+# fieldmapcorrection(origdwi, fieldmap, fieldmapmag, fmapcorr_nii_dwi) 
+# mrconvert(fmapcorr_nii_dwi)
+# denoise(fmapcorr_mif_dwi)
+# degibbs(denoise_dwi)
+dwipreproc(degibbs_dwi)
+
+
+
         # orig_dwidir = pathlib.PosixPath(sesdir, 'dwi')
         # orig_anatdir = pathlib.PosixPath(sesdir, 'anat')
         # orig_fmapdir = pathlib.PosixPath(sesdir, 'fmap')
