@@ -17,14 +17,33 @@ from lib.Utils import tools
 class tgz2NIFTI():
     # Copy a TGZ dicom archive file ('input_tgz') to /tmp/tmpXXXX, unpack it, and copy the output to 'outputdir'
     # Assumes that the TGZ file is located within XXXX_Y1/dicoms where XXXX is the subject ID and Y is the wave number
-    def __init__(self, input_tgz_filepath, outputpath):
-        self.input_tgz_filepath = input_tgz_filepath
-        self.outputpath = outputpath
-        self.unpack_tgz()
-        self.getbidsparams()
-        self.conv_dcms()
-        self.cleanup()
+    # def __init__(self, input_tgz_filepath, outputpath):
+    #     self.input_tgz_filepath = input_tgz_filepath
+    #     self.outputpath = outputpath
+    #     self.unpack_tgz()
+    #     self.getbidsparams()
+    #     self.conv_dcms()
+    #     self.cleanup()
 
+    def __init__(self, studypath, outputpath, scanstoskip, inputidfile):
+        self.studypath = pathlib.PosixPath(studypath)
+        self.outputpath = pathlib.PosixPath(outputpath)
+        if inputidfile == None:
+            subjdirs = sorted(self.studypath.iterdir())
+        else:
+            with open(inputidfile, 'r') as idfile:
+                sids = idfile.readlines()
+                sids = [s.strip('\n') for s in sids]
+                subjdirs = (subjdir for subjdir in sorted(self.studypath.iterdir()) if any(x in str(subjdir) for x in sids))
+        for subjdir in subjdirs:
+            print("\n" + "*"*35 + "\n" + "STARTING PARTICIPANT: " + subjdir.parts[-1] + "\n" + "*"*35)
+            dcm_path = pathlib.PosixPath(subjdir, "dicoms")
+            for fname in sorted(dcm_path.glob('*.tgz')):
+                if not any(x in fname.name for x in scanstoskip):
+                    self.unpack_tgz()
+                    self.getbidsparams()
+                    self.conv_dcms()
+                    self.cleanup()
 
     def unpack_tgz(self):
         tgz_fpath = pathlib.PosixPath(self.input_tgz_filepath)

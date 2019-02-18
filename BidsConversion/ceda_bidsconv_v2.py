@@ -10,7 +10,7 @@ import subprocess
 import tempfile
 import json
 
-from Local.Utils import convert
+from lib.Utils import convert
 
 
 class BidsConv():
