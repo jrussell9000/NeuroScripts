@@ -6,7 +6,6 @@ import sys
 import tarfile
 import tempfile
 import bz2
-import pydicom
 import json
 from lib.Utils import tools
 

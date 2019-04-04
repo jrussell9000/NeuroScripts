@@ -23,10 +23,12 @@ def scan2bidsmode(modstring):
         "BRAVO": "T1w",
         "AxT2FLAIR": "T2w",
         "NODDI": "dwi",
+        "Ax_DTI": "dwi",
         "EPI_": "bold",
         "Fieldmap_EPI": "epirawfmap",
         "Fieldmap_DTI": "dwirawfmap",
-        "Ax_DTI": "dwi"
+        "WATER_Fieldmap": "magnitude",
+        "FieldMap_Fieldmap_3D": "fieldmap"
     }
     returnkey = "nomatch"
     for key in scan2bidsmode_dict.keys():
@@ -41,10 +43,12 @@ def scan2bidsdir(typestring):
         "BRAVO": "anat",
         "AxT2FLAIR": "anat",
         "NODDI": "dwi",
+        "Ax_DTI": "dwi",
         "EPI": "func",
         "Fieldmap_EPI": "fmap",
         "Fieldmap_DTI": "fmap",
-        "Ax_DTI": "dwi"
+        "WATER_Fieldmap": "fmap",
+        "FieldMap_Fieldmap_3D": "fmap"
     }
     returnkey = "nomatch"
     for key in scan2bidsdir_dict.keys():

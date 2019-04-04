@@ -10,6 +10,7 @@ import json
 from pathlib import Path
 from distutils.dir_util import copy_tree
 import lib.Utils.tools as u
+from lib.Converters import fieldmaps
 
 
 class BidsConv():
@@ -238,162 +239,6 @@ class BidsConv():
                 if file.endswith(".bvec") or file.endswith(".bval"):
                     os.remove(os.path.join(self.dcm2niix_outdir, file))
 
-    # Generating usable fieldmaps from the raw fieldmap images
-    def make_fmap(self, scan_type):
-        self.fmap_dir = os.path.join(
-            self.outputpath, self.bids_participantID, self.bids_scansessiondir, 'fmap')
-        gen = (rawfmapfile for rawfmapfile in os.listdir(self.fmap_dir)
-               if rawfmapfile.endswith('.nii') if rawfmapfile.__contains__(scan_type))
-
-        # dcm2niix will automatically split the different echo scans into separate files (shorter TE time is the first volume)
-        for rawfmapfile in gen:
-            if rawfmapfile.__contains__('_e1a.'):
-                rawfmapfile_2 = rawfmapfile
-            elif rawfmapfile.__contains__('_e1.'):
-                rawfmapfile_1 = rawfmapfile
-            else:
-                next
-
-        # Stop and go next if both echo files aren't there (can't process the phase difference)
-        if not('rawfmapfile_2' in locals() and 'rawfmapfile_1' in locals()):
-            return None
-
-        os.chdir(self.fmap_dir)
-
-        # Create file and volume strings to pass to AFNI's 3DCalc; 0=Magnitude, 2=First phase image 3=Second phase image
-        rawfmapfile_1v0 = str(rawfmapfile_1 + '[0]')
-        rawfmapfile_1v2 = str(rawfmapfile_1 + '[2]')
-        rawfmapfile_1v3 = str(rawfmapfile_1 + '[3]')
-        rawfmapfile_2v0 = str(rawfmapfile_2 + '[0]')
-        rawfmapfile_2v2 = str(rawfmapfile_2 + '[2]')
-        rawfmapfile_2v3 = str(rawfmapfile_2 + '[3]')
-
-        scan_type = str(scan_type)
-
-        wrappedphasefile = rawfmapfile_1.replace('rawfmap_e1', 'wrappedphasediff')
-        mag1 = rawfmapfile_1.replace('rawfmap_e1', 'mag1')
-        mag1_brain = rawfmapfile_1.replace('rawfmap_e1', 'mag1_brain')
-        mag1_brain_mask = rawfmapfile_1.replace('rawfmap_e1', 'mag1_brain_mask')
-        phasediff_rads = rawfmapfile_1.replace('rawfmap_e1', 'phasediff_rads')
-        phasediff_Hz = rawfmapfile_1.replace('rawfmap_e1', 'phasediff_Hz')
-        
-        # Create filenames for the in-processing scans (distinguish by type)
-        # and assign the names to variables which we will pass to 3DCalc
-        if scan_type.__contains__('epi'):
-            wrappedphasefile = rawfmapfile_1.replace(
-                '_epirawfmap_e1', '_wrapped_phasediff')
-            magoutfile1 = rawfmapfile_1.replace(
-                '_epirawfmap_e1', '_magnitude1')
-            # magoutfile2 = rawfmapfile_1.replace(
-            #     '_epirawfmap_e1', '_magnitude2')
-            magoutfile1_brain = rawfmapfile_1.replace(
-                '_epirawfmap_e1', '_magnitude1_brain')
-            magoutfile1_brain_mask = rawfmapfile_1.replace(
-                '_epirawfmap_e1', '_magnitude1_brain_mask')
-            phasediffileRads = rawfmapfile_1.replace(
-                '_epirawfmap_e1', '_phasediff_rads')
-            phasediffileHz = rawfmapfile_1.replace(
-                '_epirawfmap_e1', '_phasediff')
-            # Append the BIDS sidecar for each fieldmap with the name of the associated scan file
-            fmap_intendedfor_path = os.path.join(
-                self.outputpath, self.bids_participantID, self.bids_scansessiondir, 'func')
-            fmap_intendedfor_dict = {}
-            for scan in os.listdir(fmap_intendedfor_path):
-                if scan.endswith('.nii'):
-                    fmap_intendedfor_dict.setdefault("IntendedFor", []).append(
-                        self.bids_scansessiondir + '/func/' + scan)
-            print("\n" + u.stru("CREATING FIELD MAP FOR EPI SCANS:"))
-        elif scan_type.__contains__('dwi'):
-            wrappedphasefile = rawfmapfile_1.replace(
-                '_dwirawfmap_e1', '_wrapped_phasediff')
-            magoutfile1 = rawfmapfile_1.replace(
-                '_dwirawfmap_e1', '_magnitude1')
-            magoutfile1_brain = rawfmapfile_1.replace(
-                '_dwirawfmap_e1', '_magnitude1_brain').replace('.nii','.nii.gz')
-            magoutfile1_brain_mask = rawfmapfile_1.replace(
-                '_dwirawfmap_e1', '_magnitude1_brain_mask').replace('.nii','.nii.gz')
-            # magoutfile2 = rawfmapfile_1.replace(
-            #     '_dwirawfmap_e1', '_magnitude2')
-            phasediffileRads = rawfmapfile_1.replace(
-                '_dwirawfmap_e1', '_phasediff_rads')
-            phasediffileHz = rawfmapfile_1.replace(
-                '_dwirawfmap_e1', '_phasediff')
-            # Append the BIDS sidecar for each fieldmap with the name of the associated scan file
-            fmap_intendedfor_path = os.path.join(
-                self.outputpath, self.bids_participantID, self.bids_scansessiondir, 'dwi')
-            fmap_intendedfor_dict = {}
-            for scan in os.listdir(fmap_intendedfor_path):
-                if scan.endswith('.nii'):
-                    fmap_intendedfor_dict.setdefault("IntendedFor", []).append(
-                        self.bids_scansessiondir + '/dwi/' + scan)
-            print("\n" + u.stru("CREATING FIELD MAP FOR DTI SCANS:"))
-
-        # Set the formulas and parameters to be passed to 3DCalc
-        calc_computephase = "atan2((b*c-d*a),(a*c+b*d))"
-        calc_extractmag = "a"
-        te_diff = 3
-        calc_rads2hz = "a*1000/" + str(te_diff)
-
-        # Append the echo times to the BIDS sidecar for this fieldmap
-        fmap_description = {
-            "EchoTime1": ".007",
-            "EchoTime2": ".010"
-        }
-        fmap_description.update(fmap_intendedfor_dict)
-        json_phasediffile = phasediffileHz.replace(".nii", ".json")
-        with open(json_phasediffile, 'w') as outfile:
-            json.dump(fmap_description, outfile)
-
-        # Run the fieldmap conversion using Rasmus' method (3DCalc, FSL Prelude, then convert from rads to Hz)
-        # If any process fails, print an error to the console and go next
-        try:
-            print("\n" + u.stru("Step 1") + ": Computing the phase difference from the raw fieldmap volumes")
-            # -Computing the phase difference from the raw fieldmap volume
-            subprocess.call(["3dcalc", "-float", "-a", rawfmapfile_1v2, "-b", rawfmapfile_1v3, "-c", rawfmapfile_2v2, "-d", rawfmapfile_2v3,
-                            "-expr", "atan2((b*c-d*a),(a*c+b*d))", "-prefix", wrappedphasefile])
-
-            print("\n" + u.stru("Step 2") + ": Extracting magnitude image #1")
-            # -Extract magnitude image from first raw fieldmap volume
-            subprocess.call(["3dcalc", "-a", rawfmapfile_1v0,
-                            "-expr", calc_extractmag, "-prefix", magoutfile1])
-
-            # print("\n" + u.stru("Step 3") + ": Extracting magnitude image #2")
-            # # -Extract magnitude image from second raw fieldmap volume
-            # subprocess.call(["3dcalc", "-a", rawfmapfile_2v0,
-            #                 "-expr", calc_extractmag, "-prefix", magoutfile2])
-            
-            print("\n" + u.str("Step 3") + ": Stripping magnitude image and generating mask")
-            # -Run bet2 on the magnitude image and generate a mask 
-            subprocess.call(["bet2", magoutfile1, magoutfile1_brain, '-m'])
-
-            print("\n" + u.stru("Step 4") + ": Unwrapping the phase difference using FSL's 'prelude'")
-            # -Unwrap the phase difference file
-            subprocess.call(["prelude", "-v", "-p", wrappedphasefile,
-                            "-a", magoutfile1, "-o", phasediffileRads])
-            phasediffileRads = phasediffileRads + '.gz'
-
-            print("\n" + u.stru("Step 5") + ": Converting the phase difference from radians to Hz")
-            # -Convert the phase difference file from rads to Hz
-            # -Formula for conversion: "a" x 1000 / x ; where x is the abs. value of the difference in TE between the two volumes
-            subprocess.call(["3dcalc", "-a", phasediffileRads,
-                            "-expr", calc_rads2hz, "-prefix", phasediffileHz])
-
-        except OSError as e:
-            print("ERROR MAKING FIELDMAPS: " + e)
-            pass
-
-        # Cleanup unnecessary fieldmap files and old sidecar files
-        try:
-            os.remove(wrappedphasefile)
-            os.remove(phasediffileRads)
-            os.remove(rawfmapfile_1)
-            os.remove(rawfmapfile_1.replace('.nii', '.json'))
-            os.remove(rawfmapfile_2)
-            os.remove(rawfmapfile_2.replace('.nii', '.json'))
-        except OSError as e:
-            print(e)
-            pass
-
     # Remove the temp directory
     def cleanup(self):
         shutil.rmtree(self.subjID_tmpdir)
@@ -427,8 +272,11 @@ class BidsConv():
                 self.organize_dcms()
                 self.conv_dcms()
 
-            #self.make_fmap('epi')
-            #self.make_fmap('dwi')
+            # self.prep_fmap('EPI')
+            # self.prep_fmap('DTI')
+            self.fmap_dir = os.path.join(self.outputpath, self.bids_participantID, self.bids_scansessiondir, 'fmap')
+            fieldmaps.makefmaps(self.fmap_dir, 'DTI')
+            fieldmaps.makefmaps(self.fmap_dir, 'EPI')
             self.cleanup()
             print("\n" + "#"*40 + "\n" + "CONVERSION AND PROCESSING FOR " +
                   self.subjID + " DONE!" + "\n" + "#"*40 + "\n")
