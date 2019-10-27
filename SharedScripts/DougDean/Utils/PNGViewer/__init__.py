@@ -62,7 +62,7 @@ class PNGViewer:
                 self.png_list.append(filepath)
 
         if len(self.png_list) < 1:
-            print "Directory must contain at least one .png file!"
+            print("Directory must contain at least one .png file!")
             sys.exit(1)
 
         # Makes the HTML.
@@ -74,10 +74,3 @@ class PNGViewer:
         self.HTML_file = open(self.url, "w")
         self.HTML_file.write(self.webpage)
         self.HTML_file.close()
-
-    def runPNGViewer(self):
-        # open a public URL, in this case, the webbrowser docs
-        webbrowser.open("file://"+self.url, new=2, autoraise=True )
-        
-    def cleanupURL(self):
-    	os.remove(self.url)

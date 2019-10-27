@@ -7,11 +7,14 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+import pydicom
 
 #from lib.Converters import makefmaps
 from lib.Utils import tools
 
 
+# TGZ compressed archives are found in folders generated post-2018ish (after a GE update)
+# e.g., CEDA, LOKI, late subject Youth PTSD
 class tgz2NIFTI():
 
     fmapassoclist = list()
@@ -44,6 +47,8 @@ class tgz2NIFTI():
                     self.cleanup()
             self.fixfmaps()
 
+    #Parsing the tgz archive file name to get the time point and subject ID, copy the file to a local temp 
+    #directory, then decompress it
     def unpack_tgz(self, tgzfile): 
         tgz_fpath = pathlib.PosixPath(tgzfile)
         tgz_fname = tgz_fpath.name
@@ -51,12 +56,12 @@ class tgz2NIFTI():
         if fullid[-2] == 'C':
             self.timept = fullid[-1]
             self.subjid = fullid.split('_')[0]
-        elif fullid.__contains__('rescan'):
-            self.timept = 2
-            self.subjid = fullid[1:4]
-        else:
-            self.timept = 1
-            self.subjid = fullid[1:4]
+        # elif fullid.__contains__('rescan'):
+        #     self.timept = 2
+        #     self.subjid = fullid[1:4]
+        # else:
+        #     self.timept = 1
+        #     self.subjid = fullid[1:4]
         self.tmpdir = pathlib.PosixPath(tempfile.mkdtemp(dir='/tmp'))
         shutil.copy(tgz_fpath, self.tmpdir)
         tgz_file_tmp = pathlib.PosixPath(self.tmpdir, tgz_fname)
@@ -70,6 +75,7 @@ class tgz2NIFTI():
         tgz_dcm_dirname = os.path.commonprefix(tgz_file_open.getnames())
         self.tgz_dcm_dirpath = pathlib.PosixPath(self.tmpdir, tgz_dcm_dirname)
 
+    #Parse BIDS parameters from the fully qualified path of the scan
     def getbidsparams(self, outputpath):
 
         # Get the name of the directory holding the unpacked scan archive (e.g., s0003.MPRAGE)
@@ -94,19 +100,28 @@ class tgz2NIFTI():
                 bids_acqlabel = bids_acqlabel.replace(c, '')
         bids_acqlabel = 'acq-' + bids_acqlabel
 
-        # Empty the following BIDS parameter labels (in case they're already set)
+        # Null the following BIDS parameter labels (in case they're already set)
         bids_runno = ''
         bids_tasklabel = ''
         bids_pedir = ''
         bids_tasklabel = ''
 
-        # For EPI scans, create a run number label
+        # Handle each scan based on the contents of its acquisition label (if necessary...)
+        if self.raw_scantype.__contains__('BRAVO'):
+            bids_acqlabel = 'AXFSPGRBRAVO'
+        ## If the scan is an EPI (fMRI) scan, create a run number label...
         if self.raw_scantype.__contains__('EPI_'):
-            bids_tasklabel = bids_acqlabel.replace('acq-', 'task-').replace('EPI','')
             bids_acqlabel = ''
-
-            # Add all similarly named EPI scans to a list, sorted by sequence number.
+            raw_scantype_lc = self.raw_scantype.lower().replace('-','')
+            if raw_scantype_lc.__contains__('perspective'):
+                bids_tasklabel = 'Perspective'
+            elif raw_scantype_lc.__contains__('nback'):
+                bids_tasklabel = 'N-back'
+            elif raw_scantype_lc.__contains__('resting'):
+                bids_tasklabel = 'Resting'
+            # ...and add all similarly named EPI scans to a list, sorted by sequence number.
             # If the scan to be processed is a member of that list, its run number is equal to its index in the list
+            # This fix allows us to convert the participant-varying sequence numbers to run numbers
             taskscan_list = list(scan.name for scan in sorted(self.dcm_path.glob('*.tgz')) if str(scan).__contains__(self.raw_scantype))
             if len(taskscan_list) > 1:
                 for item in taskscan_list.__iter__():
@@ -115,8 +130,9 @@ class tgz2NIFTI():
                         epi_runcount = i + 1
                         bids_runno = 'run-' + str(epi_runcount)
 
-        # If the scan is a 'WATER_Fieldmap' (magnitude volume), create a run number label (to differentiate multiple magnitude volumes)
+        ## If the scan is a 'WATER_Fieldmap' (magnitude volume), create a run number label (to differentiate multiple magnitude volumes)
         if self.raw_scantype.__contains__('WATER_Fieldmap'):
+            bids_acqlabel = 'Magnitude'
             fmapmaglist = list(scan.name for scan in sorted(self.dcm_path.glob('*.tgz')) if str(scan).__contains__(self.raw_scantype))
             for item in fmapmaglist.__iter__():
                 if self.raw_scandirname in item:
@@ -124,8 +140,9 @@ class tgz2NIFTI():
                     fmapmag_runcount = i + 1
                     bids_runno = 'run-' + str(fmapmag_runcount)
 
-        # If the scan is a 'FieldMap_Fieldmap' (real fieldmap volume), create a run number label
+        ## If the scan is a 'FieldMap_Fieldmap' (real fieldmap volume), create a run number label
         if self.raw_scantype.__contains__('FieldMap_Fieldmap'):
+            bids_acqlabel = 'FieldMap'
             fmapfmaplist = list(scan.name for scan in sorted(self.dcm_path.glob('*.tgz')) if str(scan).__contains__(self.raw_scantype))
             for item in fmapfmaplist.__iter__():
                 if self.raw_scandirname in item:
@@ -133,23 +150,25 @@ class tgz2NIFTI():
                     fmapfmap_runcount = i + 1
                     bids_runno = 'run-' + str(fmapfmap_runcount)
 
-        # If the scan is a NODDI (i.e., a DWI) parse the phase encoding polarity from the filename and create a phase encoding direction label (PA=0; AP=1)
+        ## If the scan is a NODDI (i.e., a DWI) parse the phase encoding polarity from the filename 
+        ## and create a phase encoding direction label (PA=0; AP=1)
         if self.raw_scantype.__contains__('NODDI'):
+            bids_acqlabel = 'NODDI'
             if self.raw_scantype.__contains__('pepolar0'):
                 bids_pedir = 'dir-PA'
             elif self.raw_scantype.__contains__('pepolar1'):
                 bids_pedir = 'dir-AP'
 
-        # Create the BIDS participant ID label
+        # Create the BIDS participant ID label (e.g., sub-001)
         bids_participantID = 'sub-' + self.subjid
 
-        # Create the BIDS wave (timepoint) label - two digits
+        # Create the BIDS wave (timepoint) label - two digits (e.g., ses-01)
         self.bids_scansession = 'ses-' + str(self.timept).zfill(2)
 
         # Create the BIDS scan modality label (e.g., '_T1w')
         bids_scanmode = tools.scan2bidsmode(self.raw_scantype)
 
-        # Print out the BIDS parameters for this scan
+        # Echo all the BIDS parameters for this scan
         print(tools.stru('PARSING BIDS PARAMETERS') + '...')
         print('Participant:', bids_participantID)
         print('Wave:', self.bids_scansession)
@@ -163,25 +182,28 @@ class tgz2NIFTI():
         if len(bids_pedir) > 0:
             print('Phase Encoding Label:', bids_pedir)
 
-        # Collecting all the BIDS parameters in a list
-        dlist = [bids_participantID]
-        dlist.append(self.bids_scansession)
+        # Collect all the BIDS parameters into a list
+        bidsparamlist = [bids_participantID]
+        bidsparamlist.append(self.bids_scansession)
         if len(bids_tasklabel) > 0:
-            dlist.append(bids_tasklabel)
+            bidsparamlist.append(bids_tasklabel)
         if len(bids_acqlabel) > 0:
-            dlist.append(bids_acqlabel)
+            bidsparamlist.append(bids_acqlabel)
         if len(bids_runno) > 0:
-            dlist.append(bids_runno)
+            bidsparamlist.append(bids_runno)
         if len(bids_pedir) > 0:
-            dlist.append(bids_pedir)
-        dlist.append(bids_scanmode)
+            bidsparamlist.append(bids_pedir)
+        bidsparamlist.append(bids_scanmode)
 
-        # Joining the BIDS parameter list items into an underscore delimited string
-        self.dcm2niix_label = '_'.join(dlist)
-
-        # Setting the BIDS output directory
+        # Join the BIDS parameter list items into an underscore delimited string
+        self.dcm2niix_label = '_'.join(bidsparamlist)
+        #print(bidsparamlist)
+        # Set the BIDS output directory
         self.bids_outdir = pathlib.Path(outputpath, bids_participantID, self.bids_scansession, tools.scan2bidsdir(self.raw_scandirname))
 
+    #Convert scans using dcm2niix, using filename self.dcm2niix_label and output directory self.bids_outdir. Then
+    #run through some coding gymnastics to add tasknames, multiband acceleration, and associated fieldmaps to 
+    #the BIDS sidecar files
     def conv_dcms(self):
 
         # Make the BIDS output directory for this specific scan, overwriting the directory if it exists
@@ -190,9 +212,18 @@ class tgz2NIFTI():
         # Start converting the scans using Chris Rorden's dcm2niix, providing the BIDS label created above
         print('\n' + tools.stru('BEGINNING SCAN CONVERSION') + '...')
         subprocess.run(['dcm2niix','-f', self.dcm2niix_label,
-                        '-o', self.bids_outdir, self.tgz_dcm_dirpath])
+                        '-o', self.bids_outdir, '-w', '1', self.tgz_dcm_dirpath])
 
-        # If the scan is an fmri ('EPI'), append the taskname to the BIDS sidecar file
+        # If the original scan name contains HB2 (i.e., likely is a NODDI), append multiband acceleration factor to the BIDS sidecar file
+        if self.raw_scantype.__contains__('HB2'):
+            jsonfilepath = pathlib.PosixPath(self.bids_outdir, self.dcm2niix_label + '.json')
+            with open(jsonfilepath) as jsonfile:
+                sidecar = json.load(jsonfile)
+            sidecar['MultibandAccelerationFactor'] = 2
+            with open(jsonfilepath, 'w') as f:
+                json.dump(sidecar, f, indent=4)
+
+        # If the scan is an fmri ('EPI'), append the taskname, and multiband acceleration factor to the BIDS sidecar file
         if self.raw_scantype.__contains__('EPI_'):
             jsonfilepath = pathlib.PosixPath(self.bids_outdir, self.dcm2niix_label + '.json')
             with open(jsonfilepath) as jsonfile:
@@ -228,21 +259,25 @@ class tgz2NIFTI():
         # Delete the temporary directory we created above
         shutil.rmtree(self.tmpdir)
 
+    # BIDS requires an 'IntendedFor' value in each Fieldmap scan's json sidecar.  This field is originally 
+    # (and inappropriately) recorded in the magnitude (WATER_Fieldmap) scan's sidecar file.  This CANNOT
+    # be fixed above, despite hours and hours of trying.  So...
+    # Below, get the value from the magnitude scans' json sidecars, and move it to the sidecar for the corresponding 
+    # fieldmap scan. Then, delete the magnitude scan's json sidecar file (it's not required for BIDS). Next, remove 
+    # the string 'WATER' in the file names of the magnitude scans.  The filenames for the fieldmaps and the magnitude
+    # scans should now match, and the 'IntendedFor' fields should be in the proper locations. WHEW...
+
     def fixfmaps(self):
         fmap_dir = pathlib.PurePosixPath(self.bids_outdir).parent / 'fmap'
 
-        # BIDS requires an 'IntendedFor' value in each Fieldmap scan's json sidecar.  This field is originally (and inappropriately) recorded in the 
-        # magnitude scan's (WATER_Fieldmap) json.  Below, get the value from the magnitude scan's json, move it to the fieldmap scan's json.
-        # Then delete the magnitude json (it's not required for BIDS).  Then remove the string WATER in the magnitude file names, thus 
-        # making them match the fieldmap filenames.  WHEW....
         for magjson in pathlib.Path(fmap_dir).glob('*magnitude.json'):
             magjson_parts = str(magjson).split(sep='.')
             magjson_name = str(magjson).split(sep='.')[0]
             magjson_suffix = str(magjson).split(sep='.')[1]
-            fmap_pre = str(magjson.name).split('WATER')[0]
+            fmap_pre = str(magjson.name).split('Magnitude')[0]
 
             if magjson_name.__contains__('run-1'):
-                fmapjson = fmap_pre + 'Fieldmap3D_run-1_fieldmap.json'
+                fmapjson = fmap_pre + 'Fieldmap_run-1_fieldmap.json'
                 fmapjson = pathlib.Path(fmap_dir / fmapjson)
                 with open(magjson) as magjsonfile:
                     magsidecar = json.load(magjsonfile)
@@ -255,7 +290,7 @@ class tgz2NIFTI():
                     json.dump(fmapjsonfile_dict, fmapjsonfile, indent=4)
 
             elif magjson_name.__contains__('run-2'):
-                fmapjson = fmap_pre + 'Fieldmap3D_run-2_fieldmap.json'
+                fmapjson = fmap_pre + 'Fieldmap_run-2_fieldmap.json'
                 fmapjson = pathlib.Path(fmap_dir / fmapjson)
                 with open(magjson) as magjsonfile:
                     magsidecar = json.load(magjsonfile)
@@ -268,7 +303,7 @@ class tgz2NIFTI():
                     json.dump(fmapjsonfile_dict, fmapjsonfile, indent=4)
 
             elif magjson_name.__contains__('run-3'):
-                fmapjson = fmap_pre + 'Fieldmap3D_run-3_fieldmap.json'
+                fmapjson = fmap_pre + 'Fieldmap_run-3_fieldmap.json'
                 fmapjson = pathlib.Path(fmap_dir / fmapjson)
                 with open(magjson) as magjsonfile:
                     magsidecar = json.load(magjsonfile)
@@ -286,6 +321,8 @@ class tgz2NIFTI():
                 newfname = str(fname).replace('WATER','')
                 fname.rename(newfname)
 
+# bz2 archive files are found in folders generated pre-2018ish (before a GE update)
+# e.g., Youth PTSD
 class bz2NIFTI():
 
     def __init__(self, input_bz2_scandir, outputpath):
@@ -302,8 +339,8 @@ class bz2NIFTI():
         print(fullid)
         tmpdir = tempfile.mkdtemp(dir='/tmp', suffix=fullid)
         if fullid.__contains__('rescan'):
-            self.subjid = fullid.replace('rescan','')
             timept = 2
+            self.subjid = fullid.replace('rescan','')
         else:
             timept = 1
             self.subjid = fullid
