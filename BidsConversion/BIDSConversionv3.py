@@ -15,12 +15,38 @@ class run():
     def initialize(self):
         ap = argparse.ArgumentParser()
         ap.add_argument("-s", "--studypath", required=True,
-                        help="Directory containing subject folders downloaded \
-                        from the scanner. Will look for subject folders \
-                        each containing a 'dicoms' directory. Each scan is \
-                        expected to be contained in a reflectively named \
-                        directory (e.g., s04_bravo). Raw scan files are dcm \
-                        series files compressed into a multiple file bz2 archive.")
+                        help="Study directory containing subject folders downloaded \
+                        from the scanner (e.g., /Volumes/Studies/Herringa/YouthPTSD). \
+                        This script will look for a 'dicoms' subdirectory within each subject \
+                        directory.  \
+                        These dicom directories may be organized in one of two different fashions. \
+                        \
+                        Before 2018 (ish) - Scans are stored in directories are structured as: \
+                                            SUBJID\dicoms\sYY_ZZZZ \
+                                            where SUBJID is the alphanumeric subject ID, \
+                                            YY is a two-digit integer reflecting the scan's \
+                                            order in the sequence (e.g., 04), and ZZZZ is an \
+                                            alpha string describing the scan type (e.g., bravo). \
+                                            DICOMs in each scan directory (e.g., s04_bravo) are \
+                                            contained in spanned '.bz2' archives. Detailed \
+                                            scan parameters are provided in YAML and pickle- \
+                                            encoded files within each scan directory.  \
+                                            An 'info.txt' file in the 'dicom' directory \
+                                            contains (limited) plain-text information about \
+                                            each scan in the sequence. \
+                            \
+                          2018 and beyond - Scans are stored in directories are structured as \
+                                            SUBJID\dicoms, where SUBJID is the alphanumeric \
+                                            subject ID. DICOMS are stored in '.tgz' archive \
+                                            files with naming convention: \
+                                                EKKKKK.sYYYYY.ZZZZZ.tgz \
+                                            where KKKKK is the HERI unique identifier for the \
+                                            scan session, YYYYY is the sequence or sub-sequence \
+                                            number (e.g., s0022 or s2200), and ZZZZZ is an \
+                                            alphanumeric string (e.g., MPRAGE) describing the \
+                                            scan.  An info.EKKKKK.txt file in the 'dicom' \
+                                            directory contains (limited) plain-text information \
+                                            about each scan in the sequence.")
         ap.add_argument("-i", "--ids", required=False, help="Optional path to \
                         a text file listing the subject IDs to be processed.")
                         # OR a space-delimited list of subject IDs to process

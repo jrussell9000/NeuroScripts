@@ -54,7 +54,7 @@ class PNGViewer:
         self.png_list = []
         self.url = Path(self.img_dir.parent, str(subject_id + 'manual.html'))
         for filepath in sorted(self.img_dir.glob('*.png')):
-            self.png_list.append(str(filepath))
+            self.png_list.append(str(filepath.name))
 
         if len(self.png_list) < 1:
             print ("Directory must contain at least one .png file!")
