@@ -1,0 +1,13 @@
+------------------------------
+SUBJECT _151
+START_TIME Mon Dec 2 13:52:57 CST 2019
+END_TIME Mon Dec 2 23:51:15 CST 2019
+RUNTIME_HOURS 9.972
+USER sheyn
+HOST mri-thor
+PROCESSOR x86_64
+OS Linux
+UNAME Linux mri-thor 4.15.0-65-generic #74-Ubuntu SMP Tue Sep 17 17:06:04 UTC 2019 x86_64 x86_64 x86_64 GNU/Linux
+VERSION $Id: recon-all,v 1.601 2017/02/08 21:17:33 greve Exp $
+CMDPATH /Volumes/apps/linux/freesurfer-current/bin/recon-all
+CMDARGS -i sub-151_ses-01_acq-AXFSPGRBRAVONEW_T1w.nii -subjid _151 -all

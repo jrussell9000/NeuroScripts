@@ -114,7 +114,7 @@ class BidsConv():
 
         # The second part of the scan file parent directory name (e.g., s03_'ANAT') will
         # be used to determine the 'raw' scan type
-        self.rawscan_type = self.rawscan_dirname.split('_')[1]
+        
         self.helpful_type = self.scan2helpful(self.rawscan_type)
         print("\n" + u.stru(str("FOUND " + self.helpful_type + " SCAN")) + ": " + self.rawscan_path + "\n")
 

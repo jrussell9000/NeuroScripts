@@ -1,0 +1,9 @@
+Logfile for pctsurfcon
+Mon Dec  2 22:35:26 CST 2019
+setenv SUBJECTS_DIR /Volumes/Vol6/YouthPTSD/scripts/sah_scripts/freersurferScripts
+cd /Volumes/Vol6/YouthPTSD/scripts/sah_scripts/freersurferScripts/_151/scripts
+/Volumes/apps/linux/freesurfer-current/bin/pctsurfcon
+$Id: pctsurfcon,v 1.15 2016/02/12 21:43:15 zkaufman Exp $
+Linux mri-thor 4.15.0-65-generic #74-Ubuntu SMP Tue Sep 17 17:06:04 UTC 2019 x86_64 x86_64 x86_64 GNU/Linux
+FREESURFER_HOME /Volumes/apps/linux/freesurfer-current
+Cleaning up

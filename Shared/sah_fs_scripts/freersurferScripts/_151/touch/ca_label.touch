@@ -1,0 +1,1 @@
+mri_cc -aseg aseg.auto_noCCseg.mgz -o aseg.auto.mgz -lta /Volumes/Vol6/YouthPTSD/scripts/sah_scripts/freersurferScripts/_151/mri/transforms/cc_up.lta _151

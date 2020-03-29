@@ -1,0 +1,40 @@
+Log file for defect2seg
+Mon Dec  2 19:44:47 CST 2019
+
+setenv SUBJECTS_DIR /Volumes/Vol6/YouthPTSD/scripts/sah_scripts/freersurferScripts
+cd /Volumes/Vol6/YouthPTSD/scripts/sah_scripts/freersurferScripts/_151/scripts
+/Volumes/apps/linux/freesurfer-current/bin/defect2seg --s _151
+
+freesurfer-local-build-dev-20190910
+$Id$
+Linux mri-thor 4.15.0-65-generic #74-Ubuntu SMP Tue Sep 17 17:06:04 UTC 2019 x86_64 x86_64 x86_64 GNU/Linux
+pid 77059
+mri_label2vol --defects /Volumes/Vol6/YouthPTSD/scripts/sah_scripts/freersurferScripts/_151/surf/lh.orig.nofix /Volumes/Vol6/YouthPTSD/scripts/sah_scripts/freersurferScripts/_151/surf/lh.defect_labels /Volumes/Vol6/YouthPTSD/scripts/sah_scripts/freersurferScripts/_151/mri/orig.mgz 1000 0 /Volumes/Vol6/YouthPTSD/scripts/sah_scripts/freersurferScripts/_151/mri/surface.defects.mgz
+mri_label2vol supposed to be reproducible but seed not set
+Changing input type 0 to MRI_INT
+Converting defects to volume: offset=1000, merge=0
+Writing to /Volumes/Vol6/YouthPTSD/scripts/sah_scripts/freersurferScripts/_151/mri/surface.defects.mgz
+mris_defects_pointset -s /Volumes/Vol6/YouthPTSD/scripts/sah_scripts/freersurferScripts/_151/surf/lh.orig.nofix -d /Volumes/Vol6/YouthPTSD/scripts/sah_scripts/freersurferScripts/_151/surf/lh.defect_labels -o /Volumes/Vol6/YouthPTSD/scripts/sah_scripts/freersurferScripts/_151/surf/lh.defects.pointset
+Reading in surface /Volumes/Vol6/YouthPTSD/scripts/sah_scripts/freersurferScripts/_151/surf/lh.orig.nofix
+Reading in defect segmentation /Volumes/Vol6/YouthPTSD/scripts/sah_scripts/freersurferScripts/_151/surf/lh.defect_labels
+#VMPC# mris_defects_pointset 238540
+mris_defects_pointset done
+mri_label2vol --defects /Volumes/Vol6/YouthPTSD/scripts/sah_scripts/freersurferScripts/_151/surf/rh.orig.nofix /Volumes/Vol6/YouthPTSD/scripts/sah_scripts/freersurferScripts/_151/surf/rh.defect_labels /Volumes/Vol6/YouthPTSD/scripts/sah_scripts/freersurferScripts/_151/mri/surface.defects.mgz 2000 1 /Volumes/Vol6/YouthPTSD/scripts/sah_scripts/freersurferScripts/_151/mri/surface.defects.mgz
+reading colortable from MGH file...
+colortable with 1098 entries read (originally none)
+mri_label2vol supposed to be reproducible but seed not set
+Converting defects to volume: offset=2000, merge=1
+Writing to /Volumes/Vol6/YouthPTSD/scripts/sah_scripts/freersurferScripts/_151/mri/surface.defects.mgz
+mris_defects_pointset -s /Volumes/Vol6/YouthPTSD/scripts/sah_scripts/freersurferScripts/_151/surf/rh.orig.nofix -d /Volumes/Vol6/YouthPTSD/scripts/sah_scripts/freersurferScripts/_151/surf/rh.defect_labels -o /Volumes/Vol6/YouthPTSD/scripts/sah_scripts/freersurferScripts/_151/surf/rh.defects.pointset
+Reading in surface /Volumes/Vol6/YouthPTSD/scripts/sah_scripts/freersurferScripts/_151/surf/rh.orig.nofix
+Reading in defect segmentation /Volumes/Vol6/YouthPTSD/scripts/sah_scripts/freersurferScripts/_151/surf/rh.defect_labels
+#VMPC# mris_defects_pointset 231988
+mris_defects_pointset done
+ 
+Started at Mon Dec 2 19:44:46 CST 2019 
+Ended   at Mon Dec  2 19:45:15 CST 2019
+Defect2seg-Run-Time-Sec 29
+Defect2seg-Run-Time-Min 0.58
+Defect2seg-Run-Time-Hours 0.01
+ 
+defect2seg Done

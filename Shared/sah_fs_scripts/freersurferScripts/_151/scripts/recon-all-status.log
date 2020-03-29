@@ -1,0 +1,75 @@
+status file for recon-all
+Mon Dec  2 13:53:25 CST 2019
+#@# MotionCor Mon Dec  2 13:53:38 CST 2019
+#@# Talairach Mon Dec  2 13:53:49 CST 2019
+#@# Talairach Failure Detection Mon Dec  2 13:55:33 CST 2019
+#@# Nu Intensity Correction Mon Dec  2 13:55:34 CST 2019
+#@# Intensity Normalization Mon Dec  2 13:57:40 CST 2019
+#@# Skull Stripping Mon Dec  2 13:59:55 CST 2019
+#@# EM Registration Mon Dec  2 14:19:01 CST 2019
+#@# CA Normalize Mon Dec  2 14:32:50 CST 2019
+#@# CA Reg Mon Dec  2 14:34:10 CST 2019
+#@# SubCort Seg Mon Dec  2 17:25:54 CST 2019
+#@# CC Seg Mon Dec  2 18:26:02 CST 2019
+#@# Merge ASeg Mon Dec  2 18:29:42 CST 2019
+#@# Intensity Normalization2 Mon Dec  2 18:29:42 CST 2019
+#@# Mask BFS Mon Dec  2 18:35:15 CST 2019
+#@# WM Segmentation Mon Dec  2 18:35:18 CST 2019
+#@# Fill Mon Dec  2 18:39:56 CST 2019
+#@# Tessellate lh Mon Dec  2 18:42:05 CST 2019
+#@# Tessellate rh Mon Dec  2 18:42:15 CST 2019
+#@# Smooth1 lh Mon Dec  2 18:42:26 CST 2019
+#@# Smooth1 rh Mon Dec  2 18:42:36 CST 2019
+#@# Inflation1 lh Mon Dec  2 18:42:46 CST 2019
+#@# Inflation1 rh Mon Dec  2 18:43:49 CST 2019
+#@# QSphere lh Mon Dec  2 18:44:48 CST 2019
+#@# QSphere rh Mon Dec  2 18:51:54 CST 2019
+#@# Fix Topology lh Mon Dec  2 18:58:05 CST 2019
+#@# Fix Topology rh Mon Dec  2 19:28:55 CST 2019
+#@# Make White Surf lh Mon Dec  2 19:46:21 CST 2019
+#@# Make White Surf rh Mon Dec  2 20:12:45 CST 2019
+#@# Smooth2 lh Mon Dec  2 20:30:16 CST 2019
+#@# Smooth2 rh Mon Dec  2 20:30:22 CST 2019
+#@# Inflation2 lh Mon Dec  2 20:30:28 CST 2019
+#@# Inflation2 rh Mon Dec  2 20:30:59 CST 2019
+#@# Curv .H and .K lh Mon Dec  2 20:31:30 CST 2019
+#@# Curv .H and .K rh Mon Dec  2 20:33:01 CST 2019
+#@# Curvature Stats lh Mon Dec  2 20:34:30 CST 2019
+#@# Curvature Stats rh Mon Dec  2 20:34:36 CST 2019
+#@# Sphere lh Mon Dec  2 20:34:40 CST 2019
+#@# Sphere rh Mon Dec  2 20:57:55 CST 2019
+#@# Surf Reg lh Mon Dec  2 21:12:52 CST 2019
+#@# Surf Reg rh Mon Dec  2 21:24:55 CST 2019
+#@# Jacobian white lh Mon Dec  2 21:36:44 CST 2019
+#@# Jacobian white rh Mon Dec  2 21:36:46 CST 2019
+#@# AvgCurv lh Mon Dec  2 21:36:47 CST 2019
+#@# AvgCurv rh Mon Dec  2 21:36:48 CST 2019
+#@# Cortical Parc lh Mon Dec  2 21:36:50 CST 2019
+#@# Cortical Parc rh Mon Dec  2 21:37:06 CST 2019
+#@# Make Pial Surf lh Mon Dec  2 21:37:22 CST 2019
+#@# Make Pial Surf rh Mon Dec  2 21:53:41 CST 2019
+#@# Surf Volume lh Mon Dec  2 22:12:27 CST 2019
+#@# Surf Volume rh Mon Dec  2 22:12:30 CST 2019
+#@# Cortical ribbon mask Mon Dec  2 22:12:33 CST 2019
+#@# Parcellation Stats lh Mon Dec  2 22:28:22 CST 2019
+#@# Parcellation Stats rh Mon Dec  2 22:29:42 CST 2019
+#@# Cortical Parc 2 lh Mon Dec  2 22:30:57 CST 2019
+#@# Cortical Parc 2 rh Mon Dec  2 22:31:27 CST 2019
+#@# Parcellation Stats 2 lh Mon Dec  2 22:31:58 CST 2019
+#@# Parcellation Stats 2 rh Mon Dec  2 22:32:39 CST 2019
+#@# Cortical Parc 3 lh Mon Dec  2 22:33:18 CST 2019
+#@# Cortical Parc 3 rh Mon Dec  2 22:33:39 CST 2019
+#@# Parcellation Stats 3 lh Mon Dec  2 22:34:00 CST 2019
+#@# Parcellation Stats 3 rh Mon Dec  2 22:34:38 CST 2019
+#@# WM/GM Contrast lh Mon Dec  2 22:35:19 CST 2019
+#@# WM/GM Contrast rh Mon Dec  2 22:35:26 CST 2019
+#@# Relabel Hypointensities Mon Dec  2 22:35:32 CST 2019
+#@# AParc-to-ASeg aparc Mon Dec  2 22:35:59 CST 2019
+#@# AParc-to-ASeg a2009s Mon Dec  2 22:47:26 CST 2019
+#@# AParc-to-ASeg DKTatlas Mon Dec  2 23:02:48 CST 2019
+#@# APas-to-ASeg Mon Dec  2 23:17:22 CST 2019
+#@# ASeg Stats Mon Dec  2 23:17:32 CST 2019
+#@# WMParc Mon Dec  2 23:22:19 CST 2019
+#@# BA_exvivo Labels lh Mon Dec  2 23:38:56 CST 2019
+#@# BA_exvivo Labels rh Mon Dec  2 23:45:09 CST 2019
+recon-all -s _151 finished without error at Mon Dec  2 23:51:15 CST 2019

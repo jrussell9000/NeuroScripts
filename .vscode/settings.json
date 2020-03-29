@@ -1,8 +1,3 @@
 {
-  "python.linting.pylintEnabled": true,
-  "python.pythonPath": "/Volumes/conda/jdrussell3/bin/python",
-  "python.linting.banditEnabled": false,
-  "python.linting.enabled": true,
-  "python.dataScience.jupyterServerURI": "local",
-  "python.dataScience.allowUnauthorizedRemoteConnection": true
+    "python.pythonPath": "/Volumes/conda/jdrussell3/envs/bidsvalid/bin/python"
 }

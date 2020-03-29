@@ -1,0 +1,1 @@
+mri_convert /Volumes/Vol6/YouthPTSD/scripts/sah_scripts/freersurferScripts/_151/mri/rawavg.mgz /Volumes/Vol6/YouthPTSD/scripts/sah_scripts/freersurferScripts/_151/mri/orig.mgz --conform

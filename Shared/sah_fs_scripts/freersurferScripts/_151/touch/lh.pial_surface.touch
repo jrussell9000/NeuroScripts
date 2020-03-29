@@ -1,0 +1,1 @@
+mris_make_surfaces -save-res -save-target -orig_white white.preaparc -orig_pial white.preaparc -aseg ../mri/aseg.presurf -mgz -T1 brain.finalsurfs _151 lh
