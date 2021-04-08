@@ -25,6 +25,7 @@ def scan2bidsmode(modstring):
         "AxT2FLAIR": "T2w",
         "NODDI": "dwi",
         "Ax_DTI": "dwi",
+        "AxDTI": "dwi",
         "EPI_": "bold",
         "Fieldmap_EPI": "rawfmap",
         "Fieldmap_DTI": "rawfmap",

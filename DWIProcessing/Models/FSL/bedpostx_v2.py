@@ -6,15 +6,16 @@ from joblib import parallel_backend, delayed, Parallel
 from pathlib import Path
 from random import randint
 
-xtractproc_dir = Path("/scratch/jdrussell3/fsl/cross_sec/xtract")
+xtractproc_dir = Path("/scratch/jdrussell3/fsl/xtract")
 BIDSproc_dir = Path("/Volumes/Vol6/YouthPTSD/BIDS_Processed")
 BIDSmaster_dir = Path("/Volumes/Vol6/YouthPTSD/BIDS_Master")
 
 os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
 
 
-ses_dirs_str = (str(ses_dir) for ses_dir in sorted(BIDSproc_dir.glob('*/ses-01')) if Path(ses_dir / 'dwi').exists())
+ses_dirs_str = (str(ses_dir) for ses_dir in sorted(BIDSproc_dir.glob('*/ses*')) if Path(ses_dir / 'dwi').exists())
 ses_list = list(ses_dirs_str)
+
 
 def run_bedpostx(ses_dir):
     if not xtractproc_dir.exists():
@@ -121,9 +122,10 @@ def run_bedpostx(ses_dir):
 
                 shutil.rmtree(xtractsubj_dir)
 
-ses_dirs = (ses_dir for ses_dir in BIDSproc_dir.glob('*/ses-01')
+
+ses_dirs = (ses_dir for ses_dir in BIDSproc_dir.glob('*/ses-*')
             if Path(ses_dir / 'dwi').exists())
 
-with parallel_backend("loky", inner_max_num_threads=8):
+with parallel_backend("loky", inner_max_num_threads=4):
     results = Parallel(n_jobs=8, verbose=1)(
         delayed(run_bedpostx)(ses_dir) for ses_dir in sorted(ses_dirs))

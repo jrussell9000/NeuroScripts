@@ -1,0 +1,13 @@
+*+ WARNING: Smallest FDR q [21 shape#0_Tstat] = 0.153713 ==> few true single voxel detections
+*+ WARNING: Smallest FDR q [22 shape_R^2] = 0.153482 ==> few true single voxel detections
+*+ WARNING: Smallest FDR q [23 shape_Fstat] = 0.153482 ==> few true single voxel detections
+*+ WARNING: Smallest FDR q [21 shape#0_Tstat] = 0.248327 ==> few true single voxel detections
+*+ WARNING: Smallest FDR q [22 shape_R^2] = 0.248183 ==> few true single voxel detections
+*+ WARNING: Smallest FDR q [23 shape_Fstat] = 0.248183 ==> few true single voxel detections
+*+ WARNING: Smallest FDR q [65 rot_y_deriv#0_Tstat] = 0.999894 ==> few true single voxel detections
+*+ WARNING: Smallest FDR q [66 rot_y_deriv_R^2] = 0.997227 ==> few true single voxel detections
+*+ WARNING: Smallest FDR q [67 rot_y_deriv_Fstat] = 0.997227 ==> few true single voxel detections
+tions
+*+ WARNING: Smallest FDR q [65 rot_y_deriv#0_Tstat] = 0.206485 ==> few true single voxel detections
+*+ WARNING: Smallest FDR q [66 rot_y_deriv_R^2] = 0.206167 ==> few true single voxel detections
+*+ WARNING: Smallest FDR q [67 rot_y_deriv_Fstat] = 0.206167 ==> few true single voxel detections

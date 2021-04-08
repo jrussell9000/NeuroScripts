@@ -14,12 +14,12 @@ from pathlib import Path
 from makefmaps import make_fmaps
 
 
-
 # Main class
 class convertScans():
 
     def __init__(self, studypath, outputpath, scanstoskip, inputidfile, ids):
         self.studypath = Path(studypath)
+        self.outputpath = Path(outputpath)
 
         # Did a subject ID list get passed? If so, parse it, use its contents
         if inputidfile:
@@ -34,23 +34,30 @@ class convertScans():
                          any(x in subj_dir.name for x in ids))
         # Default: Process all scans in the studypath folder
         else:
-            print("SUBJECT IDS NOT SPECIFIED...")
             subj_dirs = (subj_dir for subj_dir in sorted(self.studypath.iterdir()))
 
         for subj_dir in sorted(subj_dirs):
-            print(subj_dir)
-
             dicoms_dir = subj_dir / 'dicoms'
             if len(list(dicoms_dir.glob('*.tgz'))) > 0:
-                startsubjdir_str = ''.join(['TGZ NOW CONVERTING PARTICIPANT: ', subj_dir.name])
+                startsubjdir_str = ''.join(['NOW CONVERTING PARTICIPANT: ', subj_dir.name])
                 print('\n' + '#'*(len(startsubjdir_str)) + '\n' + startsubjdir_str +
-                      '\n' + '#'*(len(startsubjdir_str)) + '\n')
-                convtgz = tgz2NIFTI(subj_dir, outputpath, scanstoskip)
+                      '\n' + '#'*(len(startsubjdir_str)))
+                convtgz = tgz2NIFTI(subj_dir, outputpath, scanstoskip)  # noqa: F841
             elif dicoms_dir.glob('info.txt'):
-                startsubjdir_str = ''.join(['BZ2 NOW CONVERTING PARTICIPANT: ', subj_dir.name])
+                startsubjdir_str = ''.join(['NOW CONVERTING PARTICIPANT: ', subj_dir.name])
                 print('\n' + '#'*(len(startsubjdir_str)) + '\n' + startsubjdir_str +
-                      '\n' + '#'*(len(startsubjdir_str)) + '\n')
-                convbz2 = bz2NIFTI(subj_dir, outputpath, scanstoskip)
+                      '\n' + '#'*(len(startsubjdir_str)))
+                convbz2 = bz2NIFTI(subj_dir, outputpath, scanstoskip)  # noqa: F841
+        self.create_data_desc()
+
+    def create_data_desc(self):
+        self.data_description = {
+            "Name": "Youth PTSD",
+            "BIDSVersion": "1.2.2",
+            "License": "None"
+        }
+        with open(Path(self.outputpath, 'dataset_description.json'), 'w') as outfile:
+            json.dump(self.data_description, outfile)
 
 
 # TGZ compressed archives are found in folders generated post-2018ish (after a GE update)
@@ -66,16 +73,16 @@ class tgz2NIFTI():
 
         self.dicoms_dir = Path(subj_dir / 'dicoms')
         if self.dicoms_dir.exists():
-            for dicom_tgz in sorted(dicoms_dir.glob('*.tgz')):
+            for dicom_tgz in sorted(self.dicoms_dir.glob('*.tgz')):
                 if not any(x in dicom_tgz.name for x in scanstoskip):
                     self.unpack_tgz(dicom_tgz)
                     self.getbidsparams()
                     self.conv_dcms()
                     self.cleanup()
-                if self.dicoms_dir.parent.name[0] == '_':
-                    self.process_fmaps()
-                else:
-                    self.fixfmaps()
+            if self.dicoms_dir.parent.name[0] == '_':
+                self.process_fmaps()
+            else:
+                self.fixfmaps()
         else:
             nodicomdir_str = ''.join(['SKIPPING PARTICIPANT: ', subj_dir.name, ' - DICOMS SUBDIRECTORY NOT FOUND.'])
             print('\n\n' + nodicomdir_str + '\n\n')
@@ -104,7 +111,7 @@ class tgz2NIFTI():
               scanstart_str + '\n' +
               '='*(len(scanstart_str)-1))
 
-        print(tools.stru('\nCOPYING AND DECOMPRESSING ARCHIVE FILE') + '...' + '\n')
+        print(tools.stru('COPYING AND DECOMPRESSING ARCHIVE FILE') + '...' + '\n')
         dicom_tmp_open.extractall(path=self.tmpdir)
 
         # Unpacking the TGZ archive will create a directory (sYYYY.Scan_Description)
@@ -137,22 +144,11 @@ class tgz2NIFTI():
         # # Split the name of the dicom tgz archive file's parent directory (XXXX_CY; where X is the subject id and
         # # Y is the time) to get the study wave (time point; e.g., 1, 2) and the subject ID (e.g., 1001)
 
-        # self.subjid = self.dicoms_dir.parent.name.split('_')[0]
-
-        # Get the scan's sequence number (e.g., 0003) as an integer
-        # raw_seqno = int(self.dicom_tmp_dirname.split('.')[0][1:])
-
-        # Get the wave number (time point) as an integer - necessary???
-        # raw_timept = int(self.timept)
-
-        # Pull the scan's description from the dicom tgz archive name
-        # dcm = pydicom.dcmread(Path(self.tgz_dcm_dirpath / 'i.000001.dcm'))
-
         # Remove BIDS-prohibited characters from the acquisition label
         for c in ['(', ')', '-', '_', ' ', '/', 'FieldMap:', ':']:
             if c in self.raw_scantype:
                 bidslabel = self.raw_scantype.replace(c, '')
-        bids_acqlabel = 'acq-' + bidslabel
+        bids_acqlabel = bidslabel
 
         # Null the following BIDS parameter labels (in case they're already set)
         bids_runno = ''
@@ -161,7 +157,6 @@ class tgz2NIFTI():
         bids_tasklabel = ''
 
         # Handle each scan based on the contents of its acquisition label (bids_acqlabel; if necessary...)
-
         # If the scan is a BRAVO (structural), create an acquisition label
         if self.raw_scantype.__contains__('BRAVO'):
             bids_acqlabel = 'AXFSPGRBRAVO'
@@ -169,15 +164,31 @@ class tgz2NIFTI():
         # If the scan is an EPI (fMRI):
         #    1. Do not create an acquisition label
         #    2. Create a task label (bids_tasklabel)
+        # if self.raw_scantype.__contains__('EPI_'):
+        #     bids_acqlabel = ''
+        #     raw_scantype_lc = self.raw_scantype.lower().replace('-', '')
+        #     if raw_scantype_lc.__contains__('perspective'):
+        #         bids_tasklabel = 'Perspective'
+        #     elif raw_scantype_lc.__contains__('nback'):
+        #         bids_tasklabel = 'N-back'
+        #     elif raw_scantype_lc.__contains__('resting'):
+        #         bids_tasklabel = 'Resting'
+        #     elif any(x in raw_scantype_lc for x in ['emo', 'emo1']):
+        #         bids_tasklabel = 'EMOReg1'
+
         if self.raw_scantype.__contains__('EPI_'):
             bids_acqlabel = ''
             raw_scantype_lc = self.raw_scantype.lower().replace('-', '')
             if raw_scantype_lc.__contains__('perspective'):
                 bids_tasklabel = 'Perspective'
-            elif raw_scantype_lc.__contains__('nback'):
+            elif any(x in raw_scantype_lc for x in ['nback']):
                 bids_tasklabel = 'N-back'
             elif raw_scantype_lc.__contains__('resting'):
-                bids_tasklabel = 'Resting'
+                bids_tasklabel = 'EPI_Resting'
+            elif any(x in raw_scantype_lc for x in ['emo', 'emo1']):
+                bids_tasklabel = 'EPI_EMOReg1'
+            elif any(x in raw_scantype_lc for x in ['dynamic', 'faces']):
+                bids_tasklabel = 'DynamicFaces'
 
             # 3. Add all similarly named scans to a list, sorted by sequence number (e.g., sXXXX)
             taskscan_list = list(scan.name for scan in sorted(self.dicoms_dir.glob('*.tgz'))
@@ -187,7 +198,6 @@ class tgz2NIFTI():
             #    This fix allows us to convert the participant-varying sequence numbers to run numbers
             if len(taskscan_list) > 1:
                 for item in taskscan_list.__iter__():
-                    print(item)
                     if self.raw_scantype in item:
                         i = taskscan_list.index(item)
                         epi_runcount = i + 1
@@ -207,7 +217,7 @@ class tgz2NIFTI():
                     bids_runno = 'run-' + str(fmapmag_runcount)
 
         # If the scan is a 'FieldMap_Fieldmap' (phase difference volume), create a run number label
-        # (using the process described above) to differentiate it from other phaase difference volumes
+        # (using the process described above) to differentiate it from other phase difference volumes
         if self.raw_scantype.__contains__('FieldMap_Fieldmap'):
             bids_acqlabel = 'FieldMap'
             fmapfmaplist = list(scan.name for scan in sorted(self.dicoms_dir.glob('*.tgz'))
@@ -217,6 +227,14 @@ class tgz2NIFTI():
                     i = fmapfmaplist.index(item)
                     fmapfmap_runcount = i + 1
                     bids_runno = 'run-' + str(fmapfmap_runcount)
+
+        # If the scan is a 'Fieldmap_DTI' (volume containing two echos and a magnitude; i.e., raw fieldmap)
+        if self.raw_scantype.__contains__('Fieldmap_DTI'):
+            bids_acqlabel = 'FieldmapDTI'
+
+        # If the scan is a 'Fieldmap_DTI' (volume containing two echos and a magnitude; i.e., raw fieldmap)
+        if self.raw_scantype.__contains__('Fieldmap_EPI'):
+            bids_acqlabel = 'FieldmapEPI'
 
         # If the scan is a NODDI, parse the phase encoding polarity from the filename
         # and create a phase encoding direction label (bids_pedir; PA=0; AP=1)
@@ -239,12 +257,12 @@ class tgz2NIFTI():
         # Echo all the BIDS parameters for this scan
         print(tools.stru('PARSING BIDS PARAMETERS') + '...')
         print('Participant:', self.bids_participantID)
-        print('Wave:', self.bids_scansession)
+        print('Wave:', self.bids_scansession.replace('_', ''))
         if len(bids_acqlabel) > 0:
-            print('ACQ Label:', bids_acqlabel.replace('acq-', ''))
+            print('ACQ Label:', bids_acqlabel)
         print('Modality Label:', bids_scanmode)
         if len(bids_tasklabel) > 0:
-            print('Task Label:', bids_tasklabel.replace('task-', ''))
+            print('Task Label:', bids_tasklabel)
         if bids_runno:
             print('Run #:', bids_runno.replace('run-', ''))
         if len(bids_pedir) > 0:
@@ -255,9 +273,9 @@ class tgz2NIFTI():
         bidsparamlist = [self.bids_participantID]
         bidsparamlist.append(self.bids_scansession)
         if len(bids_tasklabel) > 0:
-            bidsparamlist.append(bids_tasklabel)
+            bidsparamlist.append('task-' + bids_tasklabel)
         if len(bids_acqlabel) > 0:
-            bidsparamlist.append(bids_acqlabel)
+            bidsparamlist.append('acq-' + bids_acqlabel)
         if len(bids_runno) > 0:
             bidsparamlist.append(bids_runno)
         if len(bids_pedir) > 0:
@@ -309,7 +327,6 @@ class tgz2NIFTI():
         # WATER_Fieldmap.  We'll add these to the 'IntendedFor' field in the BIDS sidecar.
         if self.raw_scantype.__contains__('WATER'):
             jsonfilepath = Path(self.bids_outdir, self.dcm2niix_label + '.json')
-            print(jsonfilepath)
             with open(jsonfilepath) as jsonfile:
                 sidecar = json.load(jsonfile)
             sidecar['IntendedFor'] = self.fmapassoclist
@@ -329,7 +346,7 @@ class tgz2NIFTI():
             except NameError:
                 self.fmapassoclist = list(self.dcm2niix_label + '.nii')
 
-        print(tools.stru('\nSCAN ' + self.dicom_tmp_dirpath.parts[-1] + ' COMPLETED!\n'))
+        print('\n' + tools.stru('SCAN ' + self.dicom_tmp_dirpath.parts[-1] + ' COMPLETED!') + '\n')
 
     def cleanup(self):
         # Delete the temporary directory we created above
@@ -337,8 +354,7 @@ class tgz2NIFTI():
         os.unlink(self.dicom_tmp)
 
     def process_fmaps(self):
-        fmap_dir = Path(self.outputpath, self.bids_participantID, self.bids_scansession) / 'fmap'
-        # session_dir = Path(self.outputpath, self.bids_participantID, self.bids_scansession)
+        fmap_dir = Path(self.outputpath, self.bids_participantID, self.bids_scansession, 'fmap')
         make_fmaps(fmap_dir, 'EPI')
         make_fmaps(fmap_dir, 'DTI')
 
@@ -418,7 +434,6 @@ class bz2NIFTI():
         if self.dicoms_dir.exists():
             for scan_dir in sorted(self.dicoms_dir.glob('*')):
                 if not any(x in scan_dir.name for x in scanstoskip) and scan_dir.is_dir():
-                    print(scan_dir)
                     self.unpack_bz2(scan_dir)
                     self.getbidsparams()
                     self.conv_dcms()
@@ -443,11 +458,17 @@ class bz2NIFTI():
         # Copy the scan directory to /tmp for faster processing
         scan_dir_tmp = self.tmpdir / scan_dir.name
         shutil.copytree(scan_dir, scan_dir_tmp)
+        scanstart_str = ''.join(['\n', 'STARTING SCAN ', scan_dir_tmp.name])
+        print('\n'+'='*(len(scanstart_str)-1) +
+              scanstart_str + '\n' +
+              '='*(len(scanstart_str)-1))
+
+        print(tools.stru('COPYING AND DECOMPRESSING SLICE FILES') + '...' + '\n')
 
         # Decompress the BZ2 files in the tmp scan directory
         for bz2_file in sorted(scan_dir_tmp.glob('*.bz2')):
             bz2_fpath = Path(scan_dir_tmp, bz2_file)
-            dcm_fpath = Path(scan_dir_tmp, str(bz2_file).replace(".bz2",""))
+            dcm_fpath = Path(scan_dir_tmp, str(bz2_file).replace(".bz2", ""))
             with open(dcm_fpath, 'wb') as newfile, open(bz2_fpath, 'rb') as oldfile:
                 decompressor = bz2.BZ2Decompressor()
                 for data in iter(lambda: oldfile.read(100 * 1024), b''):
@@ -472,7 +493,7 @@ class bz2NIFTI():
         else:
             self.subjID = self.dicoms_dir.parent.name.split('_')[0]
             self.timept = self.dicoms_dir.parent.name[-1]
-        print(self.rawscan_dir.name)
+
         self.rawscan_type = self.rawscan_dir.name.split('_')[1]
 
         # Each scan folder should contain a YAML file with the scan info
@@ -523,6 +544,16 @@ class bz2NIFTI():
         # bids_participantID: the subject ID formatted as a BIDS label string
         self.bids_participantID = "sub-" + self.subjID
 
+        # Echo all the BIDS parameters for this scan
+        print(tools.stru('PARSING BIDS PARAMETERS') + '...')
+        print('Participant:', self.bids_participantID)
+        print('Wave:', self.bids_scansession.replace('_', ''))
+        if len(bids_acqlabel) > 0:
+            print('ACQ Label:', bids_acqlabel.replace('_', ''))
+        print('Modality Label:', self.bids_scanmode.replace('_', ''))
+        if len(bids_tasklabel) > 0:
+            print('Task Label:', bids_tasklabel.replace('_', ''))
+
         # dcm2niix_outdir: the path where the converted scan files will be written by dcm2niix
         self.dcm2niix_outdir = Path(
             self.outputpath, self.bids_participantID, self.bids_scansessiondir, self.scan2bidsdir(self.rawscan_type))
@@ -539,11 +570,11 @@ class bz2NIFTI():
 
     # Converting the raw scan files to NIFTI format using the parameters previously specified
     def conv_dcms(self):
-        print(tools.stru("Step 3") + ": Converting to NIFTI using dcm2niix and sorting into appropriate BIDS folder...\n")
 
         if not self.dcm2niix_outdir.exists():
             self.dcm2niix_outdir.mkdir(parents=True)
 
+        print('\n' + tools.stru('BEGINNING SCAN CONVERSION') + '...')
         # Running dcm2niix
         subprocess.run(["dcm2niix", "-f", self.dcm2niix_label,
                         "-o", self.dcm2niix_outdir, self.rawscan_dir])
@@ -566,10 +597,8 @@ class bz2NIFTI():
 
     def process_fmaps(self):
         fmap_dir = Path(self.outputpath, self.bids_participantID, self.bids_scansessiondir, 'fmap')
-        print(fmap_dir)
-        # session_dir = Path(self.outputpath, self.bids_participantID, self.bids_scansession)
         make_fmaps(fmap_dir, 'EPI')
-        #make_fmaps(fmap_dir, 'DTI')
+        make_fmaps(fmap_dir, 'DTI')
 
     # Remove the temp directory
     def cleanup(self):

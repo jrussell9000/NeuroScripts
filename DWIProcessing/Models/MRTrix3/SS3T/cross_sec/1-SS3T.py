@@ -12,7 +12,7 @@ from joblib import parallel_backend, delayed, Parallel
 # <<<<<<<<<<<<<<<<< #
 
 bidsproc_dir = Path('/Volumes/Vol6/YouthPTSD/BIDS_Processed/')
-template_dir = Path('/scratch/jdrussell3/mrtrix/cross_sec2')
+template_dir = Path('/fast_scratch/jdr/mrtrix/cross_sec')
 
 if not template_dir.exists():
     template_dir.mkdir()

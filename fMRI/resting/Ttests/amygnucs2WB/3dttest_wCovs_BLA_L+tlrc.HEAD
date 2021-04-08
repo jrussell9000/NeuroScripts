@@ -1,0 +1,405 @@
+
+type = string-attribute
+name = HISTORY_NOTE
+count = 7920
+'[jdrussell3@mri-thor: Thu Mar 11 13:48:12 2021] {AFNI_21.0.00:linux_ubuntu_16_64} 3dttest++ -setA noPTSD sub-003 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-003/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-004 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-004/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-006 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-006/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-009 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-009/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-011 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-011/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-014 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-014/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-042 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-042/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-043 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-043/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-044 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-044/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-057 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-057/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-058 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-058/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-059 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-059/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-060 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-060/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-061 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-061/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-062 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-062/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-064 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-064/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-071 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-071/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-076 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-076/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-085 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-085/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-087 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-087/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-090 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-090/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-092 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-092/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-093 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-093/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-094 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-094/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-097 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-097/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-099 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-099/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-100 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-100/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-106 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-106/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-117 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-117/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-125 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-125/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-128 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-128/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-134 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-134/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-135 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-135/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-142 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-142/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-148 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-148/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-156 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-156/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-157 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-157/ses-01/func/fconn/WB_Z_BLA_L.nii.gz -setB yesPTSD sub-012 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-012/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-019 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-019/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-021 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-021/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-024 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-024/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-026 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-026/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-028 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-028/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-031 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-031/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-036 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-036/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-041 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-041/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-045 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-045/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-050 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-050/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-065 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-065/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-068 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-068/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-070 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-070/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-073 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-073/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-075 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-075/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-078 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-078/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-079 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-079/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-082 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-082/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-084 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-084/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-086 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-086/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-091 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-091/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-104 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-104/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-108 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-108/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-118 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-118/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-122 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-122/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-124 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-124/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-127 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-127/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-129 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-129/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-132 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-132/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-133 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-133/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-138 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-138/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-139 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-139/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-146 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-146/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-147 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-147/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-151 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-151/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-153 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-153/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-154 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-154/ses-01/func/fconn/WB_Z_BLA_L.nii.gz sub-155 /fast_scratch/jdr/resting/BIDS_fmriprep/fmriprep/sub-155/ses-01/func/fconn/WB_Z_BLA_L.nii.gz -mask /fast_scratch/tjk/PNC/seeds/MNI152_T1_2mm_brain.nii.gz -covariates covariates.txt -BminusA -prefix 3dttest_wCovs_BLA_L~
+
+type = string-attribute
+name = TYPESTRING
+count = 15
+'3DIM_HEAD_FUNC~
+
+type = string-attribute
+name = IDCODE_STRING
+count = 27
+'AFN_chBotvInSJjzVwX1kGXHMA~
+
+type = string-attribute
+name = IDCODE_DATE
+count = 25
+'Thu Mar 11 13:48:12 2021~
+
+type = integer-attribute
+name = SCENE_DATA
+count = 8
+ 2 11 1 -999 -999
+ -999 -999 -999
+
+type = string-attribute
+name = LABEL_1
+count = 5
+'zyxt~
+
+type = string-attribute
+name = LABEL_2
+count = 5
+'zyxt~
+
+type = string-attribute
+name = DATASET_NAME
+count = 5
+'zyxt~
+
+type = integer-attribute
+name = ORIENT_SPECIFIC
+count = 3
+ 1 2 4
+
+type  = float-attribute
+name  = ORIGIN
+count = 3
+             90            126            -72
+
+type  = float-attribute
+name  = DELTA
+count = 3
+             -2             -2              2
+
+type  = float-attribute
+name  = IJK_TO_DICOM
+count = 12
+             -2              0              0             90              0
+             -2              0            126              0              0
+              2            -72
+
+type  = float-attribute
+name  = IJK_TO_DICOM_REAL
+count = 12
+             -2              0              0             90              0
+             -2              0            126              0              0
+              2            -72
+
+type  = float-attribute
+name  = BRICK_STATS
+count = 36
+     -0.2095733      0.3771739      -2.883703       4.458327    -0.07044937
+      0.1361507      -4.063529        4.22313     -0.4775504       0.787599
+      -4.066288       4.470491    -0.09548365       1.258259      -3.283021
+       23.62948    -0.09791411     0.04476218      -5.886939       3.323574
+     -0.5192584      0.3630149      -4.482058         4.2444    -0.04311147
+       1.315284      -2.355554       20.38735    -0.05640889     0.07255822
+      -4.860666       3.624307     -0.4546258      0.5616597      -3.194398
+       4.064846
+
+type = integer-attribute
+name = DATASET_RANK
+count = 8
+ 3 18 0 0 0
+ 0 0 0
+
+type = integer-attribute
+name = DATASET_DIMENSIONS
+count = 5
+ 91 109 91 0 0
+
+type = integer-attribute
+name = BRICK_TYPES
+count = 18
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3
+
+type  = float-attribute
+name  = BRICK_FLOAT_FACS
+count = 18
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0
+
+type = string-attribute
+name = BRICK_LABS
+count = 297
+'yesPTSD-noPTSD_mean~yesPTSD-noPTSD_Tstat~yesPTSD-noPTSD_AGE~yesPTSD-noPTSD_AGE_Tstat~yesPTSD-noPTSD_SEX~yesPTSD-noPTSD_SEX_Tstat~noPTSD_mean~noPTSD_Tstat~noPTSD_AGE~noPTSD_AGE_Tstat~noPTSD_SEX~noPTSD_SEX_Tstat~yesPTSD_mean~yesPTSD_Tstat~yesPTSD_AGE~yesPTSD_AGE_Tstat~yesPTSD_SEX~yesPTSD_SEX_Tstat~
+
+type  = float-attribute
+name  = BRICK_STATAUX
+count = 36
+              1              3              1             70              3
+              3              1             70              5              3
+              1             70              7              3              1
+             34              9              3              1             34
+             11              3              1             34             13
+              3              1             36             15              3
+              1             36             17              3              1
+             36
+
+type = string-attribute
+name = BRICK_STATSYM
+count = 135
+'none;Ttest(70);none;Ttest(70);none;Ttest(70);none;Ttest(34);none;Ttest(34);none;Ttest(34);none;Ttest(36);none;Ttest(36);none;Ttest(36)~
+
+type  = float-attribute
+name  = FDRCURVE_000001
+count = 103
+   0.0001271858     0.01622986   0.0001266969     0.00876114     0.01750642
+     0.02610632     0.03455322     0.04354551     0.05264668     0.06185397
+     0.07088407     0.08041529      0.0893662     0.09874167      0.1080147
+      0.1174485      0.1272345        0.13664      0.1461514      0.1556691
+      0.1654581      0.1750084      0.1842254      0.1939563      0.2032659
+      0.2123919      0.2215539      0.2307186      0.2401738      0.2490053
+      0.2582161       0.267071      0.2760219      0.2845792      0.2936514
+      0.3025966      0.3110782      0.3200701       0.328715      0.3373486
+      0.3457751      0.3541749      0.3620292      0.3699796      0.3781011
+      0.3857852      0.3938272      0.4012474      0.4088695      0.4159728
+      0.4230241      0.4297605      0.4366198      0.4430242      0.4497465
+      0.4562702      0.4627249      0.4683456      0.4743116      0.4803469
+      0.4860679      0.4914326      0.4964046      0.5014867      0.5062982
+      0.5109942      0.5156492       0.520065      0.5240014      0.5282023
+      0.5319926      0.5356573       0.539589      0.5418358      0.5453635
+      0.5477005      0.5499113      0.5519916      0.5534174      0.5546662
+      0.5557906      0.5567485      0.5574334       0.557434      0.5574347
+      0.5574354      0.5574361      0.5574368      0.5574375      0.5574381
+      0.5574387      0.5574387      0.5574387      0.5574387      0.5574387
+      0.5574387      0.5574387      0.5574387      0.5574387      0.5574387
+      0.5574387      0.5574387      0.5574387
+
+type  = float-attribute
+name  = FDRCURVE_000003
+count = 103
+   0.0001272185     0.01152127   0.0001267716    0.004755622    0.009286823
+     0.01400544     0.01859423     0.02325326     0.02780809     0.03260496
+     0.03742637     0.04220495     0.04698133     0.05180879      0.0563285
+       0.060892     0.06525422     0.07007921     0.07488795     0.07938295
+     0.08387539      0.0878678     0.09249307     0.09732917      0.1022883
+       0.107104      0.1118736      0.1164601      0.1208955      0.1248682
+      0.1290476      0.1335216      0.1374983      0.1415131      0.1458138
+       0.149703      0.1534975      0.1575682       0.161468      0.1657565
+      0.1693868      0.1729453      0.1768777      0.1800332      0.1835166
+      0.1868775       0.190488      0.1939627      0.1970853      0.2006264
+      0.2040394      0.2070495      0.2096128      0.2120964      0.2145256
+      0.2168627      0.2186545      0.2209983      0.2232156      0.2253749
+      0.2270702      0.2287363      0.2303473      0.2319756      0.2341489
+      0.2361591      0.2373109      0.2389921      0.2396951       0.240638
+      0.2411489      0.2418967      0.2424528      0.2429968      0.2434153
+      0.2437762      0.2440369      0.2442002      0.2442005      0.2442007
+       0.244201      0.2442013      0.2442016      0.2442019      0.2442021
+      0.2442024      0.2442027       0.244203      0.2442033      0.2442036
+      0.2442039      0.2442041      0.2442044      0.2442047       0.244205
+      0.2442053      0.2442055      0.2442058      0.2442061      0.2442064
+      0.2442067       0.244207      0.2442076
+
+type  = float-attribute
+name  = FDRCURVE_000005
+count = 103
+   0.0001830116      0.0205641   0.0001823509     0.01357626     0.02745119
+     0.04115133     0.05497725     0.06911644     0.08344336     0.09794831
+      0.1124241      0.1266217      0.1407674      0.1547328      0.1688969
+      0.1830906      0.1971412      0.2111925      0.2252544      0.2388357
+      0.2526229      0.2661942      0.2794559      0.2927428        0.30581
+      0.3184029      0.3309886      0.3433855      0.3560273      0.3683616
+      0.3798631      0.3914818      0.4030238      0.4144512      0.4251546
+      0.4358469       0.446226       0.456084      0.4659585      0.4752472
+      0.4844528       0.493067      0.5014052      0.5094067      0.5168637
+       0.524626        0.53176      0.5381896      0.5442446      0.5496088
+      0.5554439      0.5606349      0.5657042      0.5695705      0.5731525
+      0.5759733      0.5793175      0.5812009      0.5836043      0.5865517
+      0.5878376      0.5891832      0.5893524      0.5893567      0.5898675
+      0.5898677      0.5898679      0.5898682      0.5898684      0.5898687
+      0.5898689      0.5898691      0.5898694      0.5898697      0.5898699
+      0.5898702      0.5898703      0.5898706      0.5898709      0.5898712
+      0.5898714      0.5898716      0.5898719      0.5898721      0.5898724
+      0.5898726      0.5898728      0.5898731      0.5898733      0.5898736
+      0.5898738      0.5898741      0.5898743      0.5898743      0.5898743
+      0.5898743      0.5898743      0.5898743      0.5898743      0.5898743
+      0.5898743      0.5898743      0.5898743
+
+type  = float-attribute
+name  = FDRCURVE_000007
+count = 103
+   0.0002044999      0.2171102       1.126584       1.232347       1.349121
+        1.47611       1.611124       1.750011       1.896775       2.047881
+       2.202266       2.359206       2.517353       2.675664       2.833738
+       2.990649       3.145307        3.29758       3.446932       3.592748
+       3.734951       3.873248       4.007725       4.137903       4.264368
+       4.386817       4.504968       4.618602        4.72805       4.833356
+        4.93391       5.031318       5.124897       5.215114       5.301756
+       5.384569       5.464716          5.543       5.617733        5.68945
+       5.760091       5.826971       5.893791       5.958802       6.023005
+       6.087355       6.149334       6.206551       6.266724       6.327733
+       6.384292       6.444615       6.502407       6.562022       6.617374
+        6.66895       6.725198       6.782609       6.836674       6.894464
+       6.953146       7.009044       7.064259       7.118245       7.174248
+       7.228603       7.281273        7.31622        7.31839       7.320561
+       7.320753       7.320753       7.320753       7.320753       7.320753
+       7.320753       7.320752       7.320752       7.320753       7.320753
+       7.320752       7.320753       7.320753       7.320753       7.320753
+       7.320753       7.320753       7.320753       7.320753       7.320753
+       7.320753       7.320753       7.320753       7.320753       7.320753
+       7.320753       7.320753       7.320753       7.320753       7.320753
+       7.320753       7.320753       7.320753
+
+type  = float-attribute
+name  = FDRCURVE_000009
+count = 103
+   0.0001508357     0.05512292   0.0001496308     0.03519653      0.0715049
+      0.1075487      0.1439053      0.1800433      0.2168129      0.2525933
+      0.2877261      0.3217747       0.355009      0.3877015      0.4189533
+      0.4504521      0.4800037      0.5088667      0.5348736       0.560463
+      0.5851683      0.6077768      0.6288681      0.6450999      0.6642383
+      0.6802751      0.6943631      0.7075999       0.719584      0.7315084
+      0.7433152      0.7540964       0.762844      0.7724971      0.7804851
+       0.788276      0.7944056      0.7997018      0.8059801      0.8107274
+       0.817534      0.8230571      0.8250307       0.828875      0.8289582
+      0.8354208      0.8383534      0.8394836      0.8394836      0.8404361
+      0.8463047      0.8491848      0.8491895      0.8520241      0.8544636
+      0.8544636        0.85755      0.8655496      0.8669621      0.8669786
+      0.8695769      0.8780909      0.8892705      0.9092785      0.9192624
+      0.9364247      0.9412497      0.9467137      0.9662132      0.9904291
+       1.007691       1.022031        1.05168       1.078733       1.099292
+       1.116499       1.145882        1.15699       1.173756       1.177159
+       1.202123       1.217654       1.229088       1.240866       1.243264
+       1.253298       1.275323       1.279307       1.279307       1.298093
+         1.3119       1.312509       1.317948       1.347659       1.369892
+         1.3941        1.39951       1.400094       1.400676        1.40126
+       1.401842       1.402426       1.404033
+
+type  = float-attribute
+name  = FDRCURVE_000011
+count = 103
+   0.0001488842     0.01258207    0.000126921    0.002305198    0.004590463
+    0.006791034     0.00886102     0.01133692     0.01358007     0.01540773
+     0.01786327     0.02008285     0.02248862     0.02496965     0.02770529
+     0.02997061     0.03213592     0.03449252      0.0369936     0.03960671
+     0.04271737     0.04495562     0.04804427      0.0503289     0.05318765
+     0.05613293     0.05811203     0.06067253     0.06393604     0.06680776
+     0.06954829     0.07267775     0.07539362     0.07833074     0.08079859
+     0.08357932     0.08633568     0.08943576     0.09205328     0.09517635
+     0.09770104      0.1008168      0.1042992      0.1066782       0.109481
+      0.1127872      0.1153272      0.1176259      0.1195645      0.1216807
+      0.1242695      0.1264242      0.1285195      0.1315014      0.1337362
+      0.1361035      0.1380678      0.1397584      0.1415983      0.1434733
+      0.1456653      0.1481811      0.1510323      0.1532774      0.1553213
+      0.1567312      0.1585041       0.160391      0.1620828      0.1636761
+      0.1651492      0.1663641      0.1674076      0.1681156      0.1681218
+      0.1681233      0.1681233      0.1681233      0.1681233      0.1681233
+      0.1682944      0.1688924      0.1693022      0.1696132      0.1696132
+       0.169652      0.1699597      0.1703174      0.1706249      0.1706256
+      0.1706261      0.1706267      0.1706273       0.170628      0.1706285
+      0.1706292      0.1706298      0.1706304       0.170631      0.1706316
+      0.1706322      0.1706328      0.1706444
+
+type  = float-attribute
+name  = FDRCURVE_000013
+count = 103
+    0.000596958       0.188377       1.149106       1.243292       1.346183
+        1.45693       1.574489       1.697688       1.823521       1.954967
+       2.089303       2.226121       2.364394       2.503466       2.642691
+       2.781076       2.918641       3.054675        3.18891       3.321049
+       3.450868       3.577926       3.701653       3.821105        3.93696
+       4.048205       4.154901       4.257002       4.355107       4.448729
+        4.53812       4.624013       4.704708       4.781927       4.854692
+       4.924026       4.989816       5.052218        5.11124       5.168482
+       5.223972       5.275665       5.329334       5.379415       5.432448
+         5.4793       5.527433       5.573385       5.624153        5.67662
+       5.729818       5.784936       5.841155       5.894307       5.951056
+       6.017296       6.076867       6.136235        6.19823       6.254484
+       6.306008       6.366928       6.414721       6.470014       6.514289
+       6.576611       6.636192       6.690985        6.74958       6.803421
+       6.855485       6.896754       6.952097       7.003422       7.038754
+       7.043248       7.043248       7.043248       7.043248       7.043248
+       7.043247       7.043248       7.043248       7.043247       7.043248
+       7.043248       7.043248       7.043248       7.043248       7.043247
+       7.043248       7.043248       7.043248       7.043248       7.043248
+       7.043247       7.043248       7.043248       7.043248       7.043248
+       7.043248       7.043248       7.043248
+
+type  = float-attribute
+name  = FDRCURVE_000015
+count = 103
+      0.6280838   3.627598e-05   0.0001278174   0.0001278174   0.0001278174
+   0.0001278174   0.0001278174   0.0001278174   0.0001278174   0.0001278174
+   0.0001278174   0.0001278174   0.0001278174   0.0001278174   0.0001278174
+   0.0001278174   0.0001278174   0.0001278174   0.0001278174   0.0001278174
+   0.0001278174   0.0001278174   0.0001278174   0.0001278174   0.0001278174
+   0.0001278174   0.0001278174   0.0001278174   0.0001278174   0.0001278174
+   0.0001278174   0.0001278174   0.0001278174   0.0001278174   0.0001278174
+   0.0001278174   0.0001278174   0.0001278174   0.0001278174   0.0001278174
+   0.0001278174   0.0001278174   0.0001278174   0.0001278174   0.0001278174
+   0.0001278174   0.0001278174   0.0001278174   0.0001278174   0.0001278174
+   0.0001278174   0.0001278174   0.0001278174   0.0001278174   0.0001278174
+   0.0001278174   0.0001278174   0.0001278174   0.0001278174   0.0001278174
+   0.0001278174   0.0001278174   0.0001278174   0.0001278174   0.0001278174
+   0.0001278174   0.0001278174   0.0001278174   0.0001278174   0.0001278174
+   0.0001278174   0.0001278174   0.0001278174   0.0001278174   0.0001278174
+   0.0001278174   0.0001278174   0.0001278174   0.0001278174   0.0001278174
+   0.0001278174   0.0001278174   0.0001278174   0.0001278174   0.0001278174
+   0.0001278174   0.0001278174   0.0001278174   0.0001278174   0.0001278174
+   0.0001278174   0.0001278174   0.0001278174   0.0001278174   0.0001278174
+   0.0001278174   0.0001278174   0.0001278174   0.0001278174   0.0001278174
+   0.0001278174   0.0001278174   0.0001278174
+
+type  = float-attribute
+name  = FDRCURVE_000017
+count = 103
+   0.0001321961     0.01016448   0.0001312538    0.004985107    0.009883102
+     0.01499195      0.0198123     0.02461672     0.02971001     0.03515504
+     0.04047952     0.04557749     0.05087527     0.05598997     0.06120103
+     0.06650034     0.07168857     0.07697612     0.08230344     0.08752821
+       0.092299      0.0974966      0.1028179      0.1079647      0.1133165
+      0.1183653      0.1235471      0.1287313      0.1337379      0.1384702
+      0.1440149      0.1489599      0.1541329      0.1589987       0.163986
+      0.1681615      0.1728452       0.177347      0.1824432      0.1870338
+      0.1919246      0.1965971      0.2012684      0.2058038      0.2101577
+      0.2144876      0.2192201      0.2237827      0.2280695      0.2323114
+      0.2362001       0.240343      0.2441984      0.2479265      0.2513655
+      0.2551775      0.2587023      0.2621596      0.2662036       0.269055
+       0.272151      0.2752495      0.2784151      0.2818656      0.2848386
+      0.2869557      0.2898526       0.292702      0.2956523      0.2985186
+      0.3008787      0.3033359       0.305861      0.3083798      0.3106648
+      0.3130209      0.3147598      0.3161623      0.3178721      0.3200252
+      0.3217068      0.3230543      0.3245617      0.3259002      0.3273741
+       0.328654      0.3300102       0.331209      0.3323223      0.3335104
+      0.3344605      0.3346666      0.3346831      0.3346831      0.3346832
+      0.3346832      0.3346833      0.3346833      0.3346833      0.3346834
+      0.3346834      0.3346835      0.3346855
+
+type  = float-attribute
+name  = MDFCURVE_000007
+count = 71
+            -15      0.2014955      0.9990056      0.9985468      0.9984647
+      0.9983594      0.9982448      0.9980949      0.9979498      0.9977696
+      0.9976133      0.9974092      0.9970761      0.9967639      0.9964046
+      0.9958103       0.995246       0.994577       0.993933      0.9930388
+      0.9920983      0.9907689      0.9895352      0.9877548      0.9857048
+      0.9832619      0.9805945      0.9775503      0.9740394       0.969675
+      0.9647256      0.9590972      0.9521388       0.944505      0.9358931
+      0.9254763      0.9140688      0.9017024      0.8874675      0.8717418
+      0.8541648      0.8348951      0.8137892      0.7915427      0.7671877
+      0.7411631      0.7133542      0.6837674       0.652559      0.6213117
+      0.5884856      0.5547217      0.5204277      0.4862268      0.4514626
+      0.4164647      0.3812039      0.3451644      0.3099903      0.2754352
+      0.2413291      0.2079239      0.1762236      0.1449961      0.1156777
+     0.08821571     0.06226784     0.03947216     0.02070288    0.006138647
+              0
+
+type  = float-attribute
+name  = MDFCURVE_000013
+count = 51
+      -11.23762      0.2035542       0.999001      0.9988871       0.998749
+      0.9985043      0.9982462      0.9979141      0.9974537      0.9969417
+      0.9962493      0.9953558      0.9940755      0.9924412      0.9905529
+      0.9879957       0.985034      0.9810748      0.9764482      0.9700993
+      0.9622257      0.9531327      0.9415524      0.9277648       0.911342
+      0.8918591      0.8694745      0.8435118      0.8140648      0.7815173
+      0.7450814       0.705662      0.6637973      0.6183307        0.57049
+      0.5218185      0.4708993      0.4194819      0.3698237      0.3214221
+      0.2759125        0.23227      0.1926968      0.1565997      0.1229255
+     0.09268254     0.06499618     0.04041506     0.02038869    0.006592199
+              0
+
+type = string-attribute
+name = TEMPLATE_SPACE
+count = 4
+'MNI~
+
+type = integer-attribute
+name = INT_CMAP
+count = 1
+ 0
+
+type = string-attribute
+name = BYTEORDER_STRING
+count = 10
+'LSB_FIRST~

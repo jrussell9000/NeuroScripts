@@ -120,5 +120,6 @@ class run():
         convert = converters.convertScans(self.studypath, self.outputpath, scanstoskip,
                                           self.inputidfile, self.ids)
 
+
 if __name__ == '__main__':
     r = run()

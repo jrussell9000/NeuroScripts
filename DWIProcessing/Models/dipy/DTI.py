@@ -17,7 +17,8 @@ from joblib import parallel_backend, delayed, Parallel
 from pathlib import Path
 # from dipy.reconst.dti import fractional_anisotropy
 
-out_dir = Path('/Users/jdrussell3/scratch/fsl/dtifit')
+out_dir = Path('/fast_scratch/jdr/dipy/')
+bidsproc_dir = Path('/Volumes/Vol6/YouthPTSD/BIDS_Processed')
 
 
 def loadsubj(ses_dir, out_dir):
@@ -44,7 +45,7 @@ def mif2nii(input_mif, mask_mif, output_dir, subjroot):
     return input_bval, input_bvec, input_dwi, input_mask
 
 
-def fit_dti_dipy(input_dwi, input_bval, input_bvec, output_dir, fit_type='', mask='', bmax='', mask_tensor='T'):
+def fit_dti_dipy(subjroot, input_dwi, input_bval, input_bvec, output_dir, fit_type='', mask='', bmax='', mask_tensor='T'):
 
     if not os.path.exists(output_dir):
         os.mkdir(output_dir)
@@ -110,9 +111,9 @@ def fit_dti_dipy(input_dwi, input_bval, input_bvec, output_dir, fit_type='', mas
         os.mkdir(output_dir)
 
     # Define output imgs
-    output_evecs = output_dir + '/dti_eigenvectors.nii.gz'
-    output_tensor = output_dir + '/dti_tensor.nii.gz'
-    dti_tensor_spd = output_dir + '/dti_tensor_spd.nii.gz'
+    output_evecs = output_dir + '/' + subjroot + '_dti_eigenvectors.nii.gz'
+    output_tensor = output_dir + '/' + subjroot + '_dti_tensor.nii.gz'
+    dti_tensor_spd = output_dir + '/' + subjroot + '/dti_tensor_spd.nii.gz'
     output_tensor_norm = output_dir + '/dti_tensor_norm.nii.gz'
     dti_tensor_spd_masked = output_dir + '/dti_tensor_spd_masked.nii.gz'
     norm_mask = output_dir + '/norm_mask.nii.gz'
@@ -130,7 +131,7 @@ def fit_dti_dipy(input_dwi, input_bval, input_bvec, output_dir, fit_type='', mas
 
     output_res = output_dir + '/dti_residuals.nii.gz'
 
-    evecs_img = nib.Nifti1Image(evecs, img.get_affine(), img.header)
+    evecs_img = nib.Nifti1Image(evecs, aff, img.header)
     nib.save(evecs_img, output_evecs)
 
     dti_V1 = evecs[:, :, :, :, 0]
@@ -208,12 +209,16 @@ def fit_dti_dipy(input_dwi, input_bval, input_bvec, output_dir, fit_type='', mas
 def main(ses_dir):
     input_mif, mask_mif, output_dir, subjroot = loadsubj(ses_dir, out_dir)
     input_bval, input_bvec, input_dwi, input_mask = mif2nii(input_mif, mask_mif, output_dir, subjroot)
-    fit_dti_dipy(input_dwi, str(input_bval), str(input_bvec), str(output_dir), fit_type='RESTORE', mask=str(input_mask), bmax='', mask_tensor='T')
+    fit_dti_dipy(subjroot, input_dwi, str(input_bval), str(input_bvec), str(output_dir), fit_type='RESTORE',
+                 mask=str(input_mask), bmax='', mask_tensor='T')
 
 
-bidsproc_dir = Path('/Volumes/Vol6/YouthPTSD/BIDS_Processed')
-# ses_dirs = (ses_dir for ses_dir in bidsproc_dir.glob('*/ses-01') if Path(ses_dir / 'dwi').exists() if ses_dir.parents[0].name == 'sub-001')
+ses_dirs = (ses_dir for ses_dir in bidsproc_dir.glob('*/ses-*') if Path(ses_dir / 'dwi').exists() 
+            and not ses_dir.parent.name == 'sub-003'
+            and not ses_dir.parent.name == 'sub-025')
+with parallel_backend("loky", inner_max_num_threads=1):
+    results = Parallel(n_jobs=32, verbose=1)(delayed(main)(ses_dir) for ses_dir in sorted(ses_dirs))
 
-ses_dir = bidsproc_dir / 'sub-001' / 'ses-01'
-
-main(ses_dir)
+# for ses_dir in sorted(bidsproc_dir.glob('*/ses-01')):
+#     if Path(ses_dir / 'dwi').exists() and not ses_dir.parent.name == 'sub-003' and not ses_dir.parent.name == 'sub-025':
+#         main(ses_dir)
