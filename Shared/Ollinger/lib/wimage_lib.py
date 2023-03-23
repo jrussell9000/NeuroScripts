@@ -46,7 +46,7 @@ import sys
 import os
 from os import F_OK, R_OK, W_OK
 from stat import S_IRWXU, S_IRWXG, S_IRWXO
-#import popen2
+import popen2
 try:
     import fcntl
 except:
@@ -64,17 +64,16 @@ import socket
 import smtplib
 from email.mime.text import MIMEText
 from subprocess import Popen, PIPE
-import signal
-import fcntl
 from binascii import hexlify
 
 try:
     from paramiko import Transport, ChannelException, SSHException, \
                     AuthenticationException, HostKeys, DSSKey
+    from paramiko.util import hexify, unhexify
 except:
     pass
 
-ID = "$Id: wimage_lib.py 311 2010-06-24 01:08:11Z jmo $"[1:-1]
+ID = "$Id: wimage_lib.py 207 2009-09-25 19:26:51Z jmo $"[1:-1]
 
 cvt_mode = {'r':os.O_RDONLY, \
             'w':(os.O_CREAT | os.O_WRONLY), \
@@ -96,7 +95,7 @@ class UsageError(exceptions.Exception):
     def __init__(self, msg=None, name=None):
         self.errmsg = msg + except_msg(name)
 
-def except_msg(name=None, msg=None):
+def except_msg(name=None):
     """Create useful error message for exceptions."""
     exc = sys.exc_info()
     if exc[0] is None:
@@ -110,8 +109,6 @@ def except_msg(name=None, msg=None):
         errstr = errstr + "Error encountered in: %s\n" % name
     else:
         errstr = errstr + "Error:" + str(exc[0]) + '\n'
-    if msg:
-        errstr += '%s\n' % msg
     errstr = errstr + \
                'Type:        %s\n' % type + \
                'Description: *** %s ***\n' % exc[1] + \
@@ -178,25 +175,23 @@ def execCmd(cmd, f_log=None, f_crash=None, verbose=False):
 #   Log and execute unix commands.
     if verbose:
         sys.stdout.write('%s\n' % cmd)
-    output = ''
+    outdata = ''
     try:
-        f = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
-        output, errout = f.communicate()
-        errs = f.wait()
+        outdata = getCommandOutput(cmd)
+        if isinstance(outdata,tuple):
+            outdata = outdata[0]
+        if f_log is not None:
+            f_log.write(cmd + '\n')
+            f_log.write(outdata)
+            f_log.write('\n')
+        if verbose:
+            sys.stdout.write(outdata)
+            sys.stdout.write('\n')
+        errstr = None
+    except RuntimeError, err:
+        raise RuntimeError("bash command:\n%s\n%s\n%s" % (cmd, outdata, err[2]))
     except:
-        raise RuntimeError("bash command:\n%s\n%s\n%s\n" % (cmd, output))
-        f_crash.write(cmd + '\n')
-        f_crash.write(output + '\n')
-        f_crash.write(errout + '\n')
-    if errs:
-        raise RuntimeError( \
-                "Error executing command:\n%s\n%s\n%s" % (cmd, output, errout))
-
-    if f_log is not None:
-        f_log.write(cmd + '\n')
-        f_log.write(output + '\n')
-    if verbose:
-        sys.stdout.write(output + '\n')
+        raise RuntimeError("bash command:\n%s\n%s\n" % (cmd, outdata))
 
 #def pipe_email(recipient, subject, message, username):
 #    """ Pipe email to a server that is running smtp."""
@@ -397,7 +392,7 @@ def ssh_connect(hostname, username, password=None):
 #   Create the transport.
     transport = Transport((hostname, 22))
 #   Connect to the host
-    if password is not None:
+    if password:
         transport.connect(username=username, password=password)
     else:
 #       Use ssh public key authentication.
@@ -433,8 +428,9 @@ class OpenFtp():
         try:
             self.ch = self.transport.open_session()
             self.sftp = self.transport.open_sftp_client()
-        except (IOError, NameError, ChannelException), errstr:
+        except (IOError, NameError, ChannelException, SSHException), errstr:
             self.sftp = None
+            print errstr
             if self.transport:
                 self.transport.close()
             return None
@@ -503,24 +499,24 @@ class OpenRemote():
         values, "r", "w" etc.
         """
         self.filename = filename
-        self.hostname = hostname
-        self.username = username
-        self.passwd = passwd
         try:
             self.transport = ssh_connect(hostname, username, passwd)
+#            self.transport = Transport((hostname, 22))
+#            self.transport.connect(username=username, password=passwd)
         except AuthenticationException:
-            raise IOError('Authentication error: Could not open %s@%s:%s\n' % \
-                                            (username, hostname, filename))
+            sys.stderr.write('Authentication error in OpenRemote\n')
+            self.transport.close()
             self.fd = None
+            return None
         try:
             self.ch = self.transport.open_session()
             self.sftp = self.transport.open_sftp_client()
             self.fd = self.sftp.open(filename, mode)
-        except (IOError, NameError, ChannelException, SSHException), errmsg:
+        except (IOError, NameError, ChannelException, SSHException), errstr:
+            print errstr
+            if self.transport:
+                self.transport.close()
             self.fd = None
-            raise IOError( \
-            'Authentication error: Could not open %s@%s:%s\n%s\n' % \
-                                   (username, hostname, filename, errmsg))
 
     def write(self, data):
         if self.fd is None:
@@ -534,7 +530,7 @@ class OpenRemote():
         return self.fd.seek(offset, whence)
 
     def read(self):
-        return self.fd.read()
+        return self.fd.read(data)
 
     def readline(self, Nmax=None):
         return self.fd.readline(Nmax)
@@ -580,242 +576,15 @@ def ssh_validate(hostname, username, passwd):
     except AuthenticationException:
         sys.stderr.write('Error\n')
         transport.close()
-#        errstr = 'Authentication error in ssh_exec\n'
-        raise IOError('Authentication error in ssh_exec: %s@%s' % (username, hostname))
-#    except:
-#        etype = sys.exc_info()
-#        sys.stderr.write('\n\t*** Error: %s ***\n\t %s\n'%(etype[0],etype[1]))
-#        if transport:
-#            transport.close()
-#        return False
+        errstr = 'Authentication error in ssh_exec\n'
+        return False
+    except:
+        etype = sys.exc_info()
+        sys.stderr.write('\n\t*** Error: %s ***\n\t %s\n'%(etype[0],etype[1]))
+        if transport:
+            transport.close()
+        return False
     return True
-
-class SSHPipe2():
-
-    def __init__(self, cmd, hostname, username, \
-                       passwd=None, \
-                       read_noblock=False, \
-                       readerr_noblock=False):
-                       
-        """
-        Execute a remote command using ssh.
-        An OSError exception will be raised if an error occurs.
-        Will use passwd if supplied. Otherwise it will use hostkey 
-        authentication.
-        """
-        self.cmd = cmd
-        self.hostname = hostname
-        self.read_noblock = read_noblock
-        self.readerr_noblock = readerr_noblock
-
-        fullcmd = 'ssh %s@%s %s' % (username, hostname, cmd)
-        self.f = Popen(fullcmd, shell=True, stdout=PIPE, stderr=PIPE, stdin=PIPE)
-        self.frd = self.f.stdout
-        self.frderr = self.f.stderr
-        self.fwrt = self.f.stdin
-        self.rdtail = ''
-        self.errtail = ''
-        self.MakeNonblocking(self.frderr)
-        self.errtail = self.ReadError()
-        if self.errtail.strip().lower().endswith('password:'):
-            self.errtail = ''
-            if passwd is None:
-                self.CleanUp()
-                raise RuntimeError( \
-                'Password required for command:\n%s\n' % fullcmd)
-            else:
-                self.fwrt.write(passwd)
-                self.errtail = self.frderr.read()
-                if self.errtail.strip().lower().endswith('password:'):
-                    self.CleanUp()
-                    raise RuntimeError( \
-                    'Incorrect password for command:\n%s\n' % fullcmd)
-        elif len(self.errtail) > 0:
-            raise RuntimeError('Error executing command: \n\t%s\n\t%s\n' % \
-                                    (fullcmd, self.errtail))
-        if self.read_noblock:
-            self.MakeNonblocking(self.frd)
-
-
-    def CleanUp(self):
-#       Kill the subprocess and reset the file attributes.
-        os.kill(self.f.pid, signal.SIGINT)
-        self.fin = None
-        self.fout = None
-        self.ferr = None
-
-    def MakeNonblocking(self, f):
-        fn = f.fileno()
-        fl = fcntl.fcntl(fn, fcntl.F_GETFL)
-        fcntl.fcntl(fn, fcntl.F_SETFL, fl | os.O_NONBLOCK)
-
-    def ReadReady(self):
-        if self.read_noblock:
-            try:
-                data = self.frd.read()
-                self.errtail += data
-                return True
-            except: return False
-        else:
-            return True
-
-    def Write(self, data):
-        self.fwrt.write(data)
-
-    def WriteReady(self):
-        if self.fwrt is None:
-            return False
-        else:
-            return True
-
-    def Read(self, nbytes=None):
-        data = self.rdtail
-        if self.read_noblock:
-            try: 
-                if nbytes is None:
-                    data += self.frd.read()
-                else:
-                    data += self.frd.read(nbytes)
-            except: pass
-        else:
-            if nbytes is None:
-                data += self.frd.read()
-            else:
-                data += self.frd.read(nbytes)
-        self.rdtail = ''
-        return data
-
-    def ReadError(self, nbytes=None, force_noblock=False, timeout=1.):
-        data = self.errtail
-        time0 = time.time()
-        while True:
-            data = self.errtail
-            try: 
-                if nbytes is None:
-                    data += self.frderr.read()
-                else:
-                    data += self.frderr.read(nbytes)
-                break
-            except IOError:
-                if self.readerr_noblock or force_noblock or \
-                    (timeout is not None and (time.time() - time0) > timeout):
-                    break
-                else:
-                    time.sleep(.005)
-                    continue
-        self.errtail = ''
-        return data
-
-    def ReadReady(self):
-        if self.read_noblock:
-            try: 
-                self.rdtail += self.frd.read(1)
-                return True
-            except: return False
-        else:
-            return True
-
-    def ReadErrorReady(self):
-        if self.readerr_noblock:
-            try: 
-                self.errtail += self.frderr.read(1)
-                return True
-            except: return False
-        else:
-            return True
-
-    def Flush(self):
-        self.fwrt.flush()
-
-    def Close(self):
-        self.frd.close()
-        self.frderr.close()
-        self.fwrt.close()
-
-
-class SSHPipe():
-
-    def __init__(self, cmd, hostname, username, passwd=None, \
-                                    verbose=False, background=False):
-        """
-        Execute a remote command using ssh.
-        An OSError exception will be raised if an error occurs.
-        Will use passwd if supplied. Otherwise it will use hostkey 
-        authentication.
-        """
-        self.cmd = cmd
-        self.hostname = hostname
-        output = ""
-        self.transport = None
-        try:
-#           Create a transport and open a channel
-            self.transport = ssh_connect(hostname, username, passwd)
-            self.ch = self.transport.open_channel(kind='session')
-            self.ch.settimeout(60.)
-        except AuthenticationException:
-            if self.transport is not None:
-                self.transport.close()
-            errstr = 'Authentication error in ssh_exec: %s@%s\n' % \
-                                                        (username, hostname)
-            raise OSError(errstr)
-        except:
-            if self.transport:
-                self.transport.close()
-            errstr = 'Error opening channel to %s' % hostname
-            raise OSError(errstr)
-
-        try:
-            status = self.ch.exec_command(cmd)
-        except:
-            self.transport.close()
-            etype = sys.exc_info()
-            errstr = 'Could not execute command on %s\ncommand: %s\n%s\n%s\n'% \
-                                            (hostname, cmd, etype[0],etype[1])
-            raise OSError(errstr)
-
-    def ReadReady(self):
-        return self.ch.recv_ready()
-
-    def Write(self, data):
-        status = self.ch.send(data)
-        if status != len(data):
-            raise OSError('Tried to send %d bytes, only sent %d' % \
-                                                    (len(data), status))
-
-    def WriteReady(self):
-        return self.ch.send_ready()
-
-    def Read(self, nbytes=1000):
-        data = self.ch.recv(nbytes)
-#        status = self.ch.recv_exit_status()
-#        self.CheckError()
-        return data
-
-    def ReadErrorReady(self):
-        return self.ch.recv_stderr_ready()
-
-    def ReadError(self, nbytes=None):
-        """
-        Read from stderr.
-        """
-        if self.ch.recv_stderr_ready():
-            return self.ch.recv_stderr(1000)
-        else:
-            return ''
-
-    def Close(self):
-        self.transport.close() 
-
-    def CheckError(self):
-#        status = self.ch.recv_exit_status()
-        return
-        errors =  self.ch.recv_stderr(0)
-        print 201,errors
-        if len(errors) > 0:
-            self.transport.close()
-            errstr = 'Error while executing %s:%s, %s' % \
-                                    (self.hostname, self.cmd, errors)
-            raise OSError(errstr)
 
 
 
@@ -832,9 +601,10 @@ def ssh_exec(cmd, hostname, username, passwd=None, verbose=False, background=Fal
         transport = ssh_connect(hostname, username, passwd)
         ch = transport.open_channel(kind='session')
     except AuthenticationException:
+        sys.stderr.write('Error\n')
         if transport is not None:
             transport.close()
-        errstr = 'Authentication error in ssh_exec: %s@%s\n' % (username, hostname)
+        errstr = 'Authentication error in ssh_exec\n'
         raise OSError(errstr)
     except:
         etype = sys.exc_info()
@@ -1015,42 +785,43 @@ def time_stamp():
     return('%s' % (time.strftime('%y%b%d_%H:%M:%S')))
 
 def time_user_stamp():
-    return('%s_%s' % \
-            (os.environ['LOGNAME'], time.strftime('%y%b%d_%H:%M:%S')))
+    return('%s_%s' % (os.environ['LOGNAME'],time.strftime('%y%b%d_%H:%M:%S')))
 
 def get_tmp_space(max_required, systemwide_tmpdir=".", partition=None):
     """
     Find place to write temporary files.
     max_required: Maximum amount of space required in MB.
     """
-    if partition and os.path.exists(partition):
-        tmpdir = partition
-    elif os.path.exists('/scratch.local') and \
-                        check_freedisk("/scratch.local") > max_required:
-        tmpdir = "/scratch.local"
-    elif check_freedisk("/tmp") > max_required:
-        tmpdir = "/tmp"
-    elif check_freedisk(systemwide_tmpdir) > max_required:
-        tmpdir = systemwide_tmpdir
-    elif check_freedisk(os.getcwd()) > max_required:
-        tmpdir = os.getcwd()
+    if os.access(FIGARO_TMP, F_OK):
+#       Must be running on figaro with its small /tmp.  Use /ESE/scratch/tmp.
+        if check_freedisk(FIGARO_TMP) > max_required:
+            tmpdir = FIGARO_TMP
+        else:
+#           Running on figaro but not enough tmp space. Using /tmp
+#           could cause ftp_dicom to abort, so abort preprocess instead.
+            raise IOError('Not enough tmp space on /ESE/scratch/tmp. Aborting ...')
+#           In case someone is using a stupid exception handler.
+            return None
     else:
-        tmpdir = None
-        sys.stderr.write("get_tmp_space: Insufficient space on /tmp, asked for %d, only %d available\n" % (max_required, check_freedisk("/tmp")))
-    try:
-        os.utime(tmpdir, None)
-    except OSError:
-        sys.stderr.write( \
-        '\nError accessing %s as tmp directory, using /tmp instead.\n' % tmpdir)
-        tmpdir = '/tmp'
+        if partition and os.path.exists(partition):
+            tmpdir = partition
+        elif check_freedisk("/tmp") > max_required:
+            tmpdir = "/tmp"
+        elif check_freedisk(systemwide_tmpdir) > max_required:
+            tmpdir = systemwide_tmpdir
+        elif check_freedisk(os.getcwd()) > max_required:
+            tmpdir = os.getcwd()
+        else:
+            tmpdir = None
+            sys.stderr.write("get_tmp_space: Insufficient space on /tmp, asked for %d, only %d available\n" % (max_required, check_freedisk("/tmp")))
 #   Create directory with time and user stamp.
     if tmpdir is not None:
         while True:
             time.sleep(.005) # Wait 5ms so time-tag is sure to change.
             ms = time.time()
             ms = int(1000*(ms - int(ms)))
-            tmpdir = '%s/%s_%d_%s_%03d' % \
-            (tmpdir,os.environ['LOGNAME'], os.getpid(), time.strftime('%y%b%d_%H_%M_%S'), ms)
+            tmpdir = '%s/%s_%s_%03d' % \
+            (tmpdir,os.environ['LOGNAME'],time.strftime('%y%b%d_%H_%M_%S'), ms)
             itry = 0
             while os.path.exists(tmpdir):
                 itry += 1
@@ -1063,14 +834,8 @@ def get_tmp_space(max_required, systemwide_tmpdir=".", partition=None):
 
 class GetTmpSpace():
 
-    def __init__(self, size, tmpdir=None):
-        if tmpdir is None:
-            self.tmpdir = get_tmp_space(size)
-        else:
-            self.tmpdir = tmpdir
-        if os.path.exists(self.tmpdir):
-            self.Clean()
-        os.makedirs(self.tmpdir)
+    def __init__(self, size):
+        self.tmpdir = get_tmp_space(size)
 
     def Clean(self):
         cmd = '/bin/rm -r %s' % self.tmpdir

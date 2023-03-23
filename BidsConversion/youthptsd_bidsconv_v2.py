@@ -75,7 +75,7 @@ class BidsConv():
         for key in scan2bidsdir_dict.keys():
             if key in typestring:
                 returnkey = scan2bidsdir_dict[key]
-        return(returnkey)
+        return (returnkey)
 
     # Convert raw scan directory names to friendly scan names
     def scan2helpful(self, typestring):

@@ -1,0 +1,1863 @@
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "id": "28902460",
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2021-12-03T21:06:36.614489Z",
+     "start_time": "2021-12-03T21:06:36.031936Z"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "import csv\n",
+    "import importlib\n",
+    "import itertools\n",
+    "import numpy as np\n",
+    "import pandas as pd\n",
+    "import pickle\n",
+    "import os, shutil, time, h5py\n",
+    "import statsmodels\n",
+    "import statsmodels.api as sm\n",
+    "import statsmodels.formula.api as smf\n",
+    "\n",
+    "from bct import *\n",
+    "importlib.reload(nbs)\n",
+    "from IPython.display import clear_output\n",
+    "from pathlib import Path\n",
+    "from sklearn import preprocessing\n",
+    "from scipy import stats"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "id": "e8a21e7e",
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2021-12-03T21:06:37.524978Z",
+     "start_time": "2021-12-03T21:06:37.469727Z"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "%%capture\n",
+    "#from tqdm import tqdm_notebook as tqdm\n",
+    "from tqdm.notebook import tqdm\n",
+    "tqdm().pandas()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "id": "d5bdaddf",
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2021-12-03T21:06:37.984726Z",
+     "start_time": "2021-12-03T21:06:37.980833Z"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "# Setting Variables\n",
+    "\n",
+    "## CSV Matrices of Connectivitiy Values as Z-scores (via cifti-connectivity)\n",
+    "pconncsv_dir = Path('/fast_scratch/jdr/ABCD/ABCD_3165_Pipe/Schaefer2018400p_TianS4/pconns_z_csv')\n",
+    "datadir = Path('/fast_scratch/jdr/ABCD/ABCD_3165_Pipe/Data/IPV_Networks')\n",
+    "ROI_labels_path = Path('/fast_scratch/jdr/atlases/Schaefer400Tian4/Schaefer2018_400Parcels_7Networks_order_Tian_Subcortex_S4_label_reformatted.txt')\n",
+    "allArraysPath = Path('/fast_scratch/jdr/ABCD/ABCD_3165_Pipe/Data/IPV_Networks/allArrays.pkl')\n",
+    "crpbiPath = Path('/fast_scratch/jdr/ABCD/ABCD_3165_Pipe/Data/abcd_crpbi_meansonly_baseline.txt')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 17,
+   "id": "41fcc4f1",
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2021-12-03T21:13:25.293633Z",
+     "start_time": "2021-12-03T21:13:25.289650Z"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "## Pull in the ROI labels from the atlas directory and place them in a list\n",
+    "\n",
+    "with open(ROI_labels_path, newline='') as f:\n",
+    "    reader = csv.reader(f, delimiter='\\t')\n",
+    "    ROI_labels = list(list(zip(*reader))[1])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 36,
+   "id": "db633d1c",
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2021-12-03T21:30:47.843192Z",
+     "start_time": "2021-12-03T21:26:11.939049Z"
+    }
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "/fast_scratch/jdr/ABCD/ABCD_3165_Pipe/Schaefer2018400p_TianS4/pconns_z_csv/sub-NDARINVB7A2MURD_ses-baselineYear1Arm1_task-rest_bold_desc-filtered_timeseries.ptseries.nii_8_minutes_of_data_at_FD_0.2.Z.pconn.nii.csv\n"
+     ]
+    }
+   ],
+   "source": [
+    "## Loop over CSV files in the pconncsv_dir - for each grab the subject ID (key) and the matrix and add each as a new \n",
+    "## item in an expanding list - allArrays\n",
+    "\n",
+    "subjIDs = []\n",
+    "allArrays = []\n",
+    "\n",
+    "for pconncsv in pconncsv_dir.glob('sub-NDARINV*.csv'):\n",
+    "    clear_output(wait=True)\n",
+    "    subjID = pconncsv.name.split('_')[0]\n",
+    "    #subjIDs.append(subjID)\n",
+    "\n",
+    "    csv_in_sq = pd.read_csv(pconncsv, sep=\"\\t\", header=None, names=ROI_labels)\n",
+    "    csv_in_sq.index = ROI_labels\n",
+    "    allArrays.append([subjID, csv_in_sq])\n",
+    "    print(pconncsv)\n",
+    "\n",
+    "with open(allArraysPath, 'wb') as f:\n",
+    "    pickle.dump(allArrays, f)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 37,
+   "id": "b54e0ede",
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2021-12-03T21:34:54.447568Z",
+     "start_time": "2021-12-03T21:34:48.031716Z"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "allArrays = None\n",
+    "with open(allArraysPath, 'rb') as f:\n",
+    "    allArrays = pickle.load(f)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 38,
+   "id": "9ec45f03",
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2021-12-03T21:34:57.741316Z",
+     "start_time": "2021-12-03T21:34:57.587571Z"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "## Grab the ABCD file with the IPV exposure data and import to a table (skipping the header)\n",
+    "c_data = pd.read_table('/fast_scratch/jdr/ABCD/ABCD_3165_Pipe/Data/abcd_ptsd01.txt', header=0, skiprows=[1])\n",
+    "\n",
+    "## Subset to only include the baseline data\n",
+    "c_data = c_data[c_data[\"eventname\"] == \"baseline_year_1_arm_1\"]\n",
+    "\n",
+    "## Drop unnecessary variables\n",
+    "c_data = c_data.drop(['collection_id', 'abcd_ptsd01_id', 'dataset_id', \n",
+    "                      'src_subject_id', 'interview_date', 'eventname', 'collection_title'], axis=1)\n",
+    "\n",
+    "## Reformat the 'subjectkey' variable to match the format in the CSV files\n",
+    "c_data['subjectkey'] = 'sub-' + c_data['subjectkey'].str.replace('_', '')\n",
+    "\n",
+    "## In case they exist, drop the variables we're about to calculate\n",
+    "c_data = c_data.drop(['ExposureTotal', 'IPVTotal', 'ExposureAny', 'IPVAny'], axis=1, errors='ignore')\n",
+    "\n",
+    "## Compute total overall exposure (all items) and total IPV exposure (IPV items only)\n",
+    "c_data['ExposureTotal'] = c_data.iloc[:, 3:19].sum(axis=1)\n",
+    "c_data['IPVTotal'] = c_data.iloc[:, 7:18].sum(axis=1)\n",
+    "\n",
+    "## Binarize total and IPV exposure items \n",
+    "c_data['ExposureAny'] = np.where(c_data['ExposureTotal'] == 0, 0, 1)\n",
+    "c_data['IPVAny'] = np.where(c_data['IPVTotal'] == 0, 0, 1)\n",
+    "\n",
+    "## Dummy code sex variable to Sex01\n",
+    "c_data['Sex01'] = np.where(c_data['sex'] == 'M', 1, 0) # Must use numeric data as input (not M, F)\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 39,
+   "id": "a3a9ca6e",
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2021-12-03T21:35:01.254646Z",
+     "start_time": "2021-12-03T21:35:01.226299Z"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "crpbi_data = pd.read_table(crpbiPath)\n",
+    "crpbi_data_nm = crpbi_data\n",
+    "crpbi_data_nm['crpbi_par1_mn'] = pd.to_numeric(crpbi_data_nm['crpbi_par1_mn'], errors='coerce')\n",
+    "crpbi_data_nm['crpbi_par2_mn'] = pd.to_numeric(crpbi_data_nm['crpbi_par2_mn'], errors='coerce')\n",
+    "crpbi_data_nm['subjectkey'] = 'sub-' + crpbi_data_nm['subjectkey'].str.replace('_','')\n",
+    "crpbi_data_nm = crpbi_data_nm.dropna()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 43,
+   "id": "38c10bca",
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2021-12-03T21:36:19.135753Z",
+     "start_time": "2021-12-03T21:36:19.131305Z"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "def getNetworkCorr(arrayslist, searchstr1, searchstr2):\n",
+    "    networkCorr_mn = []\n",
+    "    for i in tqdm(list(range(len(arrayslist)))):\n",
+    "        networkCorr_subj = arrayslist[i][1].loc[[x for x in arrayslist[i][1].columns if searchstr1 in x],\n",
+    "                                              [x for x in arrayslist[i][1].columns if searchstr2 in x]]\n",
+    "        networkCorr_mn.append([arrayslist[i][0], np.nanmean(networkCorr_subj.values.flatten())])\n",
+    "    \n",
+    "    networkCorr_df = pd.DataFrame(networkCorr_mn, columns=['subjectkey', str(searchstr1 + '_' + searchstr2)])\n",
+    "        \n",
+    "    return networkCorr_df"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 44,
+   "id": "dd53fe3f",
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2021-12-03T21:36:55.121162Z",
+     "start_time": "2021-12-03T21:36:19.806948Z"
+    }
+   },
+   "outputs": [
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "a9a9b86b1b7b411fb321a9cd8bcff041",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "  0%|          | 0/7219 [00:00<?, ?it/s]"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "404abbe268904e8aa7988fe34cb1756a",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "  0%|          | 0/7219 [00:00<?, ?it/s]"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "8a140f25f5ab4be0a8afa604656ad52a",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "  0%|          | 0/7219 [00:00<?, ?it/s]"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "993019fccbb24c52bf737b581905d0eb",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "  0%|          | 0/7219 [00:00<?, ?it/s]"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "2a4b923fe83343f68d52cc12366a4f83",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "  0%|          | 0/7219 [00:00<?, ?it/s]"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "d80bbe47af174e72929117bb1493f8e2",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "  0%|          | 0/7219 [00:00<?, ?it/s]"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "networks = ['Default', 'SalVentAttn', 'Cont']\n",
+    "\n",
+    "networks_df = pd.DataFrame(columns=['subjectkey'])\n",
+    "for networkName in itertools.combinations_with_replacement(networks, 2):\n",
+    "    network_df = getNetworkCorr(allArrays, networkName[0], networkName[1])\n",
+    "    networks_df = networks_df.merge(network_df, how='right', on='subjectkey')\n",
+    "    ## Merge the within default mode data with the clinical data\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 45,
+   "id": "6fa758ae",
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2021-12-03T21:37:00.950843Z",
+     "start_time": "2021-12-03T21:37:00.900757Z"
+    }
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>subjectkey</th>\n",
+       "      <th>interview_age</th>\n",
+       "      <th>sex</th>\n",
+       "      <th>ksads_ptsd_raw_754_p</th>\n",
+       "      <th>ksads_ptsd_raw_755_p</th>\n",
+       "      <th>ksads_ptsd_raw_756_p</th>\n",
+       "      <th>ksads_ptsd_raw_757_p</th>\n",
+       "      <th>ksads_ptsd_raw_758_p</th>\n",
+       "      <th>ksads_ptsd_raw_759_p</th>\n",
+       "      <th>ksads_ptsd_raw_760_p</th>\n",
+       "      <th>...</th>\n",
+       "      <th>IPVAny</th>\n",
+       "      <th>Sex01</th>\n",
+       "      <th>Default_Default</th>\n",
+       "      <th>Default_SalVentAttn</th>\n",
+       "      <th>Default_Cont</th>\n",
+       "      <th>SalVentAttn_SalVentAttn</th>\n",
+       "      <th>SalVentAttn_Cont</th>\n",
+       "      <th>Cont_Cont</th>\n",
+       "      <th>crpbi_par1_mn</th>\n",
+       "      <th>crpbi_par2_mn</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>sub-NDARINV4BXZZV14</td>\n",
+       "      <td>120.0</td>\n",
+       "      <td>M</td>\n",
+       "      <td>1.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>...</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>1.0</td>\n",
+       "      <td>0.284014</td>\n",
+       "      <td>-0.065891</td>\n",
+       "      <td>0.025845</td>\n",
+       "      <td>0.277060</td>\n",
+       "      <td>0.033916</td>\n",
+       "      <td>0.206947</td>\n",
+       "      <td>2.6</td>\n",
+       "      <td>2.8</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>sub-NDARINV4C12ZREL</td>\n",
+       "      <td>110.0</td>\n",
+       "      <td>F</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>...</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.144296</td>\n",
+       "      <td>-0.017724</td>\n",
+       "      <td>0.012787</td>\n",
+       "      <td>0.146344</td>\n",
+       "      <td>-0.017479</td>\n",
+       "      <td>0.122261</td>\n",
+       "      <td>3.0</td>\n",
+       "      <td>3.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>sub-NDARINV4C2YD3TH</td>\n",
+       "      <td>131.0</td>\n",
+       "      <td>M</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>...</td>\n",
+       "      <td>1.0</td>\n",
+       "      <td>1.0</td>\n",
+       "      <td>0.246957</td>\n",
+       "      <td>-0.116573</td>\n",
+       "      <td>0.038831</td>\n",
+       "      <td>0.371918</td>\n",
+       "      <td>0.016191</td>\n",
+       "      <td>0.203970</td>\n",
+       "      <td>2.8</td>\n",
+       "      <td>3.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>sub-NDARINV4C616XF8</td>\n",
+       "      <td>117.0</td>\n",
+       "      <td>M</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>...</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>1.0</td>\n",
+       "      <td>0.262188</td>\n",
+       "      <td>-0.092777</td>\n",
+       "      <td>0.050592</td>\n",
+       "      <td>0.416879</td>\n",
+       "      <td>-0.018093</td>\n",
+       "      <td>0.168920</td>\n",
+       "      <td>3.0</td>\n",
+       "      <td>3.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>sub-NDARINV4C8YJ9BG</td>\n",
+       "      <td>131.0</td>\n",
+       "      <td>M</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>...</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>1.0</td>\n",
+       "      <td>0.220370</td>\n",
+       "      <td>0.009909</td>\n",
+       "      <td>0.071169</td>\n",
+       "      <td>0.168979</td>\n",
+       "      <td>0.035588</td>\n",
+       "      <td>0.301850</td>\n",
+       "      <td>1.6</td>\n",
+       "      <td>3.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>...</th>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>7214</th>\n",
+       "      <td>sub-NDARINVB6AN7YDK</td>\n",
+       "      <td>120.0</td>\n",
+       "      <td>F</td>\n",
+       "      <td>1.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>...</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.258827</td>\n",
+       "      <td>-0.188481</td>\n",
+       "      <td>0.016785</td>\n",
+       "      <td>0.333071</td>\n",
+       "      <td>-0.042093</td>\n",
+       "      <td>0.260756</td>\n",
+       "      <td>2.8</td>\n",
+       "      <td>2.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>7215</th>\n",
+       "      <td>sub-NDARINVB6YGLTJK</td>\n",
+       "      <td>130.0</td>\n",
+       "      <td>M</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>...</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>1.0</td>\n",
+       "      <td>0.281285</td>\n",
+       "      <td>-0.032760</td>\n",
+       "      <td>0.038468</td>\n",
+       "      <td>0.330781</td>\n",
+       "      <td>-0.001622</td>\n",
+       "      <td>0.222155</td>\n",
+       "      <td>3.0</td>\n",
+       "      <td>2.6</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>7216</th>\n",
+       "      <td>sub-NDARINVB7440KXP</td>\n",
+       "      <td>113.0</td>\n",
+       "      <td>F</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>...</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.373494</td>\n",
+       "      <td>-0.228905</td>\n",
+       "      <td>0.000385</td>\n",
+       "      <td>0.471992</td>\n",
+       "      <td>0.064618</td>\n",
+       "      <td>0.194266</td>\n",
+       "      <td>2.6</td>\n",
+       "      <td>3.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>7217</th>\n",
+       "      <td>sub-NDARINVB74PPWH0</td>\n",
+       "      <td>119.0</td>\n",
+       "      <td>F</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>1.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>...</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.285703</td>\n",
+       "      <td>-0.131857</td>\n",
+       "      <td>0.046128</td>\n",
+       "      <td>0.317314</td>\n",
+       "      <td>-0.048313</td>\n",
+       "      <td>0.214178</td>\n",
+       "      <td>2.6</td>\n",
+       "      <td>2.4</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>7218</th>\n",
+       "      <td>sub-NDARINVB7A2MURD</td>\n",
+       "      <td>122.0</td>\n",
+       "      <td>F</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>1.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>...</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.343439</td>\n",
+       "      <td>-0.147299</td>\n",
+       "      <td>0.022673</td>\n",
+       "      <td>0.380380</td>\n",
+       "      <td>0.006740</td>\n",
+       "      <td>0.234958</td>\n",
+       "      <td>3.0</td>\n",
+       "      <td>2.6</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "<p>7219 rows × 33 columns</p>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "               subjectkey  interview_age sex  ksads_ptsd_raw_754_p  \\\n",
+       "0     sub-NDARINV4BXZZV14          120.0   M                   1.0   \n",
+       "1     sub-NDARINV4C12ZREL          110.0   F                   0.0   \n",
+       "2     sub-NDARINV4C2YD3TH          131.0   M                   0.0   \n",
+       "3     sub-NDARINV4C616XF8          117.0   M                   0.0   \n",
+       "4     sub-NDARINV4C8YJ9BG          131.0   M                   0.0   \n",
+       "...                   ...            ...  ..                   ...   \n",
+       "7214  sub-NDARINVB6AN7YDK          120.0   F                   1.0   \n",
+       "7215  sub-NDARINVB6YGLTJK          130.0   M                   0.0   \n",
+       "7216  sub-NDARINVB7440KXP          113.0   F                   0.0   \n",
+       "7217  sub-NDARINVB74PPWH0          119.0   F                   0.0   \n",
+       "7218  sub-NDARINVB7A2MURD          122.0   F                   0.0   \n",
+       "\n",
+       "      ksads_ptsd_raw_755_p  ksads_ptsd_raw_756_p  ksads_ptsd_raw_757_p  \\\n",
+       "0                      0.0                   0.0                   0.0   \n",
+       "1                      0.0                   0.0                   0.0   \n",
+       "2                      0.0                   0.0                   0.0   \n",
+       "3                      0.0                   0.0                   0.0   \n",
+       "4                      0.0                   0.0                   0.0   \n",
+       "...                    ...                   ...                   ...   \n",
+       "7214                   0.0                   0.0                   0.0   \n",
+       "7215                   0.0                   0.0                   0.0   \n",
+       "7216                   0.0                   0.0                   0.0   \n",
+       "7217                   1.0                   0.0                   0.0   \n",
+       "7218                   1.0                   0.0                   0.0   \n",
+       "\n",
+       "      ksads_ptsd_raw_758_p  ksads_ptsd_raw_759_p  ksads_ptsd_raw_760_p  ...  \\\n",
+       "0                      0.0                   0.0                   0.0  ...   \n",
+       "1                      0.0                   0.0                   0.0  ...   \n",
+       "2                      0.0                   0.0                   0.0  ...   \n",
+       "3                      0.0                   0.0                   0.0  ...   \n",
+       "4                      0.0                   0.0                   0.0  ...   \n",
+       "...                    ...                   ...                   ...  ...   \n",
+       "7214                   0.0                   0.0                   0.0  ...   \n",
+       "7215                   0.0                   0.0                   0.0  ...   \n",
+       "7216                   0.0                   0.0                   0.0  ...   \n",
+       "7217                   0.0                   0.0                   0.0  ...   \n",
+       "7218                   0.0                   0.0                   0.0  ...   \n",
+       "\n",
+       "      IPVAny  Sex01  Default_Default  Default_SalVentAttn  Default_Cont  \\\n",
+       "0        0.0    1.0         0.284014            -0.065891      0.025845   \n",
+       "1        0.0    0.0         0.144296            -0.017724      0.012787   \n",
+       "2        1.0    1.0         0.246957            -0.116573      0.038831   \n",
+       "3        0.0    1.0         0.262188            -0.092777      0.050592   \n",
+       "4        0.0    1.0         0.220370             0.009909      0.071169   \n",
+       "...      ...    ...              ...                  ...           ...   \n",
+       "7214     0.0    0.0         0.258827            -0.188481      0.016785   \n",
+       "7215     0.0    1.0         0.281285            -0.032760      0.038468   \n",
+       "7216     0.0    0.0         0.373494            -0.228905      0.000385   \n",
+       "7217     0.0    0.0         0.285703            -0.131857      0.046128   \n",
+       "7218     0.0    0.0         0.343439            -0.147299      0.022673   \n",
+       "\n",
+       "      SalVentAttn_SalVentAttn  SalVentAttn_Cont  Cont_Cont  crpbi_par1_mn  \\\n",
+       "0                    0.277060          0.033916   0.206947            2.6   \n",
+       "1                    0.146344         -0.017479   0.122261            3.0   \n",
+       "2                    0.371918          0.016191   0.203970            2.8   \n",
+       "3                    0.416879         -0.018093   0.168920            3.0   \n",
+       "4                    0.168979          0.035588   0.301850            1.6   \n",
+       "...                       ...               ...        ...            ...   \n",
+       "7214                 0.333071         -0.042093   0.260756            2.8   \n",
+       "7215                 0.330781         -0.001622   0.222155            3.0   \n",
+       "7216                 0.471992          0.064618   0.194266            2.6   \n",
+       "7217                 0.317314         -0.048313   0.214178            2.6   \n",
+       "7218                 0.380380          0.006740   0.234958            3.0   \n",
+       "\n",
+       "      crpbi_par2_mn  \n",
+       "0               2.8  \n",
+       "1               3.0  \n",
+       "2               3.0  \n",
+       "3               3.0  \n",
+       "4               3.0  \n",
+       "...             ...  \n",
+       "7214            2.0  \n",
+       "7215            2.6  \n",
+       "7216            3.0  \n",
+       "7217            2.4  \n",
+       "7218            2.6  \n",
+       "\n",
+       "[7219 rows x 33 columns]"
+      ]
+     },
+     "execution_count": 45,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "## Merge the within default mode data with the clinical data\n",
+    "df_comb = c_data.merge(networks_df, how='right', on='subjectkey')\n",
+    "df_comb = df_comb.merge(crpbi_data_nm, how='left', on='subjectkey')\n",
+    "df_comb.shape\n",
+    "df_comb\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 72,
+   "id": "98295727",
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2021-12-03T22:38:47.888419Z",
+     "start_time": "2021-12-03T22:38:47.757140Z"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "df_comb.to_csv('/fast_scratch/jdr/df_combgood.csv')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 46,
+   "id": "fa412ab7",
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2021-12-03T21:37:09.534279Z",
+     "start_time": "2021-12-03T21:37:09.520276Z"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "IPVplus = df_comb.query('IPVAny == 1')\n",
+    "IPVminus = df_comb.query('IPVAny == 0')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 75,
+   "id": "3e13044f",
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2021-12-04T02:49:45.754592Z",
+     "start_time": "2021-12-04T02:49:45.599355Z"
+    }
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "                  Results: Ordinary least squares\n",
+      "====================================================================\n",
+      "Model:              OLS              Adj. R-squared:     0.027      \n",
+      "Dependent Variable: Default_Default  AIC:                -20054.8845\n",
+      "Date:               2021-12-03 20:49 BIC:                -20027.3488\n",
+      "No. Observations:   7215             Log-Likelihood:     10031.     \n",
+      "Df Model:           3                F-statistic:        68.51      \n",
+      "Df Residuals:       7211             Prob (F-statistic): 1.12e-43   \n",
+      "R-squared:          0.028            Scale:              0.0036317  \n",
+      "---------------------------------------------------------------------\n",
+      "                 Coef.   Std.Err.     t      P>|t|    [0.025   0.975]\n",
+      "---------------------------------------------------------------------\n",
+      "Intercept        0.2352    0.0113   20.8186  0.0000   0.2130   0.2573\n",
+      "Sex01           -0.0189    0.0014  -13.3253  0.0000  -0.0217  -0.0161\n",
+      "interview_age    0.0004    0.0001    4.4867  0.0000   0.0002   0.0006\n",
+      "IPVAny          -0.0094    0.0025   -3.7591  0.0002  -0.0144  -0.0045\n",
+      "--------------------------------------------------------------------\n",
+      "Omnibus:               113.278       Durbin-Watson:          2.032  \n",
+      "Prob(Omnibus):         0.000         Jarque-Bera (JB):       118.871\n",
+      "Skew:                  0.302         Prob(JB):               0.000  \n",
+      "Kurtosis:              3.177         Condition No.:          1908   \n",
+      "====================================================================\n",
+      "* The condition number is large (2e+03). This might indicate\n",
+      "strong multicollinearity or other numerical problems.\n",
+      "                             OLS Regression Results                            \n",
+      "===============================================================================\n",
+      "Dep. Variable:     Default_SalVentAttn   R-squared:                       0.028\n",
+      "Model:                             OLS   Adj. R-squared:                  0.027\n",
+      "Method:                  Least Squares   F-statistic:                     68.33\n",
+      "Date:                 Fri, 03 Dec 2021   Prob (F-statistic):           1.46e-43\n",
+      "Time:                         20:49:45   Log-Likelihood:                 11338.\n",
+      "No. Observations:                 7215   AIC:                        -2.267e+04\n",
+      "Df Residuals:                     7211   BIC:                        -2.264e+04\n",
+      "Df Model:                            3                                         \n",
+      "Covariance Type:             nonrobust                                         \n",
+      "=================================================================================\n",
+      "                    coef    std err          t      P>|t|      [0.025      0.975]\n",
+      "---------------------------------------------------------------------------------\n",
+      "Intercept        -0.0451      0.009     -4.787      0.000      -0.064      -0.027\n",
+      "Sex01             0.0153      0.001     12.928      0.000       0.013       0.018\n",
+      "interview_age    -0.0005   7.87e-05     -6.371      0.000      -0.001      -0.000\n",
+      "IPVAny            0.0045      0.002      2.125      0.034       0.000       0.009\n",
+      "==============================================================================\n",
+      "Omnibus:                       35.931   Durbin-Watson:                   2.007\n",
+      "Prob(Omnibus):                  0.000   Jarque-Bera (JB):               42.163\n",
+      "Skew:                          -0.110   Prob(JB):                     6.99e-10\n",
+      "Kurtosis:                       3.303   Cond. No.                     1.91e+03\n",
+      "==============================================================================\n",
+      "\n",
+      "Notes:\n",
+      "[1] Standard Errors assume that the covariance matrix of the errors is correctly specified.\n",
+      "[2] The condition number is large, 1.91e+03. This might indicate that there are\n",
+      "strong multicollinearity or other numerical problems.\n",
+      "                            OLS Regression Results                            \n",
+      "==============================================================================\n",
+      "Dep. Variable:           Default_Cont   R-squared:                       0.001\n",
+      "Model:                            OLS   Adj. R-squared:                  0.001\n",
+      "Method:                 Least Squares   F-statistic:                     3.365\n",
+      "Date:                Fri, 03 Dec 2021   Prob (F-statistic):             0.0178\n",
+      "Time:                        20:49:45   Log-Likelihood:                 13194.\n",
+      "No. Observations:                7215   AIC:                        -2.638e+04\n",
+      "Df Residuals:                    7211   BIC:                        -2.635e+04\n",
+      "Df Model:                           3                                         \n",
+      "Covariance Type:            nonrobust                                         \n",
+      "=================================================================================\n",
+      "                    coef    std err          t      P>|t|      [0.025      0.975]\n",
+      "---------------------------------------------------------------------------------\n",
+      "Intercept         0.0438      0.007      6.004      0.000       0.029       0.058\n",
+      "Sex01            -0.0016      0.001     -1.729      0.084      -0.003       0.000\n",
+      "interview_age  -6.25e-05   6.09e-05     -1.027      0.305      -0.000    5.68e-05\n",
+      "IPVAny            0.0039      0.002      2.412      0.016       0.001       0.007\n",
+      "==============================================================================\n",
+      "Omnibus:                       83.385   Durbin-Watson:                   2.009\n",
+      "Prob(Omnibus):                  0.000   Jarque-Bera (JB):               97.123\n",
+      "Skew:                           0.207   Prob(JB):                     8.13e-22\n",
+      "Kurtosis:                       3.390   Cond. No.                     1.91e+03\n",
+      "==============================================================================\n",
+      "\n",
+      "Notes:\n",
+      "[1] Standard Errors assume that the covariance matrix of the errors is correctly specified.\n",
+      "[2] The condition number is large, 1.91e+03. This might indicate that there are\n",
+      "strong multicollinearity or other numerical problems.\n",
+      "                               OLS Regression Results                              \n",
+      "===================================================================================\n",
+      "Dep. Variable:     SalVentAttn_SalVentAttn   R-squared:                       0.022\n",
+      "Model:                                 OLS   Adj. R-squared:                  0.022\n",
+      "Method:                      Least Squares   F-statistic:                     54.40\n",
+      "Date:                     Fri, 03 Dec 2021   Prob (F-statistic):           9.13e-35\n",
+      "Time:                             20:49:45   Log-Likelihood:                 8741.1\n",
+      "No. Observations:                     7215   AIC:                        -1.747e+04\n",
+      "Df Residuals:                         7211   BIC:                        -1.745e+04\n",
+      "Df Model:                                3                                         \n",
+      "Covariance Type:                 nonrobust                                         \n",
+      "=================================================================================\n",
+      "                    coef    std err          t      P>|t|      [0.025      0.975]\n",
+      "---------------------------------------------------------------------------------\n",
+      "Intercept         0.2340      0.014     17.326      0.000       0.208       0.261\n",
+      "Sex01            -0.0173      0.002    -10.190      0.000      -0.021      -0.014\n",
+      "interview_age     0.0008      0.000      6.883      0.000       0.001       0.001\n",
+      "IPVAny           -0.0132      0.003     -4.392      0.000      -0.019      -0.007\n",
+      "==============================================================================\n",
+      "Omnibus:                      143.061   Durbin-Watson:                   2.004\n",
+      "Prob(Omnibus):                  0.000   Jarque-Bera (JB):              153.574\n",
+      "Skew:                           0.332   Prob(JB):                     4.48e-34\n",
+      "Kurtosis:                       3.262   Cond. No.                     1.91e+03\n",
+      "==============================================================================\n",
+      "\n",
+      "Notes:\n",
+      "[1] Standard Errors assume that the covariance matrix of the errors is correctly specified.\n",
+      "[2] The condition number is large, 1.91e+03. This might indicate that there are\n",
+      "strong multicollinearity or other numerical problems.\n",
+      "                            OLS Regression Results                            \n",
+      "==============================================================================\n",
+      "Dep. Variable:       SalVentAttn_Cont   R-squared:                       0.000\n",
+      "Model:                            OLS   Adj. R-squared:                 -0.000\n",
+      "Method:                 Least Squares   F-statistic:                    0.1311\n",
+      "Date:                Fri, 03 Dec 2021   Prob (F-statistic):              0.942\n",
+      "Time:                        20:49:45   Log-Likelihood:                 13194.\n",
+      "No. Observations:                7215   AIC:                        -2.638e+04\n",
+      "Df Residuals:                    7211   BIC:                        -2.635e+04\n",
+      "Df Model:                           3                                         \n",
+      "Covariance Type:            nonrobust                                         \n",
+      "=================================================================================\n",
+      "                    coef    std err          t      P>|t|      [0.025      0.975]\n",
+      "---------------------------------------------------------------------------------\n",
+      "Intercept         0.0171      0.007      2.353      0.019       0.003       0.031\n",
+      "Sex01             0.0003      0.001      0.364      0.716      -0.001       0.002\n",
+      "interview_age -2.722e-05   6.09e-05     -0.447      0.655      -0.000    9.21e-05\n",
+      "IPVAny           -0.0004      0.002     -0.260      0.795      -0.004       0.003\n",
+      "==============================================================================\n",
+      "Omnibus:                       36.248   Durbin-Watson:                   2.006\n",
+      "Prob(Omnibus):                  0.000   Jarque-Bera (JB):               41.863\n",
+      "Skew:                           0.116   Prob(JB):                     8.12e-10\n",
+      "Kurtosis:                       3.292   Cond. No.                     1.91e+03\n",
+      "==============================================================================\n",
+      "\n",
+      "Notes:\n",
+      "[1] Standard Errors assume that the covariance matrix of the errors is correctly specified.\n",
+      "[2] The condition number is large, 1.91e+03. This might indicate that there are\n",
+      "strong multicollinearity or other numerical problems.\n",
+      "                            OLS Regression Results                            \n",
+      "==============================================================================\n",
+      "Dep. Variable:              Cont_Cont   R-squared:                       0.003\n",
+      "Model:                            OLS   Adj. R-squared:                  0.003\n",
+      "Method:                 Least Squares   F-statistic:                     8.296\n",
+      "Date:                Fri, 03 Dec 2021   Prob (F-statistic):           1.66e-05\n",
+      "Time:                        20:49:45   Log-Likelihood:                 12085.\n",
+      "No. Observations:                7215   AIC:                        -2.416e+04\n",
+      "Df Residuals:                    7211   BIC:                        -2.413e+04\n",
+      "Df Model:                           3                                         \n",
+      "Covariance Type:            nonrobust                                         \n",
+      "=================================================================================\n",
+      "                    coef    std err          t      P>|t|      [0.025      0.975]\n",
+      "---------------------------------------------------------------------------------\n",
+      "Intercept         0.1853      0.008     21.808      0.000       0.169       0.202\n",
+      "Sex01            -0.0031      0.001     -2.898      0.004      -0.005      -0.001\n",
+      "interview_age     0.0003    7.1e-05      4.169      0.000       0.000       0.000\n",
+      "IPVAny           -0.0004      0.002     -0.219      0.826      -0.004       0.003\n",
+      "==============================================================================\n",
+      "Omnibus:                      314.537   Durbin-Watson:                   2.042\n",
+      "Prob(Omnibus):                  0.000   Jarque-Bera (JB):              398.049\n",
+      "Skew:                           0.461   Prob(JB):                     3.67e-87\n",
+      "Kurtosis:                       3.689   Cond. No.                     1.91e+03\n",
+      "==============================================================================\n",
+      "\n",
+      "Notes:\n",
+      "[1] Standard Errors assume that the covariance matrix of the errors is correctly specified.\n",
+      "[2] The condition number is large, 1.91e+03. This might indicate that there are\n",
+      "strong multicollinearity or other numerical problems.\n"
+     ]
+    }
+   ],
+   "source": [
+    "def_def = (smf.ols('Default_Default ~ Sex01 + interview_age + IPVAny', data=df_comb).fit()).summary2()\n",
+    "print(def_def)\n",
+    "\n",
+    "def_sal = (smf.ols('Default_SalVentAttn ~ Sex01 + interview_age + IPVAny', data=df_comb).fit()).summary()\n",
+    "print(def_sal)\n",
+    "\n",
+    "def_cont = (smf.ols('Default_Cont ~ Sex01 + interview_age + IPVAny', data=df_comb).fit()).summary()\n",
+    "print(def_cont)\n",
+    "\n",
+    "sal_sal = (smf.ols('SalVentAttn_SalVentAttn ~ Sex01 + interview_age + IPVAny', data=df_comb).fit()).summary()\n",
+    "print(sal_sal)\n",
+    "\n",
+    "sal_cont = (smf.ols('SalVentAttn_Cont ~  Sex01 + interview_age + IPVAny', data=df_comb).fit()).summary()\n",
+    "print(sal_cont)\n",
+    "\n",
+    "cont_cont = (smf.ols('Cont_Cont ~  Sex01 + interview_age + IPVAny', data=df_comb).fit()).summary()\n",
+    "print(cont_cont)\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 73,
+   "id": "32587ce7",
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2021-12-03T23:00:36.098297Z",
+     "start_time": "2021-12-03T23:00:35.831050Z"
+    }
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "                    Results: Ordinary least squares\n",
+      "=======================================================================\n",
+      "Model:               OLS               Adj. R-squared:      0.026      \n",
+      "Dependent Variable:  Default_Default   AIC:                 -18613.6750\n",
+      "Date:                2021-12-03 17:00  BIC:                 -18572.8123\n",
+      "No. Observations:    6704              Log-Likelihood:      9312.8     \n",
+      "Df Model:            5                 F-statistic:         37.09      \n",
+      "Df Residuals:        6698              Prob (F-statistic):  1.25e-37   \n",
+      "R-squared:           0.027             Scale:               0.0036418  \n",
+      "-----------------------------------------------------------------------\n",
+      "                        Coef.  Std.Err.    t     P>|t|   [0.025  0.975]\n",
+      "-----------------------------------------------------------------------\n",
+      "Intercept               0.2250   0.0137  16.4703 0.0000  0.1982  0.2518\n",
+      "Sex01                  -0.0188   0.0015 -12.7019 0.0000 -0.0217 -0.0159\n",
+      "interview_age           0.0004   0.0001   4.5359 0.0000  0.0003  0.0006\n",
+      "crpbi_par1_mn           0.0026   0.0026   0.9913 0.3216 -0.0026  0.0078\n",
+      "IPVTotal               -0.0238   0.0162  -1.4674 0.1423 -0.0556  0.0080\n",
+      "crpbi_par1_mn:IPVTotal  0.0077   0.0057   1.3492 0.1773 -0.0035  0.0189\n",
+      "-----------------------------------------------------------------------\n",
+      "Omnibus:               96.069         Durbin-Watson:            2.035  \n",
+      "Prob(Omnibus):         0.000          Jarque-Bera (JB):         100.377\n",
+      "Skew:                  0.287          Prob(JB):                 0.000  \n",
+      "Kurtosis:              3.170          Condition No.:            2824   \n",
+      "=======================================================================\n",
+      "* The condition number is large (3e+03). This might indicate\n",
+      "strong multicollinearity or other numerical problems.\n",
+      "                    Results: Ordinary least squares\n",
+      "=======================================================================\n",
+      "Model:              OLS                 Adj. R-squared:     0.027      \n",
+      "Dependent Variable: Default_SalVentAttn AIC:                -21071.1387\n",
+      "Date:               2021-12-03 17:00    BIC:                -21030.2760\n",
+      "No. Observations:   6704                Log-Likelihood:     10542.     \n",
+      "Df Model:           5                   F-statistic:        38.38      \n",
+      "Df Residuals:       6698                Prob (F-statistic): 5.63e-39   \n",
+      "R-squared:          0.028               Scale:              0.0025242  \n",
+      "-----------------------------------------------------------------------\n",
+      "                         Coef.  Std.Err.    t    P>|t|   [0.025  0.975]\n",
+      "-----------------------------------------------------------------------\n",
+      "Intercept               -0.0354   0.0114 -3.1087 0.0019 -0.0576 -0.0131\n",
+      "Sex01                    0.0150   0.0012 12.1599 0.0000  0.0125  0.0174\n",
+      "interview_age           -0.0005   0.0001 -6.5317 0.0000 -0.0007 -0.0004\n",
+      "crpbi_par1_mn           -0.0019   0.0022 -0.8835 0.3770 -0.0062  0.0024\n",
+      "IPVTotal                 0.0270   0.0135  1.9995 0.0456  0.0005  0.0535\n",
+      "crpbi_par1_mn:IPVTotal  -0.0094   0.0048 -1.9695 0.0489 -0.0187 -0.0000\n",
+      "-----------------------------------------------------------------------\n",
+      "Omnibus:                31.450         Durbin-Watson:            2.014 \n",
+      "Prob(Omnibus):          0.000          Jarque-Bera (JB):         37.367\n",
+      "Skew:                   -0.100         Prob(JB):                 0.000 \n",
+      "Kurtosis:               3.306          Condition No.:            2824  \n",
+      "=======================================================================\n",
+      "* The condition number is large (3e+03). This might indicate\n",
+      "strong multicollinearity or other numerical problems.\n",
+      "                   Results: Ordinary least squares\n",
+      "=====================================================================\n",
+      "Model:               OLS              Adj. R-squared:     0.000      \n",
+      "Dependent Variable:  Default_Cont     AIC:                -24504.5646\n",
+      "Date:                2021-12-03 17:00 BIC:                -24463.7019\n",
+      "No. Observations:    6704             Log-Likelihood:     12258.     \n",
+      "Df Model:            5                F-statistic:        1.408      \n",
+      "Df Residuals:        6698             Prob (F-statistic): 0.218      \n",
+      "R-squared:           0.001            Scale:              0.0015125  \n",
+      "---------------------------------------------------------------------\n",
+      "                        Coef.  Std.Err.    t    P>|t|   [0.025 0.975]\n",
+      "---------------------------------------------------------------------\n",
+      "Intercept               0.0495   0.0088  5.6264 0.0000  0.0323 0.0668\n",
+      "Sex01                  -0.0016   0.0010 -1.7167 0.0861 -0.0035 0.0002\n",
+      "interview_age          -0.0001   0.0001 -1.2723 0.2033 -0.0002 0.0000\n",
+      "crpbi_par1_mn          -0.0011   0.0017 -0.6654 0.5058 -0.0045 0.0022\n",
+      "IPVTotal                0.0092   0.0105  0.8763 0.3809 -0.0113 0.0297\n",
+      "crpbi_par1_mn:IPVTotal -0.0030   0.0037 -0.8020 0.4226 -0.0102 0.0043\n",
+      "---------------------------------------------------------------------\n",
+      "Omnibus:                83.601        Durbin-Watson:           1.997 \n",
+      "Prob(Omnibus):          0.000         Jarque-Bera (JB):        99.091\n",
+      "Skew:                   0.211         Prob(JB):                0.000 \n",
+      "Kurtosis:               3.419         Condition No.:           2824  \n",
+      "=====================================================================\n",
+      "* The condition number is large (3e+03). This might indicate\n",
+      "strong multicollinearity or other numerical problems.\n",
+      "                      Results: Ordinary least squares\n",
+      "===========================================================================\n",
+      "Model:              OLS                     Adj. R-squared:     0.022      \n",
+      "Dependent Variable: SalVentAttn_SalVentAttn AIC:                -16226.9184\n",
+      "Date:               2021-12-03 17:00        BIC:                -16186.0556\n",
+      "No. Observations:   6704                    Log-Likelihood:     8119.5     \n",
+      "Df Model:           5                       F-statistic:        30.97      \n",
+      "Df Residuals:       6698                    Prob (F-statistic): 2.92e-31   \n",
+      "R-squared:          0.023                   Scale:              0.0051992  \n",
+      "----------------------------------------------------------------------------\n",
+      "                         Coef.   Std.Err.     t     P>|t|    [0.025   0.975]\n",
+      "----------------------------------------------------------------------------\n",
+      "Intercept                0.2093    0.0163  12.8209  0.0000   0.1773   0.2413\n",
+      "Sex01                   -0.0170    0.0018  -9.6064  0.0000  -0.0204  -0.0135\n",
+      "interview_age            0.0008    0.0001   6.8854  0.0000   0.0006   0.0010\n",
+      "crpbi_par1_mn            0.0074    0.0031   2.3396  0.0193   0.0012   0.0135\n",
+      "IPVTotal                -0.0400    0.0194  -2.0616  0.0393  -0.0780  -0.0020\n",
+      "crpbi_par1_mn:IPVTotal   0.0129    0.0068   1.8829  0.0598  -0.0005   0.0263\n",
+      "---------------------------------------------------------------------------\n",
+      "Omnibus:                121.655          Durbin-Watson:             2.006  \n",
+      "Prob(Omnibus):          0.000            Jarque-Bera (JB):          129.310\n",
+      "Skew:                   0.320            Prob(JB):                  0.000  \n",
+      "Kurtosis:               3.230            Condition No.:             2824   \n",
+      "===========================================================================\n",
+      "* The condition number is large (3e+03). This might indicate\n",
+      "strong multicollinearity or other numerical problems.\n",
+      "                   Results: Ordinary least squares\n",
+      "=====================================================================\n",
+      "Model:               OLS              Adj. R-squared:     -0.001     \n",
+      "Dependent Variable:  SalVentAttn_Cont AIC:                -24519.7526\n",
+      "Date:                2021-12-03 17:00 BIC:                -24478.8899\n",
+      "No. Observations:    6704             Log-Likelihood:     12266.     \n",
+      "Df Model:            5                F-statistic:        0.1215     \n",
+      "Df Residuals:        6698             Prob (F-statistic): 0.988      \n",
+      "R-squared:           0.000            Scale:              0.0015091  \n",
+      "---------------------------------------------------------------------\n",
+      "                        Coef.  Std.Err.    t    P>|t|   [0.025 0.975]\n",
+      "---------------------------------------------------------------------\n",
+      "Intercept               0.0186   0.0088  2.1113 0.0348  0.0013 0.0358\n",
+      "Sex01                   0.0002   0.0010  0.2531 0.8002 -0.0016 0.0021\n",
+      "interview_age          -0.0000   0.0001 -0.6488 0.5165 -0.0002 0.0001\n",
+      "crpbi_par1_mn           0.0000   0.0017  0.0211 0.9831 -0.0033 0.0034\n",
+      "IPVTotal               -0.0036   0.0104 -0.3424 0.7321 -0.0241 0.0169\n",
+      "crpbi_par1_mn:IPVTotal  0.0013   0.0037  0.3417 0.7326 -0.0060 0.0085\n",
+      "---------------------------------------------------------------------\n",
+      "Omnibus:                35.775        Durbin-Watson:           1.999 \n",
+      "Prob(Omnibus):          0.000         Jarque-Bera (JB):        41.084\n",
+      "Skew:                   0.123         Prob(JB):                0.000 \n",
+      "Kurtosis:               3.294         Condition No.:           2824  \n",
+      "=====================================================================\n",
+      "* The condition number is large (3e+03). This might indicate\n",
+      "strong multicollinearity or other numerical problems.\n",
+      "                   Results: Ordinary least squares\n",
+      "======================================================================\n",
+      "Model:                OLS              Adj. R-squared:     0.003      \n",
+      "Dependent Variable:   Cont_Cont        AIC:                -22459.6653\n",
+      "Date:                 2021-12-03 17:00 BIC:                -22418.8026\n",
+      "No. Observations:     6704             Log-Likelihood:     11236.     \n",
+      "Df Model:             5                F-statistic:        5.386      \n",
+      "Df Residuals:         6698             Prob (F-statistic): 6.01e-05   \n",
+      "R-squared:            0.004            Scale:              0.0020520  \n",
+      "----------------------------------------------------------------------\n",
+      "                        Coef.  Std.Err.    t    P>|t|   [0.025  0.975]\n",
+      "----------------------------------------------------------------------\n",
+      "Intercept               0.1798   0.0103 17.5375 0.0000  0.1597  0.1999\n",
+      "Sex01                  -0.0034   0.0011 -3.0490 0.0023 -0.0056 -0.0012\n",
+      "interview_age           0.0003   0.0001  3.9178 0.0001  0.0001  0.0004\n",
+      "crpbi_par1_mn           0.0023   0.0020  1.1576 0.2471 -0.0016  0.0062\n",
+      "IPVTotal                0.0157   0.0122  1.2850 0.1988 -0.0082  0.0395\n",
+      "crpbi_par1_mn:IPVTotal -0.0056   0.0043 -1.3084 0.1908 -0.0140  0.0028\n",
+      "----------------------------------------------------------------------\n",
+      "Omnibus:               267.713        Durbin-Watson:           2.052  \n",
+      "Prob(Omnibus):         0.000          Jarque-Bera (JB):        324.743\n",
+      "Skew:                  0.450          Prob(JB):                0.000  \n",
+      "Kurtosis:              3.593          Condition No.:           2824   \n",
+      "======================================================================\n",
+      "* The condition number is large (3e+03). This might indicate\n",
+      "strong multicollinearity or other numerical problems.\n"
+     ]
+    }
+   ],
+   "source": [
+    "def_def = (smf.ols('Default_Default ~ Sex01 + interview_age + crpbi_par1_mn*IPVTotal', data=df_comb).fit()).summary2()\n",
+    "print(def_def)\n",
+    "\n",
+    "def_sal = (smf.ols('Default_SalVentAttn ~ Sex01 + interview_age + crpbi_par1_mn*IPVTotal', data=df_comb).fit()).summary2()\n",
+    "print(def_sal)\n",
+    "\n",
+    "def_cont = (smf.ols('Default_Cont ~ Sex01 + interview_age + crpbi_par1_mn*IPVTotal', data=df_comb).fit()).summary2()\n",
+    "print(def_cont)\n",
+    "\n",
+    "sal_sal = (smf.ols('SalVentAttn_SalVentAttn ~ Sex01 + interview_age + crpbi_par1_mn*IPVTotal', data=df_comb).fit()).summary2()\n",
+    "print(sal_sal)\n",
+    "\n",
+    "sal_cont = (smf.ols('SalVentAttn_Cont ~  Sex01 + interview_age + crpbi_par1_mn*IPVTotal', data=df_comb).fit()).summary2()\n",
+    "print(sal_cont)\n",
+    "\n",
+    "cont_cont = (smf.ols('Cont_Cont ~  Sex01 + interview_age + crpbi_par1_mn*IPVTotal', data=df_comb).fit()).summary2()\n",
+    "print(cont_cont)\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 102,
+   "id": "27a7c77d",
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2021-08-05T18:37:57.233610Z",
+     "start_time": "2021-08-05T18:37:57.210490Z"
+    }
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "0.0    6977\n",
+      "1.0      27\n",
+      "Name: ksads_ptsd_raw_758_p, dtype: int64\n",
+      "0.3739612188365651\n",
+      "0.0    6974\n",
+      "1.0      30\n",
+      "Name: ksads_ptsd_raw_759_p, dtype: int64\n",
+      "0.41551246537396125\n",
+      "0.0    6947\n",
+      "1.0      57\n",
+      "Name: ksads_ptsd_raw_760_p, dtype: int64\n",
+      "0.7894736842105263\n",
+      "0.0    6983\n",
+      "1.0      21\n",
+      "Name: ksads_ptsd_raw_761_p, dtype: int64\n",
+      "0.29085872576177285\n",
+      "0.0    6978\n",
+      "1.0      26\n",
+      "Name: ksads_ptsd_raw_762_p, dtype: int64\n",
+      "0.3601108033240997\n",
+      "0.0    6944\n",
+      "1.0      60\n",
+      "Name: ksads_ptsd_raw_763_p, dtype: int64\n",
+      "0.8310249307479225\n",
+      "0.0    6962\n",
+      "1.0      42\n",
+      "Name: ksads_ptsd_raw_764_p, dtype: int64\n",
+      "0.5817174515235457\n",
+      "0.0    6963\n",
+      "1.0      41\n",
+      "Name: ksads_ptsd_raw_765_p, dtype: int64\n",
+      "0.5678670360110804\n",
+      "0.0    6504\n",
+      "1.0     500\n",
+      "Name: ksads_ptsd_raw_766_p, dtype: int64\n",
+      "6.9252077562326875\n",
+      "0.0    6975\n",
+      "1.0      29\n",
+      "Name: ksads_ptsd_raw_767_p, dtype: int64\n",
+      "0.40166204986149584\n",
+      "0.0    6953\n",
+      "1.0      51\n",
+      "Name: ksads_ptsd_raw_768_p, dtype: int64\n",
+      "0.7063711911357341\n",
+      "0.0    6913\n",
+      "1.0      91\n",
+      "Name: ksads_ptsd_raw_769_p, dtype: int64\n",
+      "1.2603878116343492\n"
+     ]
+    }
+   ],
+   "source": [
+    "def getFreqPct(colName):\n",
+    "    pct = (df_comb[colName].value_counts()[1] / df_comb.shape[0])*100\n",
+    "    print(df_comb[colName].value_counts())\n",
+    "    print(pct)\n",
+    "    return(pct)\n",
+    "\n",
+    "terrorPct = getFreqPct('ksads_ptsd_raw_758_p')\n",
+    "warPct = getFreqPct('ksads_ptsd_raw_759_p')\n",
+    "witShotStab = getFreqPct('ksads_ptsd_raw_760_p')\n",
+    "violNonFam = getFreqPct('ksads_ptsd_raw_761_p')\n",
+    "violFam = getFreqPct('ksads_ptsd_raw_762_p')\n",
+    "beatenFam = getFreqPct('ksads_ptsd_raw_763_p')\n",
+    "nonFamThreat = getFreqPct('ksads_ptsd_raw_764_p')\n",
+    "famThreat = getFreqPct('ksads_ptsd_raw_765_p')\n",
+    "witDomViol = getFreqPct('ksads_ptsd_raw_766_p')\n",
+    "famSexAb = getFreqPct('ksads_ptsd_raw_767_p')\n",
+    "nonFamSexAb = getFreqPct('ksads_ptsd_raw_768_p')\n",
+    "peerSexAb = getFreqPct('ksads_ptsd_raw_769_p')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 65,
+   "id": "b0164409",
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2021-12-03T22:11:53.824508Z",
+     "start_time": "2021-12-03T22:11:52.454730Z"
+    }
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "IPV + AGE + SEX: DEFAULT BY DEFAULT\n",
+      "                  sum_sq      df           F  PR(>F)    eta_sq  omega_sq\n",
+      "C(IPVAny)       0.051318     1.0   14.130521  0.0002  0.001904  0.001769\n",
+      "C(Sex01)        0.644870     1.0  177.564705  0.0000  0.023921  0.023784\n",
+      "interview_age   0.073108     1.0   20.130163  0.0000  0.002712  0.002577\n",
+      "Residual       26.188538  7211.0         NaN     NaN       NaN       NaN\n",
+      "IPV + AGE + SEX: DEFAULT BY SALIENCE\n",
+      "                  sum_sq      df           F  PR(>F)    eta_sq  omega_sq\n",
+      "C(IPVAny)       0.011411     1.0    4.513954  0.0337  0.000608  0.000473\n",
+      "C(Sex01)        0.422539     1.0  167.142827  0.0000  0.022516  0.022378\n",
+      "interview_age   0.102596     1.0   40.583595  0.0000  0.005467  0.005332\n",
+      "Residual       18.229488  7211.0         NaN     NaN       NaN       NaN\n",
+      "IPV + AGE + SEX: DEFAULT BY FPN\n",
+      "                  sum_sq      df         F  PR(>F)    eta_sq  omega_sq\n",
+      "C(IPVAny)       0.008792     1.0  5.816450  0.0159  0.000806  0.000667\n",
+      "C(Sex01)        0.004520     1.0  2.990197  0.0838  0.000414  0.000276\n",
+      "interview_age   0.001594     1.0  1.054244  0.3046  0.000146  0.000008\n",
+      "Residual       10.900361  7211.0       NaN     NaN       NaN       NaN\n",
+      "IPV + AGE + SEX: SALIENCE BY SALIENCE\n",
+      "                  sum_sq      df           F  PR(>F)    eta_sq  omega_sq\n",
+      "C(IPVAny)       0.100172     1.0   19.288135     0.0  0.002613  0.002477\n",
+      "C(Sex01)        0.539294     1.0  103.840747     0.0  0.014068  0.013930\n",
+      "interview_age   0.246026     1.0   47.372077     0.0  0.006418  0.006281\n",
+      "Residual       37.450140  7211.0         NaN     NaN       NaN       NaN\n",
+      "IPV + AGE + SEX: SALIENCE BY FPN\n",
+      "                  sum_sq      df         F  PR(>F)    eta_sq  omega_sq\n",
+      "C(IPVAny)       0.000102     1.0  0.067705  0.7947  0.000009 -0.000129\n",
+      "C(Sex01)        0.000200     1.0  0.132484  0.7159  0.000018 -0.000120\n",
+      "interview_age   0.000302     1.0  0.200031  0.6547  0.000028 -0.000111\n",
+      "Residual       10.899553  7211.0       NaN     NaN       NaN       NaN\n",
+      "IPV + AGE + SEX: FPN BY FPN\n",
+      "                  sum_sq      df          F  PR(>F)    eta_sq  omega_sq\n",
+      "C(IPVAny)       0.000099     1.0   0.048155  0.8263  0.000007 -0.000132\n",
+      "C(Sex01)        0.017265     1.0   8.399426  0.0038  0.001161  0.001022\n",
+      "interview_age   0.035733     1.0  17.384523  0.0000  0.002402  0.002264\n",
+      "Residual       14.821942  7211.0        NaN     NaN       NaN       NaN\n",
+      "SEX X IPV + AGE: DEFAULT BY DEFAULT\n",
+      "                       sum_sq      df           F  PR(>F)    eta_sq  omega_sq\n",
+      "C(Sex01)             0.644870     1.0  177.542395  0.0000  0.023921  0.023784\n",
+      "C(IPVAny)            0.051318     1.0   14.128745  0.0002  0.001904  0.001769\n",
+      "C(Sex01):C(IPVAny)   0.000341     1.0    0.094017  0.7591  0.000013 -0.000122\n",
+      "interview_age        0.073047     1.0   20.110809  0.0000  0.002710  0.002575\n",
+      "Residual            26.188196  7210.0         NaN     NaN       NaN       NaN\n",
+      "SEX X IPV + AGE: DEFAULT BY SALIENCE\n",
+      "                       sum_sq      df           F  PR(>F)    eta_sq  \\\n",
+      "C(Sex01)             0.422539     1.0  167.142660  0.0000  0.022516   \n",
+      "C(IPVAny)            0.011411     1.0    4.513949  0.0337  0.000608   \n",
+      "C(Sex01):C(IPVAny)   0.002510     1.0    0.992817  0.3191  0.000134   \n",
+      "interview_age        0.102781     1.0   40.656652  0.0000  0.005477   \n",
+      "Residual            18.226978  7210.0         NaN     NaN       NaN   \n",
+      "\n",
+      "                        omega_sq  \n",
+      "C(Sex01)            2.237821e-02  \n",
+      "C(IPVAny)           4.733034e-04  \n",
+      "C(Sex01):C(IPVAny) -9.675101e-07  \n",
+      "interview_age       5.341462e-03  \n",
+      "Residual                     NaN  \n",
+      "SEX X IPV + AGE: DEFAULT BY FPN\n",
+      "                       sum_sq      df         F  PR(>F)    eta_sq  omega_sq\n",
+      "C(Sex01)             0.004520     1.0  2.989785  0.0838  0.000414  0.000276\n",
+      "C(IPVAny)            0.008792     1.0  5.815650  0.0159  0.000806  0.000667\n",
+      "C(Sex01):C(IPVAny)   0.000012     1.0  0.008151  0.9281  0.000001 -0.000137\n",
+      "interview_age        0.001592     1.0  1.052975  0.3049  0.000146  0.000007\n",
+      "Residual            10.900349  7210.0       NaN     NaN       NaN       NaN\n",
+      "SEX X IPV + AGE: SALIENCE BY SALIENCE\n",
+      "                       sum_sq      df           F  PR(>F)    eta_sq  omega_sq\n",
+      "C(Sex01)             0.539294     1.0  103.827248  0.0000  0.014068  0.013930\n",
+      "C(IPVAny)            0.100172     1.0   19.285627  0.0000  0.002613  0.002477\n",
+      "C(Sex01):C(IPVAny)   0.000325     1.0    0.062589  0.8025  0.000008 -0.000127\n",
+      "interview_age        0.246122     1.0   47.384489  0.0000  0.006420  0.006284\n",
+      "Residual            37.449814  7210.0         NaN     NaN       NaN       NaN\n",
+      "SEX X IPV + AGE: SALIENCE BY FPN\n",
+      "                       sum_sq      df         F  PR(>F)    eta_sq  omega_sq\n",
+      "C(Sex01)             0.000200     1.0  0.132467  0.7159  0.000018 -0.000120\n",
+      "C(IPVAny)            0.000102     1.0  0.067696  0.7947  0.000009 -0.000129\n",
+      "C(Sex01):C(IPVAny)   0.000144     1.0  0.095296  0.7576  0.000013 -0.000125\n",
+      "interview_age        0.000305     1.0  0.201622  0.6534  0.000028 -0.000111\n",
+      "Residual            10.899409  7210.0       NaN     NaN       NaN       NaN\n",
+      "SEX X IPV + AGE: FPN BY FPN\n",
+      "                       sum_sq      df          F  PR(>F)    eta_sq  omega_sq\n",
+      "C(Sex01)             0.017265     1.0   8.398900  0.0038  0.001161  0.001022\n",
+      "C(IPVAny)            0.000099     1.0   0.048152  0.8263  0.000007 -0.000132\n",
+      "C(Sex01):C(IPVAny)   0.001127     1.0   0.548328  0.4590  0.000076 -0.000062\n",
+      "interview_age        0.035658     1.0  17.346639  0.0000  0.002397  0.002259\n",
+      "Residual            14.820814  7210.0        NaN     NaN       NaN       NaN\n"
+     ]
+    }
+   ],
+   "source": [
+    "from statsmodels.formula.api import ols\n",
+    "from statsmodels.stats.anova import anova_lm\n",
+    "from statsmodels.graphics.factorplots import interaction_plot\n",
+    "from patsy.contrasts import Sum\n",
+    "\n",
+    "def eta_squared(aov):\n",
+    "    aov['eta_sq'] = 'NaN'\n",
+    "    aov['eta_sq'] = aov[:-1]['sum_sq']/sum(aov['sum_sq'])\n",
+    "    return aov\n",
+    "\n",
+    "def omega_squared(aov):\n",
+    "    mse = aov['sum_sq'][-1]/aov['df'][-1]\n",
+    "    aov['omega_sq'] = 'NaN'\n",
+    "    aov['omega_sq'] = (aov[:-1]['sum_sq']-(aov[:-1]['df']*mse))/(sum(aov['sum_sq'])+mse)\n",
+    "    return aov\n",
+    "\n",
+    "def aovLM_mainwCovs(vector):\n",
+    "    formula = vector + ' ~C(IPVAny) + C(Sex01) + interview_age'\n",
+    "    model = ols(formula, df_comb).fit()\n",
+    "    aov_table = anova_lm(model, typ=2)\n",
+    "    eta_squared(aov_table)\n",
+    "    omega_squared(aov_table)\n",
+    "    aov_table['PR(>F)'] = round(aov_table['PR(>F)'], 4)\n",
+    "    return aov_table\n",
+    "\n",
+    "def aovLM_SexByNet(vector):\n",
+    "    formula = vector + ' ~ C(Sex01)*C(IPVAny) + interview_age'\n",
+    "    model = ols(formula, df_comb).fit()\n",
+    "    aov_table = anova_lm(model, typ=2)\n",
+    "    eta_squared(aov_table)\n",
+    "    omega_squared(aov_table)\n",
+    "    aov_table['PR(>F)'] = round(aov_table['PR(>F)'], 4)\n",
+    "    return aov_table\n",
+    "\n",
+    "def aovLM_AgeByNet(vector):\n",
+    "    formula = vector + ' ~ C(interview_age)*C(IPVAny) + C(Sex01)'\n",
+    "    model = ols(formula, df_comb).fit()\n",
+    "    aov_table = anova_lm(model, typ=2)\n",
+    "    eta_squared(aov_table)\n",
+    "    omega_squared(aov_table)\n",
+    "    aov_table['PR(>F)'] = round(aov_table['PR(>F)'], 4)\n",
+    "    return aov_table\n",
+    "\n",
+    "print('IPV + AGE + SEX: DEFAULT BY DEFAULT')\n",
+    "print(aovLM_mainwCovs('Default_Default'))\n",
+    "\n",
+    "print('IPV + AGE + SEX: DEFAULT BY SALIENCE')\n",
+    "print(aovLM_mainwCovs('Default_SalVentAttn'))\n",
+    "\n",
+    "print('IPV + AGE + SEX: DEFAULT BY FPN')\n",
+    "print(aovLM_mainwCovs('Default_Cont'))\n",
+    "\n",
+    "print('IPV + AGE + SEX: SALIENCE BY SALIENCE')\n",
+    "print(aovLM_mainwCovs('SalVentAttn_SalVentAttn'))\n",
+    "\n",
+    "print('IPV + AGE + SEX: SALIENCE BY FPN')\n",
+    "print(aovLM_mainwCovs('SalVentAttn_Cont'))\n",
+    "\n",
+    "print('IPV + AGE + SEX: FPN BY FPN')\n",
+    "print(aovLM_mainwCovs('Cont_Cont'))\n",
+    "\n",
+    "print('SEX X IPV + AGE: DEFAULT BY DEFAULT')\n",
+    "print(aovLM_SexByNet('Default_Default'))\n",
+    "\n",
+    "print('SEX X IPV + AGE: DEFAULT BY SALIENCE')\n",
+    "print(aovLM_SexByNet('Default_SalVentAttn'))\n",
+    "\n",
+    "print('SEX X IPV + AGE: DEFAULT BY FPN')\n",
+    "print(aovLM_SexByNet('Default_Cont'))\n",
+    "\n",
+    "print('SEX X IPV + AGE: SALIENCE BY SALIENCE')\n",
+    "print(aovLM_SexByNet('SalVentAttn_SalVentAttn'))\n",
+    "\n",
+    "print('SEX X IPV + AGE: SALIENCE BY FPN')\n",
+    "print(aovLM_SexByNet('SalVentAttn_Cont'))\n",
+    "\n",
+    "print('SEX X IPV + AGE: FPN BY FPN')\n",
+    "print(aovLM_SexByNet('Cont_Cont'))\n",
+    "\n",
+    "\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 68,
+   "id": "988b1b60",
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2021-12-03T22:22:11.620510Z",
+     "start_time": "2021-12-03T22:22:11.596162Z"
+    }
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Assuming equal variance per non-significant Levene's Test.\n"
+     ]
+    },
+    {
+     "data": {
+      "text/plain": [
+       "Ttest_indResult(statistic=-3.4543583708709664, pvalue=0.0005547768588355575)"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Assuming equal variance per non-significant Levene's Test.\n"
+     ]
+    },
+    {
+     "data": {
+      "text/plain": [
+       "Ttest_indResult(statistic=1.8275566315872613, pvalue=0.06765741151864141)"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Assuming equal variance per non-significant Levene's Test.\n"
+     ]
+    },
+    {
+     "data": {
+      "text/plain": [
+       "Ttest_indResult(statistic=2.4294425646631352, pvalue=0.01514631208965521)"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Assuming equal variance per non-significant Levene's Test.\n"
+     ]
+    },
+    {
+     "data": {
+      "text/plain": [
+       "Ttest_indResult(statistic=-4.118480858998394, pvalue=3.856379219366135e-05)"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Assuming equal variance per non-significant Levene's Test.\n"
+     ]
+    },
+    {
+     "data": {
+      "text/plain": [
+       "Ttest_indResult(statistic=-0.2706291378879219, pvalue=0.7866840262921249)"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Assuming equal variance per non-significant Levene's Test.\n"
+     ]
+    },
+    {
+     "data": {
+      "text/plain": [
+       "Ttest_indResult(statistic=-0.1308007643687972, pvalue=0.8959365660132629)"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "def runTTest_ind(vec1, vec2):\n",
+    "    vec1_noNaN = vec1[np.logical_not(np.isnan(vec1))]\n",
+    "    vec2_noNaN = vec2[np.logical_not(np.isnan(vec2))]\n",
+    "    levene_p = stats.levene(vec1_noNaN, vec2_noNaN)[1]\n",
+    "    if levene_p > 0.05:\n",
+    "        equalvar=True\n",
+    "        print(\"Assuming equal variance per non-significant Levene's Test.\")\n",
+    "    else:\n",
+    "        print(\"Assuming UN-equal variance per significant Levene's Test.\")\n",
+    "        equalvar=False  \n",
+    "    result = stats.ttest_ind(vec1, vec2, equal_var=equalvar, nan_policy='omit')\n",
+    "    display(result)\n",
+    "\n",
+    "runTTest_ind(IPVplus['Default_Default'], IPVminus['Default_Default'])\n",
+    "runTTest_ind(IPVplus['Default_SalVentAttn'], IPVminus['Default_SalVentAttn'])\n",
+    "runTTest_ind(IPVplus['Default_Cont'], IPVminus['Default_Cont'])\n",
+    "runTTest_ind(IPVplus['SalVentAttn_SalVentAttn'], IPVminus['SalVentAttn_SalVentAttn'])\n",
+    "runTTest_ind(IPVplus['SalVentAttn_Cont'], IPVminus['SalVentAttn_Cont'])\n",
+    "runTTest_ind(IPVplus['Cont_Cont'], IPVminus['Cont_Cont'])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 70,
+   "id": "f15cdec1",
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2021-12-03T22:25:32.068689Z",
+     "start_time": "2021-12-03T22:25:32.059244Z"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "#https://dfrieds.com/math/effect-size.html\n",
+    "def two_sample_data_setup_for_cohens_d(vec1, vec2):\n",
+    "    mean_1 = np.mean(vec1)\n",
+    "    mean_2 = np.mean(vec2)\n",
+    "    sample_std_dev_1 = np.std(vec1)\n",
+    "    sample_std_dev_2 = np.std(vec2)\n",
+    "    values_1 = np.random.normal(loc=mean_1, scale=sample_std_dev_1, size=3000)\n",
+    "    values_2 = np.random.normal(loc=mean_2, scale=sample_std_dev_2, size=3000)\n",
+    "    differences_group_values = np.subtract(values_1, values_2)\n",
+    "    std_dev_differences_group_values = np.std(differences_group_values, ddof=1)\n",
+    "    cohens_d = round(abs((mean_1 - mean_2)/std_dev_differences_group_values), 3)\n",
+    "    print(cohens_d)\n",
+    "    return cohens_d"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 71,
+   "id": "48e2de8c",
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2021-12-03T22:25:32.683929Z",
+     "start_time": "2021-12-03T22:25:32.675617Z"
+    }
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "0.102\n",
+      "0.054\n",
+      "0.072\n",
+      "0.121\n",
+      "0.008\n",
+      "0.004\n"
+     ]
+    }
+   ],
+   "source": [
+    "Default_Default_cohens_d = two_sample_data_setup_for_cohens_d(IPVplus['Default_Default'], \n",
+    "                                                              IPVminus['Default_Default']) \n",
+    "\n",
+    "Default_SalVentAttn_cohens_d = two_sample_data_setup_for_cohens_d(IPVplus['Default_SalVentAttn'], \n",
+    "                                                              IPVminus['Default_SalVentAttn'])\n",
+    "\n",
+    "Default_Cont_cohens_d = two_sample_data_setup_for_cohens_d(IPVplus['Default_Cont'], \n",
+    "                                                           IPVminus['Default_Cont'])\n",
+    "\n",
+    "SalVentAttn_SalVentAttn_cohens_d = two_sample_data_setup_for_cohens_d(IPVplus['SalVentAttn_SalVentAttn'], \n",
+    "                                                              IPVminus['SalVentAttn_SalVentAttn'])\n",
+    "\n",
+    "SalVentAttn_Cont_cohens_d = two_sample_data_setup_for_cohens_d(IPVplus['SalVentAttn_Cont'], \n",
+    "                                                              IPVminus['SalVentAttn_Cont'])\n",
+    "\n",
+    "Cont_Cont_cohens_d = two_sample_data_setup_for_cohens_d(IPVplus['Cont_Cont'], \n",
+    "                                                        IPVminus['Cont_Cont'])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 82,
+   "id": "a5d6c9a3",
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2021-08-05T18:21:57.262296Z",
+     "start_time": "2021-08-05T18:21:57.245594Z"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "c_data_IPVplus = c_data.query('IPVAny == 1').loc[:, ['subjectkey', 'IPVAny']]\n",
+    "c_data_IPVminus = c_data.query('IPVAny == 0').loc[:, ['subjectkey', 'IPVAny']]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 83,
+   "id": "41901f62",
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2021-08-05T18:22:06.426871Z",
+     "start_time": "2021-08-05T18:21:59.060104Z"
+    }
+   },
+   "outputs": [
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "6455288a02d24be0b01103f440bcf0b5",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "  0%|          | 0/7220 [00:00<?, ?it/s]"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "IPVMinusArrays = []\n",
+    "IPVPlusArrays = []\n",
+    "\n",
+    "for i in tqdm(list(range(len(allArrays)))):\n",
+    "    subjectkeyArray = allArrays[i][0]\n",
+    "    try:\n",
+    "        IPVvalue = c_data[c_data.subjectkey==subjectkeyArray].IPVAny.item()\n",
+    "        if IPVvalue == 0:\n",
+    "            IPVMinusArrays.append(allArrays[i][1].to_numpy())\n",
+    "        elif IPVvalue == 1:\n",
+    "            IPVPlusArrays.append(allArrays[i][1].to_numpy())\n",
+    "    except:\n",
+    "        next"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 84,
+   "id": "90146645",
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2021-08-05T18:22:22.728362Z",
+     "start_time": "2021-08-05T18:22:15.037962Z"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "IPVMinusMatrices = np.array(IPVMinusArrays).T\n",
+    "IPVPlusMatrices = np.array(IPVPlusArrays).T"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 85,
+   "id": "a0325056",
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2021-08-05T18:23:35.816155Z",
+     "start_time": "2021-08-05T18:22:24.468281Z"
+    }
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "max component size is 6407\n",
+      "estimating null distribution with 1000 permutations\n",
+      "permutation 0 of 1000.  Permutation max is 212.0.  Observed max is 6407.0.  P-val estimate is 0.000 \n"
+     ]
+    },
+    {
+     "ename": "KeyboardInterrupt",
+     "evalue": "",
+     "output_type": "error",
+     "traceback": [
+      "\u001b[0;31m---------------------------------------------------------------------------\u001b[0m",
+      "\u001b[0;31mKeyboardInterrupt\u001b[0m                         Traceback (most recent call last)",
+      "\u001b[0;32m<ipython-input-85-5bc7aaeed197>\u001b[0m in \u001b[0;36m<module>\u001b[0;34m\u001b[0m\n\u001b[0;32m----> 1\u001b[0;31m \u001b[0mpvals\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0madj\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mnulls\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mnbs\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mnbs_bct\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mIPVMinusMatrices\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mIPVPlusMatrices\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mthresh\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0;36m3\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mverbose\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0;32mTrue\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m",
+      "\u001b[0;32m/Volumes/conda/jdrussell3/lib/python3.7/site-packages/bct/nbs.py\u001b[0m in \u001b[0;36mnbs_bct\u001b[0;34m(***failed resolving arguments***)\u001b[0m\n\u001b[1;32m    223\u001b[0m                     d[i, :nx], d[i, -nx:], tail)\n\u001b[1;32m    224\u001b[0m             \u001b[0;32melse\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m--> 225\u001b[0;31m                 \u001b[0mt_stat_perm\u001b[0m\u001b[0;34m[\u001b[0m\u001b[0mi\u001b[0m\u001b[0;34m]\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mttest2_stat_only\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0md\u001b[0m\u001b[0;34m[\u001b[0m\u001b[0mi\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0;34m:\u001b[0m\u001b[0mnx\u001b[0m\u001b[0;34m]\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0md\u001b[0m\u001b[0;34m[\u001b[0m\u001b[0mi\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0;34m-\u001b[0m\u001b[0mny\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m]\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mtail\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m    226\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    227\u001b[0m         \u001b[0mind_t\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mnp\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mwhere\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mt_stat_perm\u001b[0m \u001b[0;34m>\u001b[0m \u001b[0mthresh\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
+      "\u001b[0;31mKeyboardInterrupt\u001b[0m: "
+     ]
+    }
+   ],
+   "source": [
+    "pvals, adj, nulls = nbs.nbs_bct(IPVMinusMatrices, IPVPlusMatrices, thresh=3, verbose=True)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 15,
+   "id": "32dd69ad",
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2021-07-28T16:49:58.753409Z",
+     "start_time": "2021-07-28T16:49:58.744500Z"
+    }
+   },
+   "outputs": [
+    {
+     "ename": "NameError",
+     "evalue": "name 'adj' is not defined",
+     "output_type": "error",
+     "traceback": [
+      "\u001b[0;31m---------------------------------------------------------------------------\u001b[0m",
+      "\u001b[0;31mNameError\u001b[0m                                 Traceback (most recent call last)",
+      "\u001b[0;32m<ipython-input-15-fbca061246f5>\u001b[0m in \u001b[0;36m<module>\u001b[0;34m\u001b[0m\n\u001b[0;32m----> 1\u001b[0;31m \u001b[0madj\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m",
+      "\u001b[0;31mNameError\u001b[0m: name 'adj' is not defined"
+     ]
+    }
+   ],
+   "source": [
+    "adj"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "2e560120",
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.9.7"
+  },
+  "varInspector": {
+   "cols": {
+    "lenName": 16,
+    "lenType": 16,
+    "lenVar": 40
+   },
+   "kernels_config": {
+    "python": {
+     "delete_cmd_postfix": "",
+     "delete_cmd_prefix": "del ",
+     "library": "var_list.py",
+     "varRefreshCmd": "print(var_dic_list())"
+    },
+    "r": {
+     "delete_cmd_postfix": ") ",
+     "delete_cmd_prefix": "rm(",
+     "library": "var_list.r",
+     "varRefreshCmd": "cat(var_dic_list()) "
+    }
+   },
+   "types_to_exclude": [
+    "module",
+    "function",
+    "builtin_function_or_method",
+    "instance",
+    "_Feature"
+   ],
+   "window_display": false
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}

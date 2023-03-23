@@ -37,7 +37,7 @@
 # ** and may not be useful for anything.  Use it at your own risk!     **
 # ** If these terms are not acceptable, you aren't allowed to use the code.**
 
-ID = "$Id: math_bic.py 583 2011-07-08 18:47:42Z jmo $"[1:-1]
+ID = "$Id: math_bic.py 216 2009-11-18 01:43:09Z jmo $"[1:-1]
 
 import sys
 import string
@@ -48,16 +48,15 @@ from numpy.linalg import det,inv
 
 from scipy.special.basic import erfcinv, erfinv
 from scipy.special import stdtr, fdtr, fdtri, stdtrit, ndtr
-#from levmar import levmar_der
 
 try:
-#    import geio
-    from geio import pyreslice_3d, pyextent_threshold
+    import GEio
+    from GEio import _reslice_3d, _extent_threshold
 except ImportError:
-    def pyreslice_3d(data_type,  Rtot, dims_out):
+    def _reslice_3d(data_type,  Rtot, dims_out):
 #        sys.stderr.write("_reslice_3d is not available on this system.\n")
         raise OSError("_reslice_3d is not available on this system.\n")
-    def pyextent_threshold(dumm1, dummy2, dummy3, dummy4):
+    def _extent_threshold(dumm1, dummy2, dummy3, dummy4):
         raise OSError("_extent_threshold is not available on this system.\n")
 #        sys.stderr.write("_extent_threshold is not available on this system\n")
 #        return None
@@ -75,7 +74,9 @@ from scipy.ndimage.morphology import binary_erosion,binary_dilation
 from scipy.special.basic import erfcinv, erfinv
 from scipy.special import stdtr, fdtrc,ndtr
 
-ID = "$Id: math_bic.py 583 2011-07-08 18:47:42Z jmo $"[1:-1]
+ID = "$Id: math_bic.py 216 2009-11-18 01:43:09Z jmo $"[1:-1]
+def echo_ID():
+    return ID
 
 
 #*********************
@@ -114,7 +115,7 @@ def clip_sinuses(input_file,output_file,skip,lcv):
 #     Extract brains.
     brain_file = stem + "_brain.img"
     cmd = "bet %s %s" % (input_file,brain_file)
-    file_io.exec_cmd(cmd)
+    file_io.exec_cmd(cmd,skip,lcv)
     
     brain_data = file_io.read_file(brain_file)
     brain_hdr = brain_data['header']
@@ -741,10 +742,9 @@ def hex_to_int(word):
     return(value)
 
 
-def print_matrix(A,title="",write=True, fmt='%7.4f', f=sys.stdout, tab_del=False):
-    """
-    Print matrix A with a pretty format.
-    """
+#*******************************************************
+def print_matrix(A,title="",print_str=True, fmt='%7.4f'):
+#*******************************************************
 
     if len(title) > 0:
         first_str = "%s |" % title
@@ -753,88 +753,67 @@ def print_matrix(A,title="",write=True, fmt='%7.4f', f=sys.stdout, tab_del=False
         first_str = " |"
         bar = "|"
     pad = (len(first_str) - len(bar)-1)*" "
-    if A.shape == (4,4) or A.shape == (3,3): # Might be a rotation matrix. Set output format.
+    shp = shape(A)
+    if shp == (4,4) or shp == (3,3): # Might be a rotation matrix. Set output format.
         if allclose(abs(sum(A[:3,:3],0)),1.):
 #           Looks like a rotation matrix with cardinal angles., 
-            low_precision = True
-            fmt_str = '%3.0f'
+            low_precision = 1
         else:
-            low_precision = False
-            fmt_str = fmt
+            low_precision = 0
     else:
-        low_precision = False
-        fmt_str = fmt
-    if fmt_str.endswith('d'):
-        amax = A.max()
-        amin = A.min()
-        if amax > 0:
-            lmax = log10(amax)
-        elif amax < 0. and amin < amax:
-            lmax = log10(-amin)
-        else:
-            lmax = 1.
-        fmtlen = int(lmax) + 1
-    else:
-        sfmt = fmt_str.split('.')
-        fmtlen = int(sfmt[0][1:]) + int(sfmt[1][:-1])  + 5
+        low_precision = 0
     outstr = ""
-    if A.ndim == 2:
-        ydim, xdim = A.shape
+    if len(shp) == 2:
+        ydim,xdim = shp
         for y in range(ydim):
             if y > 0:
                 outstr = "%s%s %s" % (outstr,pad,bar)
             else:
                 outstr = first_str
             if low_precision:
-                str = fmt_str % A[y,0]
-                str = (fmtlen - len(str))*" " + str
+                str = "%3.0f" % A[y,0]
+                str = (3-len(str))*" " + str
             else:
-                str = fmt_str % A[y,0]
-                str = (fmtlen-len(str))*" " + str
-            outstr += str
+                str = fmt % A[y,0]
+                str = (8-len(str))*" " + str
+            outstr = outstr + str
             for x in range(xdim-2):
                 if low_precision:
-                    str = fmt_str % A[y,x+1]
-                    str = (fmtlen -len(str))*" " + str
+                    str = "%3.0f" % A[y,x+1]
+                    str = (3-len(str))*" " + str
                 else:
-                    str = fmt_str % A[y,x+1]
-                    str = (fmtlen -len(str))*" " + str
-                outstr += str
+                    str = fmt % A[y,x+1]
+                    str = (8-len(str))*" " + str
+                outstr = outstr + str
             else:
                 str = ""
-            str = fmt_str % A[y,xdim-1]
-            str = (fmtlen-len(str))*" " + str
-            outstr += "%s %s" % (str,bar)
-            outstr = outstr + "\n"
-    elif A.ndim == 1:
-        xdim = A.shape[0]
+            str = fmt % A[y,xdim-1]
+            str = (10-len(str))*" " + str
+            outstr = outstr + "%s %s\n" % (str,bar)
+    elif len(shp) == 1:
+        xdim = shp[0]
         outstr = '%s: ' % title
         for x in range(xdim):
-            outstr = outstr + "  " + fmt_str % A[x]
-        if write:
-            outstr = outstr + "\n"
+            outstr = outstr + "  " + fmt % A[x]
+        outstr = outstr + "\n"
     else:
         outstr = array2string(A)
 
-    if tab_del:
-        for i in xrange(10):
-            tgt = (10-i)*' '
-            outstr = outstr.replace(tgt, '\t')
-    if write:
-        f.write(outstr)
+    if print_str:
+        sys.stdout.write(outstr)
     return outstr
 
 #************************************
 def reslice(imgin,hdr_in,hdr_parent):
 #************************************
     """
-    
+    reslice(image,hdr_in,hdr_parent)
+    hdr_in is the header for image.
+    hdr_parent is the header of an image in the desired orientation and 
     position.
 
     Purpose: Reslice the image given by image and hdr_in to the coordinate 
              system defined in hdr_parent.
-    hdr_in is the header for image.
-    hdr_parent is the header of an image in the desired orientation and 
 
     Assumptions: Rotation matrices define rotations to and from cardinal axes.
     """
@@ -1065,7 +1044,7 @@ def fit_legendre(image,axis,order,skip,setup_data=(None,None)):
     MINDIM = 10 # Minimum number of points to fit
     MEDIAN_WDW = 5
 
-    image.shape
+    shp = shape(image)
     tdim = shp[axis]
     ndim = len(shp)
     nfit = 1
@@ -1196,28 +1175,38 @@ def reslice_3d(src_image, src_hdr, tgt_hdr):
         tgt_hdr: hdr attribute from Wimage instance in desired coordinates.
     """
 
-    Rtmp = diag(src_hdr['sizes'][:3])
+    Rtmp = diag([src_hdr['xsize'],src_hdr['ysize'],src_hdr['zsize']])
+#    Rsrc = dot(Rtmp,src_hdr['R'][:3,:3])
     Rsrc = dot(src_hdr['R'][:3,:3],Rtmp)
     
-    Rtmp = diag(tgt_hdr['sizes'][:3])
+    Rtmp = diag([tgt_hdr['xsize'],tgt_hdr['ysize'],tgt_hdr['zsize']])
     Rtgt = dot(tgt_hdr['R'][:3,:3],Rtmp)
 
 #   Compute source to taarget xform.
     Rtot = zeros([4,4],float)
     Rtot[:3,:3] = dot(linalg.inv(Rsrc),Rtgt)
-    Rtot[:3, 3] = dot(linalg.inv(Rsrc),(-src_hdr['R'][:3,3] + \
-                                                    tgt_hdr['R'][:3,3]))
+    Rtot[:3, 3] = dot(linalg.inv(Rsrc),(-src_hdr['R'][:3,3] + tgt_hdr['R'][:3,3]))
     Rtot[3,3] = 1. 
 
+    Rtmp = zeros([4,4],float)
+    Rtmp[3,3] = 1.
+    Rtmp[:3,:3] = Rsrc
+    Rtmp[:3,3] = src_hdr['R'][:3,3]
+#    print_matrix(Rtmp,'\nRsrc:')
+
+    Rtmp[:3,:3] = Rtgt
+    Rtmp[:3,3] = tgt_hdr['R'][:3,3]
+#    print_matrix(Rtmp,'\nRtgt:')
+
+#    print_matrix(Rtot,'\nRtot:')
 
 #   Reslice source to target coordinates.
     dims_out = (tgt_hdr['zdim'],tgt_hdr['ydim'],tgt_hdr['xdim'])
-    imgout = pyreslice_3d(src_image.astype(float), Rtot, dims_out)
+    imgout = _reslice_3d(src_image.astype(float), Rtot, dims_out)
 
     return imgout
 
-def extent_threshold(image, hght_thresh, extent_lower_thresh, \
-                                                extent_upper_thresh=None):
+def extent_threshold(image, hght_thresh, extent_lower_thresh, extent_upper_thresh=None):
     """
     Purpose: Apply hght_thresh to an image to isolate above-threshold 
              regions, and then apply a spatial extent threshold to those
@@ -1243,7 +1232,7 @@ def extent_threshold(image, hght_thresh, extent_lower_thresh, \
         upper_thresh = extent_upper_thresh
     else:
         upper_thresh = int(image.size)
-    image =  pyextent_threshold(image, hght_thresh, \
+    image =  GEio._extent_threshold(image, hght_thresh, \
                             int(extent_lower_thresh), int(upper_thresh))
 
     n_reg = int(image[0,0,0])
@@ -1262,8 +1251,6 @@ class ThreshConvert():
         self.input_type = stat_type.lower()
         self.df1 = double(df1)
         self.df2 = double(df2)
-        if not isinstance(stat, ndarray):
-            stat = array(stat)
         if one_sided:
             self.one_sided = 2.
         else:
@@ -1347,59 +1334,6 @@ class ThreshConvert():
         else:
             self.f = None
         return self.f
-
-#def lm_der(func, jacf, p0, extra, data, max_iter, delta0=1.e-3, \
-#                        eps_jac=1.e-17, eps_cauchy=1.e-17, eps_rsse=1.e-17):
-#    """
-#    func: func(p, data, extra_data),  returns residuals evaluated at p
-#    jacf jacfc(p, data, extra_data),  returns Jacobian evaluated at p
-#    p0: Initial estimate.
-#    extra: Values for independent variable.
-#    data: Input data.
-#    max_iter: Stop if number of iterations exceeds this.
-#    delta0: Scale factor for initial step-size.
-#    eps_jac: Stopping threshold for ||J^T e||_inf, 
-#    eps_cauchy: Stopping threshold for||Dp||_2 
-#    eps_rsse: Stopping threshold for||e||_2. 
-#    info:
-#      rsse0: ||e||_2 at initial p.
-#      rsse: [ ||e||_2
-#      eps_jac: ||J^T e||_inf
-#      eps_cauchy: ||Dp||_2, 
-#      eps_2: \mu/max[J^T J]_ii
-#      niter:  # iterations,
-#      term_code: 1 - stopped by small gradient J^T e
-#                 2 - stopped by small Dp
-#                 3 - stopped by itmax
-#                 4 - singular matrix. Restart from current p with increased \mu
-#                 5 - no further error reduction is possible. Restart with increased mu
-#      *          6 - stopped by small ||e||_2
-#      *          7 - stopped by invalid (i.e. NaN or Inf) "func" values; a user error
-#      * nfunc_evals: Number of function evaluations
-#      * njacf_evals: Number of Jacobian evaluations
-#      * nsys_solveld: linear systems solved, i.e. # attempts for reducing error
-#    """
-#    term_codes =  { \
-#      1:'Stopped by small gradient J^T e', \
-#      2:'Stopped by small Dp', \
-#      3:'Stopped by itmax', \
-#      4:'Singular matrix. Restart from current p with increased \mu', \
-#      5:'No further error reduction is possible. Restart with increased mu', \
-#      6:'Stopped by small ||e||_2', \
-#      7:'Stopped by invalid (i.e. NaN or Inf) "func" values; a user error'}
-#
-#    opts = empty(4, float)
-#    if delta0 is not None:
-#        opts[0] = delta0
-#    if eps_jac is not None:
-#        opts[1] = eps_jac
-#    if eps_cauchy is not None:
-#        opts[2] = eps_cauchy
-#    if eps_rsse is not None:
-#        opts[3] = eps_rsse
-#    niter, phat, info = levmar_der(func, jacf, p0, extra, data, max_iter, opts)
-#
-#    return niter, phat, info, term_codes[info['term_code']]
 
 if __name__ == '__main__':
     sys.stdout.write('%s\n' % ID)

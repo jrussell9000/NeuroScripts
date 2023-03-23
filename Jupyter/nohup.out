@@ -1,0 +1,828 @@
+[I 13:52:01.398 NotebookApp] [nb_conda_kernels] enabled, 1 kernels found
+[W 13:52:01.731 NotebookApp] WARNING: The notebook server is listening on all IP addresses and not using encryption. This is not recommended.
+[I 13:52:01.761 NotebookApp] [jupyter_nbextensions_configurator] enabled 0.4.1
+[W 2021-08-11 13:52:02.208 LabApp] Config option `kernel_spec_manager_class` not recognized by `LabApp`.
+[W 2021-08-11 13:52:02.214 LabApp] 'allow_remote_access' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
+[W 2021-08-11 13:52:02.251 LabApp] 'ip' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
+[W 2021-08-11 13:52:02.252 LabApp] 'ip' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
+[W 2021-08-11 13:52:02.293 LabApp] 'port' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
+[W 2021-08-11 13:52:02.293 LabApp] 'password' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
+[W 2021-08-11 13:52:02.327 LabApp] Config option `kernel_spec_manager_class` not recognized by `LabApp`.
+[I 2021-08-11 13:52:02.366 LabApp] JupyterLab extension loaded from /Volumes/conda/jdrussell3/lib/python3.7/site-packages/jupyterlab
+[I 2021-08-11 13:52:02.394 LabApp] JupyterLab application directory is /Volumes/conda/jdrussell3/share/jupyter/lab
+[I 13:52:02.399 NotebookApp] Serving notebooks from local directory: /Volumes/Users/jdrussell3/NeuroScripts/Jupyter
+[I 13:52:02.427 NotebookApp] Jupyter Notebook 6.4.0 is running at:
+[I 13:52:02.427 NotebookApp] http://mri-thor:8888/
+[I 13:52:02.427 NotebookApp] Use Control-C to stop this server and shut down all kernels (twice to skip confirmation).
+[I 13:52:04.565 NotebookApp] 302 GET / (144.92.2.84) 0.510000ms
+[W 13:52:06.003 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'limit_output/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/limit_output/limit-output.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/limit_output/limit-output.yaml'
+[W 13:52:06.003 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'varInspector/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/varInspector/varInspector.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/varInspector/varInspector.yaml'
+[W 13:52:06.040 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'toc2/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/toc2/toc2.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/toc2/toc2.yaml'
+[W 13:52:06.083 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'hide_input/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/hide_input/hide-input.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/hide_input/hide-input.yaml'
+[W 13:52:06.122 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'load_tex_macros/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/load_tex_macros/load_tex_macros.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/load_tex_macros/load_tex_macros.yaml'
+[W 13:52:06.164 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'scratchpad/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/scratchpad/scratchpad.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/scratchpad/scratchpad.yaml'
+[W 13:52:06.220 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'collapsible_headings/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/collapsible_headings/collapsible_headings.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/collapsible_headings/collapsible_headings.yaml'
+[W 13:52:06.258 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'highlighter/highlighter' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/highlighter/highlighter.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/highlighter/highlighter.yaml'
+[W 13:52:06.308 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'printview/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/printview/printview.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/printview/printview.yaml'
+[W 13:52:06.350 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'code_prettify/code_prettify' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/code_prettify/code_prettify.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/code_prettify/code_prettify.yaml'
+[W 13:52:06.391 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'code_prettify/isort' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/code_prettify/isort.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/code_prettify/isort.yaml'
+[W 13:52:06.434 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'code_prettify/autopep8' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/code_prettify/autopep8.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/code_prettify/autopep8.yaml'
+[W 13:52:06.475 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'code_prettify/2to3' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/code_prettify/2to3.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/code_prettify/2to3.yaml'
+[W 13:52:06.517 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'export_embedded/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/export_embedded/export_embedded.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/export_embedded/export_embedded.yaml'
+[W 13:52:06.662 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'comment-uncomment/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/comment-uncomment/comment-uncomment.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/comment-uncomment/comment-uncomment.yaml'
+[W 13:52:06.717 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'code_font_size/code_font_size' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/code_font_size/code_font_size.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/code_font_size/code_font_size.yaml'
+[W 13:52:06.759 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'execute_time/ExecuteTime' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/execute_time/ExecuteTime.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/execute_time/ExecuteTime.yaml'
+[W 13:52:06.801 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'hide_header/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/hide_header/hide_header.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/hide_header/hide_header.yaml'
+[W 13:52:06.842 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'keyboard_shortcut_editor/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/keyboard_shortcut_editor/keyboard_shortcut_editor.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/keyboard_shortcut_editor/keyboard_shortcut_editor.yaml'
+[W 13:52:06.884 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'navigation-hotkeys/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/navigation-hotkeys/hotkeys.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/navigation-hotkeys/hotkeys.yaml'
+[W 13:52:06.926 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'snippets_menu/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/snippets_menu/config.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/snippets_menu/config.yaml'
+[W 13:52:06.968 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'addbefore/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/addbefore/addbefore.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/addbefore/addbefore.yaml'
+[W 13:52:07.009 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'zenmode/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/zenmode/zenmode.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/zenmode/zenmode.yaml'
+[W 13:52:07.051 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'exercise/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/exercise/exercise.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/exercise/exercise.yaml'
+[W 13:52:07.093 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'notify/notify' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/notify/notify.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/notify/notify.yaml'
+[W 13:52:07.144 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'codemirror_mode_extensions/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/codemirror_mode_extensions/codemirror_mode_extensions.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/codemirror_mode_extensions/codemirror_mode_extensions.yaml'
+[W 13:52:07.177 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'autosavetime/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/autosavetime/autosavetime.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/autosavetime/autosavetime.yaml'
+[W 13:52:07.211 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'latex_envs/latex_envs' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/latex_envs/latex_envs.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/latex_envs/latex_envs.yaml'
+[W 13:52:07.244 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'equation-numbering/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/equation-numbering/info.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/equation-numbering/info.yaml'
+[W 13:52:07.277 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'qtconsole/qtconsole' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/qtconsole/qtconsole.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/qtconsole/qtconsole.yaml'
+[W 13:52:07.311 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'help_panel/help_panel' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/help_panel/help_panel.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/help_panel/help_panel.yaml'
+[W 13:52:07.344 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'execution_dependencies/execution_dependencies' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/execution_dependencies/execution_dependencies.yml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/execution_dependencies/execution_dependencies.yml'
+[W 13:52:07.378 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'gist_it/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/gist_it/gist_it.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/gist_it/gist_it.yaml'
+[W 13:52:07.420 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'ruler/edit' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/ruler/ruler_editor.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/ruler/ruler_editor.yaml'
+[W 13:52:07.461 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'ruler/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/ruler/ruler.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/ruler/ruler.yaml'
+[W 13:52:07.495 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'splitcell/splitcell' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/splitcell/splitcell.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/splitcell/splitcell.yaml'
+[W 13:52:07.528 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'datestamper/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/datestamper/main.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/datestamper/main.yaml'
+[W 13:52:07.570 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'nbTranslate/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/nbTranslate/nbTranslate.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/nbTranslate/nbTranslate.yaml'
+[W 13:52:07.602 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'livemdpreview/livemdpreview' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/livemdpreview/livemdpreview.yml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/livemdpreview/livemdpreview.yml'
+[W 13:52:07.637 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'autoscroll/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/autoscroll/autoscroll.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/autoscroll/autoscroll.yaml'
+[W 13:52:07.679 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'freeze/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/freeze/config.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/freeze/config.yaml'
+[W 13:52:07.725 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'hinterland/hinterland' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/hinterland/hinterland.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/hinterland/hinterland.yaml'
+[W 13:52:07.762 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'spellchecker/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/spellchecker/config.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/spellchecker/config.yaml'
+[W 13:52:07.804 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'toggle_all_line_numbers/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/toggle_all_line_numbers/main.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/toggle_all_line_numbers/main.yaml'
+[W 13:52:07.845 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'contrib_nbextensions_help_item/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/contrib_nbextensions_help_item/contrib_nbextensions_help_item.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/contrib_nbextensions_help_item/contrib_nbextensions_help_item.yaml'
+[W 13:52:07.910 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'select_keymap/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/select_keymap/select_keymap.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/select_keymap/select_keymap.yaml'
+[W 13:52:07.949 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'scroll_down/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/scroll_down/config.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/scroll_down/config.yaml'
+[W 13:52:07.991 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'snippets/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/snippets/snippets.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/snippets/snippets.yaml'
+[W 13:52:08.033 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'cell_filter/cell_filter' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/cell_filter/cell_filter.yml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/cell_filter/cell_filter.yml'
+[W 13:52:08.075 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'move_selected_cells/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/move_selected_cells/move_selected_cells.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/move_selected_cells/move_selected_cells.yaml'
+[W 13:52:08.117 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'init_cell/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/init_cell/init_cell.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/init_cell/init_cell.yaml'
+[W 13:52:08.163 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'highlight_selected_word/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/highlight_selected_word/configurator.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/highlight_selected_word/configurator.yaml'
+[W 13:52:08.200 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'codefolding/edit' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/codefolding/codefolding_editor.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/codefolding/codefolding_editor.yaml'
+[W 13:52:08.242 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'codefolding/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/codefolding/codefolding.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/codefolding/codefolding.yaml'
+[W 13:52:08.284 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'hide_input_all/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/hide_input_all/hide_input_all.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/hide_input_all/hide_input_all.yaml'
+[W 13:52:08.325 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'rubberband/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/rubberband/rubberband.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/rubberband/rubberband.yaml'
+[W 13:52:08.368 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'skip-traceback/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/skip-traceback/skip-traceback.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/skip-traceback/skip-traceback.yaml'
+[W 13:52:08.410 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'exercise2/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/exercise2/exercise2.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/exercise2/exercise2.yaml'
+[W 13:52:08.451 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'skill/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/skill/skill.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/skill/skill.yaml'
+[W 13:52:08.492 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'table_beautifier/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/table_beautifier/table_beautifier.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/table_beautifier/table_beautifier.yaml'
+[W 13:52:08.534 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'python-markdown/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/python-markdown/python-markdown.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/python-markdown/python-markdown.yaml'
+[W 13:52:08.585 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'runtools/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/runtools/runtools.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/runtools/runtools.yaml'
+[W 13:52:08.626 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'tree-filter/index' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/tree-filter/tree-filter.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/tree-filter/tree-filter.yaml'
+[I 13:52:11.474 NotebookApp] Kernel started: 5927a21a-8e4f-4278-acc2-db8fa5642a5f, name: python3
+[I 13:52:16.073 NotebookApp] Kernel started: 0ef336e8-2376-49e1-b106-b349199e3d9e, name: python3
+[I 13:54:11.393 NotebookApp] Saving file at /Untitled1.ipynb
+[I 13:54:16.034 NotebookApp] Saving file at /MakingFieldmaps.ipynb
+[I 09:14:52.668 NotebookApp] Starting buffering for 0ef336e8-2376-49e1-b106-b349199e3d9e:4fd4ce0648dc40f69e57abdbf85c6d50
+[I 09:14:52.670 NotebookApp] Starting buffering for 5927a21a-8e4f-4278-acc2-db8fa5642a5f:b7b04cb9416e4102bf3aebaffd1ffd17
+[I 15:53:19.466 NotebookApp] 302 GET / (144.92.2.84) 1.380000ms
+[I 15:53:19.473 NotebookApp] 302 GET /tree? (144.92.2.84) 0.860000ms
+[I 15:53:20.938 NotebookApp] 302 GET / (144.92.2.84) 0.570000ms
+[W 15:53:22.650 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'limit_output/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/limit_output/limit-output.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/limit_output/limit-output.yaml'
+[W 15:53:22.651 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'varInspector/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/varInspector/varInspector.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/varInspector/varInspector.yaml'
+[W 15:53:22.652 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'toc2/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/toc2/toc2.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/toc2/toc2.yaml'
+[W 15:53:22.652 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'hide_input/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/hide_input/hide-input.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/hide_input/hide-input.yaml'
+[W 15:53:22.653 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'load_tex_macros/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/load_tex_macros/load_tex_macros.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/load_tex_macros/load_tex_macros.yaml'
+[W 15:53:22.653 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'scratchpad/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/scratchpad/scratchpad.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/scratchpad/scratchpad.yaml'
+[W 15:53:22.654 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'collapsible_headings/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/collapsible_headings/collapsible_headings.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/collapsible_headings/collapsible_headings.yaml'
+[W 15:53:22.654 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'highlighter/highlighter' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/highlighter/highlighter.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/highlighter/highlighter.yaml'
+[W 15:53:22.655 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'printview/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/printview/printview.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/printview/printview.yaml'
+[W 15:53:22.655 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'code_prettify/code_prettify' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/code_prettify/code_prettify.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/code_prettify/code_prettify.yaml'
+[W 15:53:22.656 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'code_prettify/isort' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/code_prettify/isort.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/code_prettify/isort.yaml'
+[W 15:53:22.656 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'code_prettify/autopep8' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/code_prettify/autopep8.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/code_prettify/autopep8.yaml'
+[W 15:53:22.657 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'code_prettify/2to3' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/code_prettify/2to3.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/code_prettify/2to3.yaml'
+[W 15:53:22.657 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'export_embedded/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/export_embedded/export_embedded.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/export_embedded/export_embedded.yaml'
+[W 15:53:22.657 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'comment-uncomment/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/comment-uncomment/comment-uncomment.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/comment-uncomment/comment-uncomment.yaml'
+[W 15:53:22.658 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'code_font_size/code_font_size' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/code_font_size/code_font_size.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/code_font_size/code_font_size.yaml'
+[W 15:53:22.658 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'execute_time/ExecuteTime' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/execute_time/ExecuteTime.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/execute_time/ExecuteTime.yaml'
+[W 15:53:22.659 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'hide_header/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/hide_header/hide_header.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/hide_header/hide_header.yaml'
+[W 15:53:22.659 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'keyboard_shortcut_editor/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/keyboard_shortcut_editor/keyboard_shortcut_editor.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/keyboard_shortcut_editor/keyboard_shortcut_editor.yaml'
+[W 15:53:22.659 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'navigation-hotkeys/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/navigation-hotkeys/hotkeys.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/navigation-hotkeys/hotkeys.yaml'
+[W 15:53:22.660 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'snippets_menu/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/snippets_menu/config.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/snippets_menu/config.yaml'
+[W 15:53:22.661 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'addbefore/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/addbefore/addbefore.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/addbefore/addbefore.yaml'
+[W 15:53:22.661 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'zenmode/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/zenmode/zenmode.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/zenmode/zenmode.yaml'
+[W 15:53:22.661 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'exercise/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/exercise/exercise.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/exercise/exercise.yaml'
+[W 15:53:22.662 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'notify/notify' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/notify/notify.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/notify/notify.yaml'
+[W 15:53:22.662 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'codemirror_mode_extensions/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/codemirror_mode_extensions/codemirror_mode_extensions.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/codemirror_mode_extensions/codemirror_mode_extensions.yaml'
+[W 15:53:22.662 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'autosavetime/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/autosavetime/autosavetime.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/autosavetime/autosavetime.yaml'
+[W 15:53:22.663 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'latex_envs/latex_envs' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/latex_envs/latex_envs.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/latex_envs/latex_envs.yaml'
+[W 15:53:22.663 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'equation-numbering/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/equation-numbering/info.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/equation-numbering/info.yaml'
+[W 15:53:22.664 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'qtconsole/qtconsole' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/qtconsole/qtconsole.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/qtconsole/qtconsole.yaml'
+[W 15:53:22.664 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'help_panel/help_panel' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/help_panel/help_panel.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/help_panel/help_panel.yaml'
+[W 15:53:22.664 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'execution_dependencies/execution_dependencies' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/execution_dependencies/execution_dependencies.yml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/execution_dependencies/execution_dependencies.yml'
+[W 15:53:22.665 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'gist_it/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/gist_it/gist_it.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/gist_it/gist_it.yaml'
+[W 15:53:22.665 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'ruler/edit' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/ruler/ruler_editor.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/ruler/ruler_editor.yaml'
+[W 15:53:22.665 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'ruler/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/ruler/ruler.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/ruler/ruler.yaml'
+[W 15:53:22.666 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'splitcell/splitcell' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/splitcell/splitcell.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/splitcell/splitcell.yaml'
+[W 15:53:22.666 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'datestamper/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/datestamper/main.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/datestamper/main.yaml'
+[W 15:53:22.666 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'nbTranslate/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/nbTranslate/nbTranslate.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/nbTranslate/nbTranslate.yaml'
+[W 15:53:22.667 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'livemdpreview/livemdpreview' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/livemdpreview/livemdpreview.yml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/livemdpreview/livemdpreview.yml'
+[W 15:53:22.667 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'autoscroll/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/autoscroll/autoscroll.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/autoscroll/autoscroll.yaml'
+[W 15:53:22.668 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'freeze/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/freeze/config.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/freeze/config.yaml'
+[W 15:53:22.668 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'hinterland/hinterland' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/hinterland/hinterland.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/hinterland/hinterland.yaml'
+[W 15:53:22.669 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'spellchecker/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/spellchecker/config.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/spellchecker/config.yaml'
+[W 15:53:22.669 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'toggle_all_line_numbers/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/toggle_all_line_numbers/main.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/toggle_all_line_numbers/main.yaml'
+[W 15:53:22.669 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'contrib_nbextensions_help_item/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/contrib_nbextensions_help_item/contrib_nbextensions_help_item.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/contrib_nbextensions_help_item/contrib_nbextensions_help_item.yaml'
+[W 15:53:22.669 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'select_keymap/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/select_keymap/select_keymap.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/select_keymap/select_keymap.yaml'
+[W 15:53:22.670 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'scroll_down/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/scroll_down/config.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/scroll_down/config.yaml'
+[W 15:53:22.670 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'snippets/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/snippets/snippets.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/snippets/snippets.yaml'
+[W 15:53:22.670 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'cell_filter/cell_filter' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/cell_filter/cell_filter.yml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/cell_filter/cell_filter.yml'
+[W 15:53:22.670 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'move_selected_cells/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/move_selected_cells/move_selected_cells.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/move_selected_cells/move_selected_cells.yaml'
+[W 15:53:22.671 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'init_cell/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/init_cell/init_cell.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/init_cell/init_cell.yaml'
+[W 15:53:22.672 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'highlight_selected_word/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/highlight_selected_word/configurator.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/highlight_selected_word/configurator.yaml'
+[W 15:53:22.672 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'codefolding/edit' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/codefolding/codefolding_editor.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/codefolding/codefolding_editor.yaml'
+[W 15:53:22.672 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'codefolding/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/codefolding/codefolding.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/codefolding/codefolding.yaml'
+[W 15:53:22.673 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'hide_input_all/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/hide_input_all/hide_input_all.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/hide_input_all/hide_input_all.yaml'
+[W 15:53:22.673 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'rubberband/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/rubberband/rubberband.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/rubberband/rubberband.yaml'
+[W 15:53:22.673 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'skip-traceback/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/skip-traceback/skip-traceback.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/skip-traceback/skip-traceback.yaml'
+[W 15:53:22.674 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'exercise2/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/exercise2/exercise2.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/exercise2/exercise2.yaml'
+[W 15:53:22.674 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'skill/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/skill/skill.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/skill/skill.yaml'
+[W 15:53:22.674 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'table_beautifier/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/table_beautifier/table_beautifier.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/table_beautifier/table_beautifier.yaml'
+[W 15:53:22.674 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'python-markdown/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/python-markdown/python-markdown.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/python-markdown/python-markdown.yaml'
+[W 15:53:22.675 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'runtools/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/runtools/runtools.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/runtools/runtools.yaml'
+[W 15:53:22.675 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'tree-filter/index' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/tree-filter/tree-filter.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/tree-filter/tree-filter.yaml'
+[I 15:53:45.458 NotebookApp] Creating new notebook in 
+[I 15:53:48.157 NotebookApp] Kernel started: 2901b78d-7300-494d-80b2-57b3a1da5cd0, name: python3
+[I 15:55:45.654 NotebookApp] Kernel shutdown: 0ef336e8-2376-49e1-b106-b349199e3d9e
+[I 15:55:46.068 NotebookApp] Kernel shutdown: 5927a21a-8e4f-4278-acc2-db8fa5642a5f
+[I 15:55:46.472 NotebookApp] Kernel shutdown: 2901b78d-7300-494d-80b2-57b3a1da5cd0
+[W 15:55:46.963 NotebookApp] 404 DELETE /api/sessions/c2db4795-622a-4160-8b36-3effe624cd9b (144.92.2.84): Session not found: session_id='c2db4795-622a-4160-8b36-3effe624cd9b'
+[W 15:55:46.963 NotebookApp] Session not found: session_id='c2db4795-622a-4160-8b36-3effe624cd9b'
+[W 15:55:46.963 NotebookApp] 404 DELETE /api/sessions/c2db4795-622a-4160-8b36-3effe624cd9b (144.92.2.84) 1.020000ms referer=http://128.104.152.48:8888/notebooks/Untitled.ipynb?kernel_name=python3
+[I 15:55:48.982 NotebookApp] Saving file at /Untitled.ipynb
+[W 15:55:52.736 NotebookApp] 404 DELETE /api/sessions/c2db4795-622a-4160-8b36-3effe624cd9b (144.92.2.84): Session not found: session_id='c2db4795-622a-4160-8b36-3effe624cd9b'
+[W 15:55:52.738 NotebookApp] Session not found: session_id='c2db4795-622a-4160-8b36-3effe624cd9b'
+[W 15:55:52.738 NotebookApp] 404 DELETE /api/sessions/c2db4795-622a-4160-8b36-3effe624cd9b (144.92.2.84) 2.180000ms referer=http://128.104.152.48:8888/notebooks/Untitled.ipynb?kernel_name=python3
+[I 15:55:53.347 NotebookApp] Kernel started: f4f3d4d5-6c2a-45ed-97d3-7c38756bf6cf, name: python3
+[I 15:57:48.999 NotebookApp] Saving file at /Untitled.ipynb
+[I 16:13:24.519 NotebookApp] Starting buffering for f4f3d4d5-6c2a-45ed-97d3-7c38756bf6cf:4bceed38bbaf4ff6894a13a19a4eaab4
+[I 09:41:57.780 NotebookApp] 302 GET / (144.92.2.84) 1.210000ms
+[W 09:41:59.434 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'limit_output/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/limit_output/limit-output.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/limit_output/limit-output.yaml'
+[W 09:41:59.435 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'varInspector/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/varInspector/varInspector.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/varInspector/varInspector.yaml'
+[W 09:41:59.436 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'toc2/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/toc2/toc2.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/toc2/toc2.yaml'
+[W 09:41:59.437 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'hide_input/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/hide_input/hide-input.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/hide_input/hide-input.yaml'
+[W 09:41:59.437 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'load_tex_macros/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/load_tex_macros/load_tex_macros.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/load_tex_macros/load_tex_macros.yaml'
+[W 09:41:59.437 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'scratchpad/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/scratchpad/scratchpad.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/scratchpad/scratchpad.yaml'
+[W 09:41:59.438 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'collapsible_headings/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/collapsible_headings/collapsible_headings.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/collapsible_headings/collapsible_headings.yaml'
+[W 09:41:59.439 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'highlighter/highlighter' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/highlighter/highlighter.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/highlighter/highlighter.yaml'
+[W 09:41:59.439 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'printview/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/printview/printview.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/printview/printview.yaml'
+[W 09:41:59.439 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'code_prettify/code_prettify' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/code_prettify/code_prettify.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/code_prettify/code_prettify.yaml'
+[W 09:41:59.440 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'code_prettify/isort' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/code_prettify/isort.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/code_prettify/isort.yaml'
+[W 09:41:59.440 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'code_prettify/autopep8' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/code_prettify/autopep8.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/code_prettify/autopep8.yaml'
+[W 09:41:59.441 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'code_prettify/2to3' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/code_prettify/2to3.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/code_prettify/2to3.yaml'
+[W 09:41:59.441 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'export_embedded/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/export_embedded/export_embedded.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/export_embedded/export_embedded.yaml'
+[W 09:41:59.442 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'comment-uncomment/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/comment-uncomment/comment-uncomment.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/comment-uncomment/comment-uncomment.yaml'
+[W 09:41:59.442 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'code_font_size/code_font_size' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/code_font_size/code_font_size.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/code_font_size/code_font_size.yaml'
+[W 09:41:59.442 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'execute_time/ExecuteTime' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/execute_time/ExecuteTime.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/execute_time/ExecuteTime.yaml'
+[W 09:41:59.443 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'hide_header/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/hide_header/hide_header.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/hide_header/hide_header.yaml'
+[W 09:41:59.443 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'keyboard_shortcut_editor/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/keyboard_shortcut_editor/keyboard_shortcut_editor.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/keyboard_shortcut_editor/keyboard_shortcut_editor.yaml'
+[W 09:41:59.444 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'navigation-hotkeys/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/navigation-hotkeys/hotkeys.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/navigation-hotkeys/hotkeys.yaml'
+[W 09:41:59.444 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'snippets_menu/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/snippets_menu/config.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/snippets_menu/config.yaml'
+[W 09:41:59.445 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'addbefore/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/addbefore/addbefore.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/addbefore/addbefore.yaml'
+[W 09:41:59.445 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'zenmode/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/zenmode/zenmode.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/zenmode/zenmode.yaml'
+[W 09:41:59.446 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'exercise/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/exercise/exercise.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/exercise/exercise.yaml'
+[W 09:41:59.446 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'notify/notify' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/notify/notify.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/notify/notify.yaml'
+[W 09:41:59.446 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'codemirror_mode_extensions/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/codemirror_mode_extensions/codemirror_mode_extensions.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/codemirror_mode_extensions/codemirror_mode_extensions.yaml'
+[W 09:41:59.447 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'autosavetime/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/autosavetime/autosavetime.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/autosavetime/autosavetime.yaml'
+[W 09:41:59.447 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'latex_envs/latex_envs' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/latex_envs/latex_envs.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/latex_envs/latex_envs.yaml'
+[W 09:41:59.448 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'equation-numbering/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/equation-numbering/info.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/equation-numbering/info.yaml'
+[W 09:41:59.448 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'qtconsole/qtconsole' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/qtconsole/qtconsole.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/qtconsole/qtconsole.yaml'
+[W 09:41:59.448 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'help_panel/help_panel' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/help_panel/help_panel.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/help_panel/help_panel.yaml'
+[W 09:41:59.448 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'execution_dependencies/execution_dependencies' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/execution_dependencies/execution_dependencies.yml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/execution_dependencies/execution_dependencies.yml'
+[W 09:41:59.449 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'gist_it/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/gist_it/gist_it.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/gist_it/gist_it.yaml'
+[W 09:41:59.449 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'ruler/edit' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/ruler/ruler_editor.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/ruler/ruler_editor.yaml'
+[W 09:41:59.450 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'ruler/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/ruler/ruler.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/ruler/ruler.yaml'
+[W 09:41:59.450 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'splitcell/splitcell' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/splitcell/splitcell.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/splitcell/splitcell.yaml'
+[W 09:41:59.450 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'datestamper/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/datestamper/main.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/datestamper/main.yaml'
+[W 09:41:59.451 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'nbTranslate/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/nbTranslate/nbTranslate.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/nbTranslate/nbTranslate.yaml'
+[W 09:41:59.451 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'livemdpreview/livemdpreview' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/livemdpreview/livemdpreview.yml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/livemdpreview/livemdpreview.yml'
+[W 09:41:59.451 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'autoscroll/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/autoscroll/autoscroll.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/autoscroll/autoscroll.yaml'
+[W 09:41:59.452 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'freeze/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/freeze/config.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/freeze/config.yaml'
+[W 09:41:59.452 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'hinterland/hinterland' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/hinterland/hinterland.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/hinterland/hinterland.yaml'
+[W 09:41:59.453 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'spellchecker/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/spellchecker/config.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/spellchecker/config.yaml'
+[W 09:41:59.453 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'toggle_all_line_numbers/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/toggle_all_line_numbers/main.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/toggle_all_line_numbers/main.yaml'
+[W 09:41:59.453 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'contrib_nbextensions_help_item/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/contrib_nbextensions_help_item/contrib_nbextensions_help_item.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/contrib_nbextensions_help_item/contrib_nbextensions_help_item.yaml'
+[W 09:41:59.454 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'select_keymap/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/select_keymap/select_keymap.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/select_keymap/select_keymap.yaml'
+[W 09:41:59.454 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'scroll_down/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/scroll_down/config.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/scroll_down/config.yaml'
+[W 09:41:59.454 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'snippets/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/snippets/snippets.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/snippets/snippets.yaml'
+[W 09:41:59.454 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'cell_filter/cell_filter' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/cell_filter/cell_filter.yml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/cell_filter/cell_filter.yml'
+[W 09:41:59.455 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'move_selected_cells/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/move_selected_cells/move_selected_cells.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/move_selected_cells/move_selected_cells.yaml'
+[W 09:41:59.455 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'init_cell/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/init_cell/init_cell.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/init_cell/init_cell.yaml'
+[W 09:41:59.456 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'highlight_selected_word/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/highlight_selected_word/configurator.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/highlight_selected_word/configurator.yaml'
+[W 09:41:59.456 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'codefolding/edit' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/codefolding/codefolding_editor.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/codefolding/codefolding_editor.yaml'
+[W 09:41:59.457 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'codefolding/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/codefolding/codefolding.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/codefolding/codefolding.yaml'
+[W 09:41:59.457 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'hide_input_all/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/hide_input_all/hide_input_all.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/hide_input_all/hide_input_all.yaml'
+[W 09:41:59.457 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'rubberband/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/rubberband/rubberband.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/rubberband/rubberband.yaml'
+[W 09:41:59.458 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'skip-traceback/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/skip-traceback/skip-traceback.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/skip-traceback/skip-traceback.yaml'
+[W 09:41:59.458 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'exercise2/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/exercise2/exercise2.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/exercise2/exercise2.yaml'
+[W 09:41:59.458 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'skill/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/skill/skill.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/skill/skill.yaml'
+[W 09:41:59.459 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'table_beautifier/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/table_beautifier/table_beautifier.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/table_beautifier/table_beautifier.yaml'
+[W 09:41:59.459 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'python-markdown/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/python-markdown/python-markdown.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/python-markdown/python-markdown.yaml'
+[W 09:41:59.459 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'runtools/main' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/runtools/runtools.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/runtools/runtools.yaml'
+[W 09:41:59.460 NotebookApp] [jupyter_nbextensions_configurator] nbextension 'tree-filter/index' has duplicate listings in both '/Volumes/conda/jdrussell3/share/jupyter/nbextensions/tree-filter/tree-filter.yaml' and '/Volumes/Users/jdrussell3/.local/share/jupyter/nbextensions/tree-filter/tree-filter.yaml'
+[W 09:42:10.998 NotebookApp] Notebook Untitled.ipynb is not trusted
+[I 09:43:11.277 NotebookApp] Starting buffering for f4f3d4d5-6c2a-45ed-97d3-7c38756bf6cf:175c7b799b7740ff8127102302c3c461
+[I 09:43:11.820 NotebookApp] Kernel restarted: f4f3d4d5-6c2a-45ed-97d3-7c38756bf6cf
+[I 09:43:11.839 NotebookApp] Restoring connection for f4f3d4d5-6c2a-45ed-97d3-7c38756bf6cf:175c7b799b7740ff8127102302c3c461
+[I 09:43:12.535 NotebookApp] Replaying 3 buffered messages
+[I 09:44:11.105 NotebookApp] Saving file at /Untitled.ipynb
+[I 09:46:11.139 NotebookApp] Saving file at /Untitled.ipynb
+[I 09:51:33.990 NotebookApp] Starting buffering for f4f3d4d5-6c2a-45ed-97d3-7c38756bf6cf:175c7b799b7740ff8127102302c3c461
+[W 09:51:39.114 NotebookApp] Notebook Untitled.ipynb is not trusted
+[I 09:51:52.387 NotebookApp] Starting buffering for f4f3d4d5-6c2a-45ed-97d3-7c38756bf6cf:0f666106fbc94d2c8ce97f95d385250e
+[I 09:51:52.395 NotebookApp] Kernel shutdown: f4f3d4d5-6c2a-45ed-97d3-7c38756bf6cf
+[W 10:51:54.418 NotebookApp] Notebook Untitled.ipynb is not trusted
+[I 10:51:54.579 NotebookApp] Kernel started: 7ca44f1a-3a5f-4426-a803-18d9f8f2c4c5, name: python3
+[I 10:52:13.986 NotebookApp] Starting buffering for 7ca44f1a-3a5f-4426-a803-18d9f8f2c4c5:e8a3d557a8254a3b807e1c72d5a39682
+[I 10:52:14.015 NotebookApp] Saving file at /Untitled.ipynb
+[I 10:58:13.198 NotebookApp] Saving file at /Untitled.ipynb
+[I 13:32:45.068 NotebookApp] Starting buffering for 7ca44f1a-3a5f-4426-a803-18d9f8f2c4c5:49b78c2b4aa449fa84dea9094e69403a
+[I 16:28:25.592 NotebookApp] 302 GET / (144.92.2.84) 13.090000ms
+[I 16:28:25.891 NotebookApp] 302 GET /tree? (144.92.2.84) 3.580000ms
+[E 16:28:25.907 NotebookApp] Uncaught exception GET /login?next=%2Ftree%3F (144.92.2.84)
+    HTTPServerRequest(protocol='http', host='128.104.152.48:8888', method='GET', uri='/login?next=%2Ftree%3F', version='HTTP/1.1', remote_ip='144.92.2.84')
+    Traceback (most recent call last):
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/tornado/web.py", line 1702, in _execute
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/auth/login.py", line 68, in get
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/auth/login.py", line 28, in _render
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 515, in render_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 511, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 883, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 857, in _load_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 115, in load
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 197, in get_source
+    jinja2.exceptions.TemplateNotFound: login.html
+[E 16:28:25.917 NotebookApp] Uncaught exception in write_error
+    Traceback (most recent call last):
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/tornado/web.py", line 1702, in _execute
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/auth/login.py", line 68, in get
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/auth/login.py", line 28, in _render
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 515, in render_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 511, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 883, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 857, in _load_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 115, in load
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 197, in get_source
+    jinja2.exceptions.TemplateNotFound: login.html
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 585, in write_error
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 515, in render_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 511, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 883, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 857, in _load_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 115, in load
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 197, in get_source
+    jinja2.exceptions.TemplateNotFound: 500.html
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/tornado/web.py", line 1217, in send_error
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 587, in write_error
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 515, in render_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 511, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 883, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 857, in _load_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 115, in load
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 197, in get_source
+    jinja2.exceptions.TemplateNotFound: error.html
+[E 16:28:25.919 NotebookApp] {
+      "Host": "128.104.152.48:8888",
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:91.0) Gecko/20100101 Firefox/91.0",
+      "Accept": "*/*",
+      "Accept-Language": "en-US,en;q=0.5",
+      "Accept-Encoding": "gzip, deflate",
+      "Dnt": "1",
+      "Connection": "keep-alive",
+      "Pragma": "no-cache",
+      "Cache-Control": "no-cache"
+    }
+[E 16:28:25.919 NotebookApp] 500 GET /login?next=%2Ftree%3F (144.92.2.84) 20.210000ms referer=None
+[I 16:28:27.143 NotebookApp] 302 GET / (144.92.2.84) 0.500000ms
+[I 16:28:27.156 NotebookApp] 302 GET /tree? (144.92.2.84) 0.510000ms
+[E 16:28:27.169 NotebookApp] Uncaught exception GET /login?next=%2Ftree%3F (144.92.2.84)
+    HTTPServerRequest(protocol='http', host='128.104.152.48:8888', method='GET', uri='/login?next=%2Ftree%3F', version='HTTP/1.1', remote_ip='144.92.2.84')
+    Traceback (most recent call last):
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/tornado/web.py", line 1702, in _execute
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/auth/login.py", line 68, in get
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/auth/login.py", line 28, in _render
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 515, in render_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 511, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 883, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 857, in _load_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 115, in load
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 197, in get_source
+    jinja2.exceptions.TemplateNotFound: login.html
+[E 16:28:27.169 NotebookApp] Uncaught exception in write_error
+    Traceback (most recent call last):
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/tornado/web.py", line 1702, in _execute
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/auth/login.py", line 68, in get
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/auth/login.py", line 28, in _render
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 515, in render_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 511, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 883, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 857, in _load_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 115, in load
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 197, in get_source
+    jinja2.exceptions.TemplateNotFound: login.html
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 585, in write_error
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 515, in render_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 511, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 883, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 857, in _load_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 115, in load
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 197, in get_source
+    jinja2.exceptions.TemplateNotFound: 500.html
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/tornado/web.py", line 1217, in send_error
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 587, in write_error
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 515, in render_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 511, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 883, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 857, in _load_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 115, in load
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 197, in get_source
+    jinja2.exceptions.TemplateNotFound: error.html
+[E 16:28:27.170 NotebookApp] {
+      "Host": "128.104.152.48:8888",
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:91.0) Gecko/20100101 Firefox/91.0",
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.5",
+      "Accept-Encoding": "gzip, deflate",
+      "Dnt": "1",
+      "Connection": "keep-alive",
+      "Upgrade-Insecure-Requests": "1"
+    }
+[E 16:28:27.170 NotebookApp] 500 GET /login?next=%2Ftree%3F (144.92.2.84) 1.340000ms referer=None
+[E 16:28:27.246 NotebookApp] Uncaught exception in write_error
+    Traceback (most recent call last):
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/tornado/web.py", line 1704, in _execute
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/tornado/web.py", line 2576, in get
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 842, in validate_absolute_path
+    tornado.web.HTTPError: HTTP 404: Not Found
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 585, in write_error
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 515, in render_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 511, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 883, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 857, in _load_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 115, in load
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 197, in get_source
+    jinja2.exceptions.TemplateNotFound: 404.html
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/tornado/web.py", line 1217, in send_error
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 587, in write_error
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 515, in render_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 511, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 883, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 857, in _load_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 115, in load
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 197, in get_source
+    jinja2.exceptions.TemplateNotFound: error.html
+[W 16:28:27.246 NotebookApp] 404 GET /favicon.ico (144.92.2.84) 5.720000ms referer=http://128.104.152.48:8888/login?next=%2Ftree%3F
+[I 16:28:37.794 NotebookApp] 302 GET / (144.92.2.84) 0.270000ms
+[I 16:28:37.806 NotebookApp] 302 GET /tree? (144.92.2.84) 0.500000ms
+[E 16:28:37.819 NotebookApp] Uncaught exception GET /login?next=%2Ftree%3F (144.92.2.84)
+    HTTPServerRequest(protocol='http', host='128.104.152.48:8888', method='GET', uri='/login?next=%2Ftree%3F', version='HTTP/1.1', remote_ip='144.92.2.84')
+    Traceback (most recent call last):
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/tornado/web.py", line 1702, in _execute
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/auth/login.py", line 68, in get
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/auth/login.py", line 28, in _render
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 515, in render_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 511, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 883, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 857, in _load_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 115, in load
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 197, in get_source
+    jinja2.exceptions.TemplateNotFound: login.html
+[E 16:28:37.819 NotebookApp] Uncaught exception in write_error
+    Traceback (most recent call last):
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/tornado/web.py", line 1702, in _execute
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/auth/login.py", line 68, in get
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/auth/login.py", line 28, in _render
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 515, in render_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 511, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 883, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 857, in _load_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 115, in load
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 197, in get_source
+    jinja2.exceptions.TemplateNotFound: login.html
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 585, in write_error
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 515, in render_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 511, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 883, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 857, in _load_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 115, in load
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 197, in get_source
+    jinja2.exceptions.TemplateNotFound: 500.html
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/tornado/web.py", line 1217, in send_error
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 587, in write_error
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 515, in render_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 511, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 883, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 857, in _load_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 115, in load
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 197, in get_source
+    jinja2.exceptions.TemplateNotFound: error.html
+[E 16:28:37.823 NotebookApp] {
+      "Host": "128.104.152.48:8888",
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:91.0) Gecko/20100101 Firefox/91.0",
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.5",
+      "Accept-Encoding": "gzip, deflate",
+      "Dnt": "1",
+      "Connection": "keep-alive",
+      "Cookie": "_xsrf=2|ab7b6dfb|383821c81894c494d4f09e208531fc89|1630963707",
+      "Upgrade-Insecure-Requests": "1"
+    }
+[E 16:28:37.823 NotebookApp] 500 GET /login?next=%2Ftree%3F (144.92.2.84) 3.890000ms referer=None
+[I 16:36:47.952 NotebookApp] 302 GET / (144.92.2.84) 1.300000ms
+[I 16:36:47.969 NotebookApp] 302 GET /tree? (144.92.2.84) 0.750000ms
+[E 16:36:47.982 NotebookApp] Uncaught exception GET /login?next=%2Ftree%3F (144.92.2.84)
+    HTTPServerRequest(protocol='http', host='128.104.152.48:8888', method='GET', uri='/login?next=%2Ftree%3F', version='HTTP/1.1', remote_ip='144.92.2.84')
+    Traceback (most recent call last):
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/tornado/web.py", line 1702, in _execute
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/auth/login.py", line 68, in get
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/auth/login.py", line 28, in _render
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 515, in render_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 511, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 883, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 857, in _load_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 115, in load
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 197, in get_source
+    jinja2.exceptions.TemplateNotFound: login.html
+[E 16:36:47.983 NotebookApp] Uncaught exception in write_error
+    Traceback (most recent call last):
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/tornado/web.py", line 1702, in _execute
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/auth/login.py", line 68, in get
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/auth/login.py", line 28, in _render
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 515, in render_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 511, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 883, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 857, in _load_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 115, in load
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 197, in get_source
+    jinja2.exceptions.TemplateNotFound: login.html
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 585, in write_error
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 515, in render_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 511, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 883, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 857, in _load_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 115, in load
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 197, in get_source
+    jinja2.exceptions.TemplateNotFound: 500.html
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/tornado/web.py", line 1217, in send_error
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 587, in write_error
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 515, in render_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 511, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 883, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 857, in _load_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 115, in load
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 197, in get_source
+    jinja2.exceptions.TemplateNotFound: error.html
+[E 16:36:47.984 NotebookApp] {
+      "Host": "128.104.152.48:8888",
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:91.0) Gecko/20100101 Firefox/91.0",
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.5",
+      "Accept-Encoding": "gzip, deflate",
+      "Dnt": "1",
+      "Connection": "keep-alive",
+      "Cookie": "_xsrf=2|ab7b6dfb|383821c81894c494d4f09e208531fc89|1630963707",
+      "Upgrade-Insecure-Requests": "1"
+    }
+[E 16:36:47.984 NotebookApp] 500 GET /login?next=%2Ftree%3F (144.92.2.84) 2.460000ms referer=None
+[E 16:36:48.055 NotebookApp] Uncaught exception in write_error
+    Traceback (most recent call last):
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/tornado/web.py", line 1704, in _execute
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/tornado/web.py", line 2576, in get
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 842, in validate_absolute_path
+    tornado.web.HTTPError: HTTP 404: Not Found
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 585, in write_error
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 515, in render_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 511, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 883, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 857, in _load_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 115, in load
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 197, in get_source
+    jinja2.exceptions.TemplateNotFound: 404.html
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/tornado/web.py", line 1217, in send_error
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 587, in write_error
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 515, in render_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 511, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 883, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 857, in _load_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 115, in load
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 197, in get_source
+    jinja2.exceptions.TemplateNotFound: error.html
+[W 16:36:48.056 NotebookApp] 404 GET /favicon.ico (144.92.2.84) 1.570000ms referer=http://128.104.152.48:8888/login?next=%2Ftree%3F
+[I 16:36:56.121 NotebookApp] 302 GET / (144.92.2.84) 0.240000ms
+[I 16:36:56.135 NotebookApp] 302 GET /tree? (144.92.2.84) 0.300000ms
+[E 16:36:56.148 NotebookApp] Uncaught exception GET /login?next=%2Ftree%3F (144.92.2.84)
+    HTTPServerRequest(protocol='http', host='128.104.152.48:8888', method='GET', uri='/login?next=%2Ftree%3F', version='HTTP/1.1', remote_ip='144.92.2.84')
+    Traceback (most recent call last):
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/tornado/web.py", line 1702, in _execute
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/auth/login.py", line 68, in get
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/auth/login.py", line 28, in _render
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 515, in render_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 511, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 883, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 857, in _load_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 115, in load
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 197, in get_source
+    jinja2.exceptions.TemplateNotFound: login.html
+[E 16:36:56.148 NotebookApp] Uncaught exception in write_error
+    Traceback (most recent call last):
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/tornado/web.py", line 1702, in _execute
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/auth/login.py", line 68, in get
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/auth/login.py", line 28, in _render
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 515, in render_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 511, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 883, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 857, in _load_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 115, in load
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 197, in get_source
+    jinja2.exceptions.TemplateNotFound: login.html
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 585, in write_error
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 515, in render_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 511, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 883, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 857, in _load_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 115, in load
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 197, in get_source
+    jinja2.exceptions.TemplateNotFound: 500.html
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/tornado/web.py", line 1217, in send_error
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 587, in write_error
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 515, in render_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 511, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 883, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 857, in _load_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 115, in load
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 197, in get_source
+    jinja2.exceptions.TemplateNotFound: error.html
+[E 16:36:56.149 NotebookApp] {
+      "Host": "128.104.152.48:8888",
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:91.0) Gecko/20100101 Firefox/91.0",
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.5",
+      "Accept-Encoding": "gzip, deflate",
+      "Dnt": "1",
+      "Connection": "keep-alive",
+      "Cookie": "_xsrf=2|ab7b6dfb|383821c81894c494d4f09e208531fc89|1630963707",
+      "Upgrade-Insecure-Requests": "1"
+    }
+[E 16:36:56.149 NotebookApp] 500 GET /login?next=%2Ftree%3F (144.92.2.84) 1.250000ms referer=None
+[W 16:38:11.754 NotebookApp] 403 POST /api/shutdown (::1): '_xsrf' argument missing from POST
+[E 16:38:11.756 NotebookApp] Uncaught exception in write_error
+    Traceback (most recent call last):
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/tornado/web.py", line 1679, in _execute
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 449, in check_xsrf_cookie
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/tornado/web.py", line 1519, in check_xsrf_cookie
+    tornado.web.HTTPError: HTTP 403: Forbidden ('_xsrf' argument missing from POST)
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 585, in write_error
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 515, in render_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 511, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 883, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 857, in _load_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 115, in load
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 197, in get_source
+    jinja2.exceptions.TemplateNotFound: 403.html
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/tornado/web.py", line 1217, in send_error
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 587, in write_error
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 515, in render_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 511, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 883, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 857, in _load_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 115, in load
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 197, in get_source
+    jinja2.exceptions.TemplateNotFound: error.html
+[W 16:38:11.757 NotebookApp] 403 POST /api/shutdown (::1) 3.930000ms referer=None
+[I 16:39:39.752 NotebookApp] 302 GET / (144.92.2.84) 0.550000ms
+[I 16:39:39.767 NotebookApp] 302 GET /tree? (144.92.2.84) 0.450000ms
+[E 16:39:39.779 NotebookApp] Uncaught exception GET /login?next=%2Ftree%3F (144.92.2.84)
+    HTTPServerRequest(protocol='http', host='128.104.152.48:8888', method='GET', uri='/login?next=%2Ftree%3F', version='HTTP/1.1', remote_ip='144.92.2.84')
+    Traceback (most recent call last):
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/tornado/web.py", line 1702, in _execute
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/auth/login.py", line 68, in get
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/auth/login.py", line 28, in _render
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 515, in render_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 511, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 883, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 857, in _load_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 115, in load
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 197, in get_source
+    jinja2.exceptions.TemplateNotFound: login.html
+[E 16:39:39.780 NotebookApp] Uncaught exception in write_error
+    Traceback (most recent call last):
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/tornado/web.py", line 1702, in _execute
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/auth/login.py", line 68, in get
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/auth/login.py", line 28, in _render
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 515, in render_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 511, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 883, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 857, in _load_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 115, in load
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 197, in get_source
+    jinja2.exceptions.TemplateNotFound: login.html
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 585, in write_error
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 515, in render_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 511, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 883, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 857, in _load_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 115, in load
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 197, in get_source
+    jinja2.exceptions.TemplateNotFound: 500.html
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/tornado/web.py", line 1217, in send_error
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 587, in write_error
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 515, in render_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 511, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 883, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 857, in _load_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 115, in load
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 197, in get_source
+    jinja2.exceptions.TemplateNotFound: error.html
+[E 16:39:39.781 NotebookApp] {
+      "Host": "128.104.152.48:8888",
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:91.0) Gecko/20100101 Firefox/91.0",
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.5",
+      "Accept-Encoding": "gzip, deflate",
+      "Dnt": "1",
+      "Connection": "keep-alive",
+      "Cookie": "_xsrf=2|ab7b6dfb|383821c81894c494d4f09e208531fc89|1630963707",
+      "Upgrade-Insecure-Requests": "1"
+    }
+[E 16:39:39.781 NotebookApp] 500 GET /login?next=%2Ftree%3F (144.92.2.84) 2.370000ms referer=None
+[E 16:39:39.853 NotebookApp] Uncaught exception in write_error
+    Traceback (most recent call last):
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/tornado/web.py", line 1704, in _execute
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/tornado/web.py", line 2576, in get
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 842, in validate_absolute_path
+    tornado.web.HTTPError: HTTP 404: Not Found
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 585, in write_error
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 515, in render_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 511, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 883, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 857, in _load_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 115, in load
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 197, in get_source
+    jinja2.exceptions.TemplateNotFound: 404.html
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/tornado/web.py", line 1217, in send_error
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 587, in write_error
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 515, in render_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 511, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 883, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 857, in _load_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 115, in load
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 197, in get_source
+    jinja2.exceptions.TemplateNotFound: error.html
+[W 16:39:39.854 NotebookApp] 404 GET /favicon.ico (144.92.2.84) 1.210000ms referer=http://128.104.152.48:8888/login?next=%2Ftree%3F
+[I 16:39:45.091 NotebookApp] 302 GET / (144.92.2.84) 0.410000ms
+[I 16:39:45.106 NotebookApp] 302 GET /tree? (144.92.2.84) 0.390000ms
+[E 16:39:45.120 NotebookApp] Uncaught exception GET /login?next=%2Ftree%3F (144.92.2.84)
+    HTTPServerRequest(protocol='http', host='128.104.152.48:8888', method='GET', uri='/login?next=%2Ftree%3F', version='HTTP/1.1', remote_ip='144.92.2.84')
+    Traceback (most recent call last):
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/tornado/web.py", line 1702, in _execute
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/auth/login.py", line 68, in get
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/auth/login.py", line 28, in _render
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 515, in render_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 511, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 883, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 857, in _load_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 115, in load
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 197, in get_source
+    jinja2.exceptions.TemplateNotFound: login.html
+[E 16:39:45.121 NotebookApp] Uncaught exception in write_error
+    Traceback (most recent call last):
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/tornado/web.py", line 1702, in _execute
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/auth/login.py", line 68, in get
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/auth/login.py", line 28, in _render
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 515, in render_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 511, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 883, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 857, in _load_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 115, in load
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 197, in get_source
+    jinja2.exceptions.TemplateNotFound: login.html
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 585, in write_error
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 515, in render_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 511, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 883, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 857, in _load_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 115, in load
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 197, in get_source
+    jinja2.exceptions.TemplateNotFound: 500.html
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/tornado/web.py", line 1217, in send_error
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 587, in write_error
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 515, in render_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/notebook/base/handlers.py", line 511, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 883, in get_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/environment.py", line 857, in _load_template
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 115, in load
+      File "/Volumes/conda/jdrussell3/lib/python3.7/site-packages/jinja2/loaders.py", line 197, in get_source
+    jinja2.exceptions.TemplateNotFound: error.html
+[E 16:39:45.121 NotebookApp] {
+      "Host": "128.104.152.48:8888",
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:91.0) Gecko/20100101 Firefox/91.0",
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.5",
+      "Accept-Encoding": "gzip, deflate",
+      "Dnt": "1",
+      "Connection": "keep-alive",
+      "Cookie": "_xsrf=2|ab7b6dfb|383821c81894c494d4f09e208531fc89|1630963707",
+      "Upgrade-Insecure-Requests": "1"
+    }
+[E 16:39:45.121 NotebookApp] 500 GET /login?next=%2Ftree%3F (144.92.2.84) 1.390000ms referer=None
+[C 16:40:42.718 NotebookApp] received signal 15, stopping
+[I 16:40:42.755 NotebookApp] Shutting down 1 kernel
+[I 16:40:45.532 NotebookApp] Kernel shutdown: 7ca44f1a-3a5f-4426-a803-18d9f8f2c4c5
+[I 16:40:45.535 NotebookApp] Shutting down 0 terminals

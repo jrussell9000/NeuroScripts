@@ -43,7 +43,10 @@
 # ** and may not be useful for anything.  Use it at your own risk!     **
 # ** If these terms are not acceptable, you aren't allowed to use the code.**
 
-
+import sys
+sys.path.insert(0, '/Users/jdrussell3/NeuroScripts/Shared/Ollinger/lib')
+import warnings
+warnings.simplefilter("ignore", UserWarning)
 import sys
 import os
 from os import R_OK,W_OK,F_OK
@@ -57,13 +60,14 @@ import file_io
 from file_io import isIfile, Wimage, writefile, DicomTar
 from wbl_util import execCmd, except_msg,  chg_perm, GetTmpSpace
 import scipy
-from scipy.stats.stats import histogram2
-from scipy.ndimage.morphology import binary_erosion,binary_dilation, \
+# from scipy.stats.stats import histogram2
+from numpy import histogram2d
+from scipy.ndimage.morphology import binary_erosion, binary_dilation, \
                                      grey_dilation
 from scipy.ndimage.filters import median_filter
 
 import math_bic
-from math_bic import print_matrix,erode,fit_legendre,whisto
+from math_bic import print_matrix, erode, fit_legendre, whisto
 from optparse import OptionParser
 from wisc_dicom import isdicom, IsDicom
 import time
@@ -98,13 +102,14 @@ University of Wisconsin
 
 Modified for the GE scanner on 3/26/05.
 
-""" 
+"""
+
 
 class MakeFieldmap():
 
     def __init__(self):
 
-#       Set default permission to 0775
+        # Set default permission to 0775
         os.umask(0002)
 
         usage = \

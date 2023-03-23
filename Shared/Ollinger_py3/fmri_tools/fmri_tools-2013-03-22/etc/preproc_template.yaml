@@ -1,0 +1,110 @@
+#!fmri_file_template    # The first part of this line MUST be present or
+#                         this file won't be recognized as a template.
+
+# Template defining the naming convention to be used by the 
+# preprocess script. Edit the fields in the "Value" column to change the file structure.
+# This file follows the "yaml" (yet-another-markup-language) syntax. For this format,
+# indentation is very important.  That is how it differentiates between attributes and
+# sub-attributes.  The only other special syntax in the file below is "---", the colon 
+# after each tag-name, the brackets around lists of items separated by commas, and the 
+# "&id00n" variables.  These latter variables should be numbered sequentially as below.
+#
+# Here are some basic syntax rules:
+# 1. The code "#!fmri_file_template" must appear at the beginning of the first line of the file.
+#
+# 2. The code "---" is a delimiter used by yaml. Keep them where they are.
+#
+# 3. Indentation is important.  Always use the same indentation for a given block.  For
+#                               example, the "anat" block has two items, "outdir" and
+#                               "format".  The parser figures this out because both
+#                               are indented 4 spaces from the left margin.
+#
+# 4. The colon is used instead of an equal. 
+#
+# 5. A space must follow the colon.
+#
+# 6. Brackets denote a list.  Each member of the list must be followed by a comma.
+#
+# 7. The &id_*** variables are required by the parser. Each of the lines where it appears
+#    (e.g. anat:) defines the beginning of a Python dictionary, and the indented elements
+#    after it are the dictionaries members.  The name of the dictionary and its "id" must 
+#    be unique. For example, epis could have names of epi1, epi2 ... and id's of &id001, &id002, ...
+#
+# File type codes: brik=BRIK, nii=one-file nifti, ni1 = two_file nifti
+
+#keyword   Value                  Meaning
+#-------   -------                -------
+
+# Global variables.
+top_outdir: ""         # Directory for output data (defaults to raw data directory)
+subject: "same"        # Subdirectory for processed data. MUST be in quotes.
+                       # If set to "same" use the the same name as the data, e.g.,
+                       #     if the data are in /study/mystudy/sub001, and top_outdir=/study/mystudy/processed,
+                       #     the data will be stored in /study/mystudy/processed/sub001.
+fsl_flip: False        # If true, all output images will be flipped physically such that they are 
+                       # in LPI, PSL, or LSP orientation.  This is workaround for a bug in flsview that
+                       # requires this orientation. The header will correctly represent the orientation,
+                       # so files can still be viewed in AFNI, SPM, VoxBo, or mricron.
+server_userid: default # Username on the servers.  Defaults to the value on your local machine
+
+# Structural images:
+anat: &id_anat         # Structural image info.
+    outdir: anat       # Directory where anatomical images should be stored.
+    format: brik       # File format for structural images. 'brik', 'nii', or 'n+1'
+    t1_low: [T1High]   # List of names for each T1-weighted images. Defaults to "T1High" if not present.
+    t1_high: [T1High]  # List of names for each T1-weighted images. Defaults to "T1High" if not present.
+    anat_norm: T1High  # Name of T1 image to be used as anatomical reference for spatial normalization. Defaults to T1High.
+    skull_strip: T1High
+
+# DTI processing
+dti: &id_dti           # DTI info
+    outdir: dti        # Directory where DTI images should be stored.
+    format: nii        # Default type is nifti one-file.
+    pepolar: 0         # Default phase encode direction. (pe axis read from header.)
+    anat_ref: 'fieldmap' # Anatomical image that should be best registered with this image.
+
+# ASL processing
+asl: &id_asl           # ASL info
+    outdir: asl
+    format: nii
+    anat_ref: default
+
+
+# Log file location.
+logdir: log            # Directory for log files
+
+# Address where advisory emails should be sent.
+email: noname@wisc.edu # Email address where completion status should be sent. Set
+                       #       to "noname" or "noname@whatever.whatever for no email.
+
+# Field maps Processing
+fmap: &id_fmap         # Fieldmap info
+    outdir: fieldmap   # Directory where fieldmaps should be stored.
+    echo_spacing: .688
+    anat_ref: "default"
+correct_fmap_phase: "auto" # Takes on values of "force", "omit", or "auto"
+
+# EPI processing.
+first_epi: epi_setup   # Directory for first two EPI images.
+epi_type: brik         # Output epi file type.
+skip: 5                # Number of frames to skip.
+censor_threshold: 2.   # Threshold for censoring. Frames with motion > threshold are censored.
+censor_interleave: True   # Threshold for censoring. Frames with motion > threshold are censored.
+motion_ref_frame: 0    # Frame to use as motion reference (Skipped frames are not included).
+acq_tr: None        # Acquisition TR in ms. For a bunched slice acquisition with
+                    # an overall TR of 2.5 sec and a 1. sec quiet period, the
+                    # acq_tr would be 1500. If acq_tr is not "None", slice time
+                    # correction will be done using 3dTshift. Otherwise it will
+                    # be done with 3dvolreg.
+epi_motion_interp: -Fourier # Interpolation method argument for 3dvolreg.
+epi_file_format: brik  # Format of final epi files.
+epi_align: False # (True or False) Align EPI to anatomical using transformation computed by aligning anat_ref to the Hi-res anatomical.
+epidir_dflt: &id001       # First set of epis.
+    type: epi          # Type of data. The only value currently used is "epi"
+    acq_order: 0       # Acquisition order. 
+    outdir: "run_1"    # Directory for first set of epis.
+    names: [epi_run1, epi_run2, epi_run3, epi_run4, epi_run5, epi_run6, epi_run7, epi_run8] # List of names.
+    pepolar: 0         # 0 = default phase-encode direction, 1 = reversed.
+    plane: 'any'       # Valid values are 'coronal', 'axial', 'sagittal', 'oblique' and 'any'
+    anat_ref: 'T1High' # anatomical image that should be best registered with this image. Takes on values of 'T1High' and 'fieldmap'.
+

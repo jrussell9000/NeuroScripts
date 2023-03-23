@@ -5,8 +5,8 @@ from pathlib import Path
 import subprocess
 from joblib import parallel_backend, delayed, Parallel
 
-BIDS_Master = Path('/fast_scratch/jdr/resting/BIDS_OnlyT1/')
-BIDS_fmriprep = Path('/fast_scratch/jdr/resting/BIDS_fmriprep')
+BIDS_Master = Path('/fast_scratch/jdr/resting/extrafmriprep_in')
+BIDS_fmriprep = Path('/fast_scratch/jdr/resting/extrafmriprep_out')
 fmriprep_script = Path('/Users/jdrussell3/NeuroScripts/fMRI/resting/fmriprep_cmd.sh')
 
 

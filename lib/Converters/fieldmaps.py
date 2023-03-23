@@ -2,7 +2,6 @@
 import subprocess
 import os
 from pathlib import PurePath, Path
-import pathlib
 import json
 
 class makefmaps():

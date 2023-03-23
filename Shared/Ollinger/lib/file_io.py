@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # Written by John Ollinger
 #
 # University of Wisconsin, 8/16/09
@@ -55,29 +57,30 @@ from numpy import array, dot, zeros, transpose, fromstring, reshape, nonzero, \
         take, float, short, float32, identity, fliplr, flipud, sign, \
         prod, where, ones, byte, int8, uint8, int16, uint16, complex,  \
         integer, diag, argmax, ubyte, float64, complex64, complex128, ubyte, \
-        long, ndarray, array2string, dtype, int32, empty, arange
+        long, ndarray, array2string, dtype, int32
+from numpy.linalg import det
+import math
 import string
 import gzip
 import bz2
 from types import IntType,FloatType,StringType
-import math
 from math import sin, cos, acos
 from stat import S_IRWXU, S_IRWXG, S_IRWXO
 import time
 from datetime import datetime
 from socket import gethostname, gethostname
 import yaml
-import cPickle
-from subprocess import Popen, PIPE
-import signal
 
 #import dicom
-from wisc_dicom import Dicom, isdicom, open_gzbz2, DicomTar, dicom_to_rot44
+from dicom import Dicom, isdicom, dicom_to_rot44, open_gzbz2
 import constants as c
-from wbl_util import Timer, GetTmpSpace, except_msg, Translate
+from wimage_lib import UsageError, Timer, get_tmp_space, except_msg
 
 #FIGARO_TMP = '/ESE/scratch/tmp'
-GE_HEADER_POOL_LEN = 149788
+
+ID = "$Id: file_io.py 222 2010-01-02 17:21:47Z jmo $"[1:-1]
+def echo_ID():
+    return ID
 
 datatype_to_lgth = {'bit':1, 'byte':8, 'short':16, 'integer':32, \
         'float32':32, 'float':32, 'double':64, 'complex':64, 'int16':16, \
@@ -98,40 +101,10 @@ nifti_datacode_to_type = {1:'bit', 2:'byte', 4:'short', 8:'integer', \
         16:'float32', 32:'complex', 64:'double', 128:'rgb'}
 nifti_type_to_datacode = {'bit':1, 'byte':2, 'short':4, 'integer':8, \
         'float32':16, 'float':16, 'complex':32, 'double':64, 'int16':16, 'int32':32}
-
-NIFTI_SLICE_UNKNOWN = 0
-NIFTI_SLICE_SEQ_INC = 1
-NIFTI_SLICE_SEQ_DEC = 2
-NIFTI_SLICE_ALT_INC = 3
-NIFTI_SLICE_ALT_DEC = 4
-NIFTI_SLICE_ALT_INC2 = 5
-NIFTI_SLICE_ALT_DEC2 = 6
-
-# Canonical number <-> string mappings
-nifti_slice_orders = [
-    (NIFTI_SLICE_UNKNOWN, 'unknown'),
-    (NIFTI_SLICE_SEQ_INC, 'seq+z'),
-    (NIFTI_SLICE_SEQ_DEC, 'seq-z'),
-    (NIFTI_SLICE_ALT_INC, 'alt+z'),
-    (NIFTI_SLICE_ALT_DEC, 'alt-z'),
-    (NIFTI_SLICE_ALT_INC2, 'alt+z2'),
-    (NIFTI_SLICE_ALT_DEC2, 'alt-z2')]
-
-nifti_slice_order_decode = dict(nifti_slice_orders)
-nifti_slice_order_encode = dict([(e[1], e[0]) for e in nifti_slice_orders])
-# Also understand old strings (maybe left in yaml files)
-nifti_slice_order_encode['zero'] = NIFTI_SLICE_UNKNOWN
-nifti_slice_order_encode['seq+'] = NIFTI_SLICE_SEQ_INC
-nifti_slice_order_encode['seqplus'] = NIFTI_SLICE_SEQ_INC
-nifti_slice_order_encode['seqminus'] = NIFTI_SLICE_SEQ_DEC
-nifti_slice_order_encode['seq0'] = NIFTI_SLICE_SEQ_DEC
-nifti_slice_order_encode['alt+'] = NIFTI_SLICE_ALT_INC
-nifti_slice_order_encode['altplus'] = NIFTI_SLICE_ALT_INC
-nifti_slice_order_encode['alt-'] = NIFTI_SLICE_ALT_DEC
-nifti_slice_order_encode['altminus'] = NIFTI_SLICE_ALT_DEC
-nifti_slice_order_encode['alt+2'] = NIFTI_SLICE_ALT_INC2
-nifti_slice_order_encode['alt-2'] = NIFTI_SLICE_ALT_DEC2
-
+nifti_slice_order_decode = {'0':'unknown', '1':'seq+', '2':'seq0', '3':'alt+', \
+        '4':'alt-', '5':'alt+2', '6':'alt-2'}
+nifti_slice_order_encode = {'unknown':'0', 'seq+':'1', 'seq0':'2', 'alt+':'3', \
+        'alt-':'4', 'alt+2':'5', 'alt-2':'6'}
 nifti_intent_decode = {0:'unknown', 2:'correl', 3:'ttest', 4:'ftest', \
         5:'zscore', 6:'chisq', 7:'beta', 8:'binom', 9:'gamma', 10:'poisson', \
         11:'normal', 12:'ftest_nonc', 13:'chisq_nonc', 14:'logistic', \
@@ -192,11 +165,18 @@ hexts = {'.HEAD':'.BRIK', '.hdr':'.img', '.spr':'.sdt', '.tes':'', '.cub':'', \
         '.nii':'', '4dfp.ifh':'4dfp.img', '.7':'','.nii.gz':''}
 iexts = {'.BRIK':'.HEAD', '.img':'.hdr', '.sdt':'.spr', '.tes':'.tes', \
         '.cub':'.cub', '.nii':'.n+1', '4dfp.img':'4dfp.ifh', '.7':'.7'}
-extlist = {'brik':'.BRIK', 'analyze':'.img', 'dicom':None, 'ge_data':None, \
-           'cub':None, 'tes':None, 'ni1':'.img', 'n+1':'.nii', 'nii':'.nii'}
+extlist = {'brik':'.BRIK', 'analyze':'.img', 'dicom':None, \
+    'ge_data':None, 'cub':None, 'tes':None, 'ni1':'.img', 'n+1':'.nii'}
 dtype_max = {int8:127.,uint8:255.,int16:32767.,uint16:65535.}
 
 yaml_magic_code = '#!Wimage header\n'
+
+NIFTI_SLICE_UNKNOWN = 0
+NIFTI_SLICE_SEQ_INC = 1
+NIFTI_SLICE_SEQ_DEC = 2
+NIFTI_SLICE_ALT_INC = 3
+NIFTI_SLICE_ALT_DEC = 4
+
 
 none_subhdr = {'AcqTime':-1, \
         'EffEchoSpacing':-1, \
@@ -239,7 +219,6 @@ num_cvt = {IntType:convert_integer, FloatType:convert_float, \
 allchar = string.maketrans(string.printable, string.printable)
 transtab = 32*" " + allchar[32:128] + 128*" "
 
-
 def ndarray_representer(dumper, data):
     """Representor to add numpy ndarray objects to a yaml stream."""
     output = '%s:%s:%s' % (data.shape, data.dtype.char, numpy.array2string(data))
@@ -263,20 +242,6 @@ def add_ndarray_to_yaml():
 system_tmp = os.getenv('SYSTEM_TMP')
 if system_tmp is None:
     system_tmp = '.'
-
-#*******************************
-def exec_cmd(cmd, verbose=False):
-#*******************************
-    """
-    Execute command.  Deprecated.
-    """
-    p = Popen(cmd, shell=True, stderr=PIPE, stdout=PIPE)
-    output, errors = p.communicate()
-    signl = p.wait()
-    if verbose:
-        print output
-        print errors
-    return output, errors
 
 #*************************
 def get_hdrname(filename):
@@ -328,22 +293,16 @@ def get_hdrname(filename):
 
     return ('%s%s' % (stem, ext), ext[:])
 
-def isImage(fname):
-    if file_type(fname) is None:
-        return False
-    else:
-        return True
-
-#*********************************
-def file_type(file_in, slot=None):
-#*********************************
+#***********************
+def file_type(file_in):
+#***********************
 
     """
 
     Function: file_type(filename)
     Purpose: Determine type of image file.
     Return codes: analyze, nifti, brik, dicom, ge_ifile (I-file), ge_data 
-                  (P-file), cub, tes, biopac
+                  (P-file), cub, tes
     """
 
 
@@ -357,35 +316,11 @@ def file_type(file_in, slot=None):
 
     if os.path.isdir(file_in):
 #       Directory specified, Look for a dicom or ifile.
-        prefix = '%s/%s' % (file_in, os.path.basename(file_in))
-        if os.path.exists(prefix + '.pickle'):
-            f = open(prefix + '.pickle', 'r')
-            hdr = cPickle.load(f)
-            f.close()
-            return hdr['filetype']
-        elif os.path.exists(prefix + '.yaml'):
-#           Summary stored in yaml_file.
-            f = open(prefix + '.yaml', 'r')
-            info = f.read()
-            f.close()
-            i0 = info.find('filetype:')
-            if 'dicom' in info[i0+10:i0+15]:
-                return('dicom')
-            elif 'ge_ifile' in info[i0+10:i0+15]:
-                return('ge_file')
         for fname in os.listdir(file_in):
-            if fname.startswith('.'):
-                continue
             fname1 = '%s/%s' % (file_in,fname)
             if os.path.isdir(fname1):
                 continue
-            elif fname1.endswith('.tar'):
-                dt = DicomTar(fname1)
-                if dt.isTar:
-                    return('dicom')
             try:
-                if os.path.isdir(fname1):
-                    return None
                 f = open_gzbz2(fname1, 'rb')
                 testdata = f.read(132)
                 f.close()
@@ -395,76 +330,59 @@ def file_type(file_in, slot=None):
                     return('dicom')
                 elif testdata.endswith('GEMS PET Export'):
                     return('pet')
-                else:
-                    return None
             except IOError:
                 raise IOError("Could not open %s, aborting ..." % fname1)
-    else:
-        try:
-            if not os.path.exists(filename) and not '.' in filename:
-                fname = '%s.nii' % filename
-                if os.path.exists(fname):
-                    filename = fname
-                    ext = '.nii'
-            f = open_gzbz2(filename, 'rb')
-        except IOError:
-            raise IOError("\nfile_type: Could not open %s\n" % filename)
+    try:
+        f = open_gzbz2(filename, 'rb')
+    except IOError:
+        raise IOError("\nfile_type: Could not open %s\n" % filename)
 
-#       Read data that will identify file type.
-        if not f:
-            return None
-        try:
-            testdata = f.read(132)
-            if len(testdata) < 132:
-                return None
-        except IOError:
+#   Read data that will identify file type.
+    if not f:
+        return None
+    try:
+        testdata = f.read(132)
+    except IOError:
+        f.close()
+        return None
+    linetest = {'VB98\nCUB1':'cub', 'VB98\nTES1':'tes', \
+                'INTERFILE':'4dfp.ifh', 'IMGF':'ge_ifile', \
+                'GEMS PET Export':'ge_pet'}
+    for key in linetest.keys():
+        if testdata.startswith(key):
+            filetype = linetest[key]
+            if filetype == 'ge_ifile':
+                if 'sunos' in sys.platform:
+                    hdr_lgth = fromstring(testdata[:8], int32)[1]
+                else:
+                    hdr_lgth = fromstring(testdata[:8], int32).byteswap()[1]
+                if hdr_lgth != 7904:
+                    filetype = 'imgf'
             f.close()
-            return None
-        linetest = {'VB98\nCUB1':'cub', 'VB98\nTES1':'tes', \
-                    'INTERFILE':'4dfp.ifh', 'IMGF':'ge_ifile', \
-                    'GEMS PET Export':'ge_pet'}
-        for key in linetest.keys():
-            if testdata.startswith(key):
-                filetype = linetest[key]
-                if filetype == 'ge_ifile':
-                    if 'sunos' in sys.platform:
-                        hdr_lgth = fromstring(testdata[:8], int32)[1]
-                    else:
-                        hdr_lgth = fromstring(testdata[:8], int32).byteswap()[1]
-                    if hdr_lgth != 7904:
-                        filetype = 'imgf'
-                f.close()
-                return filetype
+            return filetype
 
-        if testdata.endswith('DICM') or filename.endswith('.dcm'):
-#           Siemens dicom files from Iowa don't have the DICM code.
-            f.close()
-            return('dicom')
+    if testdata.endswith('DICM') or filename.endswith('.dcm'):
+#       Siemens dicom files from Iowa don't have the DICM code.
+        f.close()
+        return('dicom')
 
-#       Read embedded magic numbers, first test for nifti
-        nifti_tests = ['.hdr', '.nii', 'n+1']
-        nifti_types = {'n+1':'n+1', 'ni1':'ni1'}
-        if filename.replace('.gz','')[-4:] in nifti_tests:
-            f.seek(344)
-            nifti_code = f.read(4)
-            f.close()
-            return nifti_types.get(nifti_code[:3], 'analyze')
+#   Read embedded magic numbers, first test for nifti
+    nifti_tests = ['.hdr', '.nii', 'n+1']
+    nifti_types = {'n+1':'n+1', 'ni1':'ni1'}
+    if filename.replace('.gz','')[-4:] in nifti_tests:
+        f.seek(344)
+        nifti_code = f.read(4)
+        f.close()
+        return nifti_types.get(nifti_code[:3], 'analyze')
 
-        dt = DicomTar(filename)
-        if dt.isTar:
-            return('dicom')
-
-#       Test for GE data.
-        if os.path.basename(filename) == 'HEADER_POOL':
-            return 'ge_data'
-        f.seek(0)
-        test = f.read(44)
-        test = test[34:]
+#   Test for GE data.
+    if os.path.basename(filename).startswith("P") and ".7" in filename[-6:]:
+        f.seek(34)
+        test = f.read(10)
         if len(test) < 10:
             f.close()
             return None
-        test =  struct.unpack('10s', test)
-        if 'GE_MED_NMR' in test or 'INVALIDNMR' in test:
+        if 'GE_MED_NMR' in struct.unpack('10s', test):
             f.seek(0)
             testdata = f.read(4)
             rev = struct.unpack('f', testdata)[0]
@@ -475,28 +393,10 @@ def file_type(file_in, slot=None):
 #               This is a valid revision number
                 f.close()
                 return('ge_data')
-                
-            return None
-
-        fmt_ctl_windows = '<'
-        fmt_ctl_mac = '>'
-        fmt_size = 'hi'
-        data = struct.unpack(fmt_ctl_windows+fmt_size, testdata[:6])
-        if data[1] > 100 or data[1] < 0:
-#        Invalid file version. This must be a mac. Don't byteswap.
-            data = struct.unpack(fmt_ctl_mac+fmt_size, testdata[:6])
-            if data[1] > 0 and data[1] < 100:
-                return 'biopac'
-#                biopac_version = data[1]
-        else:
-            if data[1] > 0 and data[1] < 100:
-                return 'biopac'
-#                biopac_version = data[1]
-            else:
-                return None
-        
-        f.close()
+    
+    f.close()
     return None
+
 
 def readheader(filename, scan=False):
     """
@@ -507,21 +407,24 @@ def readheader(filename, scan=False):
     return hd.get_header()
 
 
-#*****************************************************************************
-def writefile(filename, image, hdr, frame=None, last=True, rescale_ints=False):
-#*****************************************************************************
+#*********************************************************
+def writefile(filename, image, hdr, frame=None, last=True):
+#*********************************************************
 
     """
-    Write image to a file named "filename" in the image format
+    Purpose: write image to a file named "filename" in the image format
         specified by hdr['filetype'] with the data-type specified by
         hdr['datatype'], which takes on values of "byte" "short",
         "float"="float32", double, and complex. (complex32 in numpy)
-    Returns  0 on successful completion.
-    <filename>: output filename with or without extension.
-    <image>: numpy ndarray to be written.
-    <frame>: Frame to be written. Mulitple frames can be written to the same file by making multiple calls to writefile.
-    <last>: Set to True for the only or last frame. The header will only be written if last=true.
-    <rescale_ints>: If True, integer images will be rescaled to the maximum and minimum values for their data type. Appropriate scale factors are stored in the header.
+    Returns: 0 on successful completion.
+    Arguments:
+        filename: output filename with or without extension.
+        image: numpy ndarray to be written.
+        frame: Frame to be written. Mulitple frames can be 
+            written to the same file by making multiple calls
+            to writefile.
+        last: Set to True for the only or last frame. The header
+            will only be written if last=true.
     """
 
     extensions = {'analyze':'.img', 'ni1':'.img', 'n+1':'.nii', \
@@ -557,14 +460,12 @@ def writefile(filename, image, hdr, frame=None, last=True, rescale_ints=False):
         nvox_hdr = prod(hdr['dims'][:3])
     if nvox_in != nvox_hdr:
         raise RuntimeError(\
-        'Dimensions of input image do not match those in the header: %s.', filename)
+        'Dimensions of input image do not match those in the header.')
 
-    filebase = strip_suffix(filename)
-
-    outdir = os.path.dirname(filebase)
+    filebase = os.path.splitext(filename)[0]
+    outdir = os.path.dirname(filename)
     if len(outdir) == 0:
         outdir = "."
-    outdir = os.path.realpath(outdir)
     hdrname = "%s%s" % (filebase, hext[hdr['filetype']])
 
     filetype = hdr['filetype']
@@ -586,8 +487,7 @@ def writefile(filename, image, hdr, frame=None, last=True, rescale_ints=False):
 #   Rescale image to fit in output data type.
     if hdr['filetype'] != 'brik':
 #       Not a brik, so it's nifti, tes or analyze.
-        if hdr['datatype'] in ['byte', 'short'] and \
-           hdr['filetype'] != 'brik' and rescale_ints:
+        if hdr['datatype'] in ['byte', 'short'] and hdr['filetype'] != 'brik':
             img, scale_factor, scale_offset, image_min, image_max = \
                                             rescale(img, hdr['datatype'])
         else:
@@ -622,6 +522,8 @@ def writefile(filename, image, hdr, frame=None, last=True, rescale_ints=False):
                 write_nifti_header(hdrname, hdr, newfile=newfile)
 
 #       Write the image.
+#        if hdr['filetype'] == 'ni1' or hdr['filetype'] == 'n+1':
+#            img = flip_image(img, 0, 1)
         if hdr['filetype'] == 'ni1':
             hdr['start_binary'] = 0
         elif hdr['filetype'] == 'nii' or  hdr['filetype'] == 'n+1':
@@ -650,112 +552,51 @@ def writefile(filename, image, hdr, frame=None, last=True, rescale_ints=False):
         f.close()
     else:
 #       Use to3d to convert tmp file into BRIK.
-        wb = WriteBrik(filename, hdr, img)()
-
-    return 0
-
-
-class WriteBrik():
-    """
-    Creates and output buffer to store sub-bricks as they are added, then
-    call to3d to write it as a brik file.
-    """
-    def __init__(self, prefix, hdr=None, image=None, frame=None, force=True):
-        self.prefix = strip_suffix(prefix)
-        self.outdir = os.path.dirname(prefix)
-        self.force = force
-
-#       Get tmp space
-        max_required = (2*hdr['xdim']*hdr['ydim']*hdr['zdim']*\
-                        hdr['tdim']*hdr['mdim']*8)/1e6 + 400
-        self.tmp = GetTmpSpace(max_required, system_tmp)
-        self.tmpdir = self.tmp()
-        self.tmpfile = '%s/%s.tmp' % (self.tmpdir,os.path.basename(self.prefix))
-        self.f = open(self.tmpfile, 'a+')
-
-        self.hdr = self.ProcessHeader(hdr)
-        self.nframe = 0
-
-        if image is not None:
-#           Add the first image
-            self.AddImage(image, frame)
-
-    def ProcessHeader(self, hdr):
-        """
-        Workaround bugs in third-party packages that create files with
-        incomplete or incorrect nifti headers.
-        """
-        if hdr is None:
-            return None
-#       Workaround for Freesurfer bug.
-        hdr['dims'] = where(hdr['dims'] <= 0, 1, hdr['dims'])
-        hdr['xdim'],  hdr['ydim'], hdr['zdim'], hdr['tdim'], hdr['mdim'] = \
-                                                hdr['dims'][:5].tolist()
-        hdr['xsize'],  hdr['ysize'], hdr['zsize'], hdr['tsize'], hdr['msize'] =\
-                                                hdr['sizes'][:5].tolist()
-        hdr['num_voxels'] = prod(hdr['dims'])
-        hdr['imgfile'] = self.prefix
         hdr['scale_offset'] = 0.
         hdr['scale_factor'] = 1.
-        self.xyzdim = prod(hdr['dims'][:3])
-        self.voxel_bytes = datatype_to_lgthbytes[hdr['datatype']]
-        return hdr
-
-    def AddImage(self, image, frame=None, last=False, history_note=None):
-        """
-        Add a frame of data to the output buffer.
-        """
-        if image.dtype == float64:
-#           Afni briks don't support 64-bit floats.
-            img = image.astype(float32)
-        else:
-            img = image
-        self.datum_type = img.dtype.char
-        if frame is not None:
-            self.nframe = max(frame, self.nframe-1) + 1
-            self.f.seek(frame*self.xyzdim*self.voxel_bytes)
-        self.f.write(img.tostring())
-
-        if last is True:
-            self.Finish(history_note=history_note)
-
-    def __call__(self):
-        self.Finish()
-
-    def Finish(self, history_note=None):
-        """
-        Use to3d to convert the buffer file a brik file.
-        """
-        self.f.close()
-        to3d_cmd, refit_cmd = make_to3d_cmd(self.tmpfile, self.prefix, \
-                                        self.outdir, self.hdr, self.datum_type)
-        if self.force:
-            if os.path.exists(self.prefix+"+orig.BRIK"):
-                exec_cmd('/bin/rm %s+orig.BRIK' % self.prefix)
-            if os.path.exists(self.prefix+"+orig.HEAD"):
-                exec_cmd('/bin/rm %s+orig.HEAD' % self.prefix)
-        out, errs = exec_cmd(to3d_cmd, verbose=False)
+        img = img.astype(float32)
+        datum_type = img.dtype.char
+        max_required = (2*hdr['xdim']*hdr['ydim']*hdr['zdim']*\
+                        hdr['tdim']*hdr['mdim']*img.itemsize)/1e6 + 400
+        max_required = (2*prod(hdr['dims']).astype(long)*img.itemsize)/1e6 + 400
+        tmpdir = get_tmp_space(max_required, system_tmp)
+        tmpfile = '%s/%s' % (tmpdir,os.path.basename(imgfile))
+        to3d_cmd = ''
+        try:
+            img = img.tostring()
+            f = open(tmpfile, "wb")
+            f.write(img)
+            f.close()
+            filebase = filebase.split("+orig")[0]
+            hdr['imgfile'] = filebase
+            x = make_to3d_cmd(tmpfile, filebase, outdir, hdr, datum_type)
+            to3d_cmd, refit_cmd = x
+            if os.access("%s.BRIK" % hdr['imgfile'], W_OK):
+                os.remove("%s.BRIK" % hdr['imgfile'])
+            if os.access("%s.HEAD" % hdr['imgfile'], W_OK):
+                os.remove("%s.HEAD"% hdr['imgfile'])
+#            print to3d_cmd
+        except (IndexError), errstr:
+            errstr = "\nError in make_to3d: %s\n%s\n" % (errstr,except_msg())
+            sys.stderr.write(errstr)
+#            raise RuntimeError('\nfile_io: Error in make_to3d\ncmd: %s\n%s'%\
+#                                (to3d_cmd, except_msg()))
+            os.remove(tmpfile)
+            return -1
+        try:
+            os.system(to3d_cmd + '>& /dev/null')
+        except :
+#           Catch the error that always occurs with to3d.
+            pass
+        os.remove(tmpfile)
+        os.rmdir(tmpdir)
         if refit_cmd is not None:
-            exec_cmd(refit_cmd, verbose=False)
-        modify_HEAD(self.hdr)
-        if history_note is not None:
-            fname = '%s.HEAD' % self.hdr['imgfile'].replace('.BRIK','')
-            old_note = self.hdr['native_header'].get('history_note', '')
-            append_history_note(self.prefix + '+orig', \
-                                            legacy_history_note=history_note)
-        self.tmp.Clean()
+#            print 'Executing refit_cmd: %s' % refit_cmd
+            os.system(refit_cmd + '>& /dev/null')
+        modify_HEAD(hdr)
 
-def strip_suffix(fname):
-    """
-    Remove the .nii, .img, .hdr, BRIK etc suffixes from <fname>
-    """
-    filebase = fname.strip().replace('.nii','')
-    filebase = filebase.replace('.img','')
-    filebase = filebase.replace('.hdr','')
-    filebase = filebase.replace('.BRIK','')
-    filebase = filebase.replace('.HEAD','')
-    filebase = filebase.replace('+orig','')
-    return filebase
+
+    return 0
 
 #*****************************
 def modify_nifti_auxfile(hdr):
@@ -801,9 +642,9 @@ def modify_nifti_auxfile(hdr):
     return True
 
 
-def append_history_note(filename, text=None, legacy_history_note=''):
+def append_history_note(filename, text, legacy_history_note=''):
     """
-    Appends "text" to the end of the HISTORY_NOTE field of an AFNI .HEAD file.
+    Appends "text" to the end of the HISTORY_NOTE field of an AFNI file.
     """
     if filename.endswith('.HEAD'):
         hdrfile = filename
@@ -817,8 +658,6 @@ def append_history_note(filename, text=None, legacy_history_note=''):
     f = open(hdrfile, 'r')
     lines = f.readlines()
     f.close()
-    if len(lines) == 0:
-        return
     old_note = ''
     for i in xrange(len(lines)):
         wds = lines[i].split()
@@ -830,10 +669,7 @@ def append_history_note(filename, text=None, legacy_history_note=''):
     host = gethostname()
     username = os.getenv('LOGNAME')
     tod = datetime.today().strftime('%a %b %d %X')
-    if text is None:
-        text =  ''.join(sys.argv)
-    new_note = "'%s\\n[%s@%s %s] %s~\n" % \
-                            (old_note, username, host, tod, ' '.join(sys.argv))
+    new_note = "'%s\\n[%s@%s %s] %s~\n" % (old_note, username, host, tod, text)
     f = open(hdrfile, 'w')
     for i in xrange(len(lines)):
         wds = lines[i].split()
@@ -885,7 +721,7 @@ def modify_HEAD(hdr):
         if len(newline) == 2:
             newline = ''
         try:
-            fname = '%s.HEAD' % hdr['imgfile'].replace('.BRIK','')
+            fname = '%s.HEAD' % hdr['imgfile']
             f = open(fname, 'rb+')
             x = f.read()
             i1 = x.find("name = HISTORY_NOTE\ncount =")
@@ -1044,7 +880,7 @@ def orientecode_to_R(orient_code, x0, y0, z0):
     """
     Returns: 4x4 Transformation matrix.
     Arguments:
-        orient_code: Valid orient code for Analyze format, 0 <= orient_code <= 6
+        orient_code: Valid orient code for Analyze format, 0-6
         x0, y0, z0: origin in RAI coordinates.
     """
 
@@ -1084,9 +920,6 @@ def orientestring_to_R(orient_code, x0, y0, z0):
             'ASL':(1.,-1.,-1.),'OBL':(1.,1.,1.),'LAI':(-1.,1.,1.),\
             '???*':(0.,0.,0.)}
 
-    cvt_ambiguous = {'AS?':'ASL', 'RA?':'RAI', 'RS?':'RSA'}
-    code = cvt_ambiguous.get(orient_code, orient_code)
-
     Rrot = zeros((9), float)
     Rrot.put(array(Rpos[orient_code]), array(Rval[orient_code]))
     R = zeros((4, 4), float)
@@ -1100,6 +933,7 @@ def read_afni_header(filename):
 #******************************
 
     """
+    Function: read_afni_header(filename)
     Returns a dictionary containing entire AFNI header.
     """
 
@@ -1206,21 +1040,6 @@ def read_afni_header(filename):
     except KeyError:
         sys.stderr.write('read_afni_header: Could not parse %s' % filename)
         return None
-
-#   Get slice ordering.
-    if whdr.has_key('taxis_offsets'):
-        TR = whdr['TR']/1000.
-        if abs(whdr['taxis_offsets'][0]) < .001 and \
-           abs(whdr['taxis_offsets'][1] - TR/2) < .001:
-            whdr['SliceOrder'] = 'alt+z'
-        elif abs(whdr['taxis_offsets'][-1]) < .001 and \
-           abs(whdr['taxis_offsets'][-2] - TR/2) < .001:
-            whdr['SliceOrder'] = 'alt-z'
-        else:
-            raise RuntimeError('Could not determine slice ordering for %s' % \
-                                                                    filename)
-    else:
-        whdr['SliceOrder'] = 'unknown'
             
     return whdr
 
@@ -1228,7 +1047,9 @@ def read_afni_header(filename):
 #**********************************
 def read_voxbo_header(filename):
 #**********************************
+
     """
+    Function: read_voxbo_header(filename)
     Purpose: Return native tes header as a dictionary.
     """
 
@@ -1288,15 +1109,13 @@ def read_nifti_header(hdrname):
 
     try:
         f = open_gzbz2(hdrname, 'rb')
-        if f is None:
-            raise IOError
     except IOError:
         sys.stderr.write('Error while opening %s\n' % hdrname)
         return None
     whdr = {}
 
 #   Check for byteswapping.
-    fmt = 'i10s18sihcB8hfffhhhh8ffffhBbffffii80s24shhffffff4f4f4f16s4s'
+    fmt = 'i10s18sihcB8hfffhhhh8ffffhcbffffii80s24shhffffff4f4f4f16s4s'
     slgth = f.read(4)
     lgth = struct.unpack('<i', slgth)[0]
     if lgth == 348:
@@ -1307,7 +1126,8 @@ def read_nifti_header(hdrname):
         fmt = ">" + fmt
         lgth = struct.unpack('>i', slgth)[0]
     if lgth != 348:
-        raise IOError('\nFile is not in nifti format: %s\n'%hdrname)
+        sys.stderr.write('\nFile is not in nifti format: %s\n'%hdrname)
+        return None
 
 #   Now read the data.
     f.seek(0)
@@ -1319,8 +1139,7 @@ def read_nifti_header(hdrname):
         hdrdata = f.read()
     lgth = struct.calcsize(fmt)
     vhdr = struct.unpack(fmt, hdrdata[:lgth])
-    whdr['vhdr'] = vhdr
-    
+
 #   Read extension header if there is one.
     if len(hdrdata) > lgth:
         whdr['extcodes'] = fromstring(hdrdata[-4:],ubyte).tolist()
@@ -1371,7 +1190,9 @@ def read_nifti_header(hdrname):
         whdr['scl_slope'] = 1.
     whdr['scl_inter'] = vhdr[32] # Data scaling: offset. float funused2;     
     whdr['slice_end'] = vhdr[33] # Last slice index. float funused3;     
-    whdr['slice_code'] = vhdr[34] # Slice timing order.
+    whdr['slice_code'] = vhdr[34] # Slice timing order.  
+    if not whdr['slice_code'].isdigit():
+        whdr['slice_code'] = '0'
     whdr['xyzt_units'] = vhdr[35] # Units of pixdim[1..4]
     if not whdr['xyzt_units']:
         whdr['xyzt_units'] = 0
@@ -1416,9 +1237,9 @@ def read_nifti_header(hdrname):
     whdr['freq_dim'] = dim_info & 3
     whdr['phase_dim'] = (dim_info >> 2) & 3
     whdr['slice_dim'] = (dim_info >> 4) & 3
-    whdr['SliceOrder'] = nifti_slice_order_decode.get(whdr['slice_code'],
-                nifti_slice_order_decode[0])
-    whdr['intent_class'] = nifti_intent_decode.get(whdr['intent_code'],
+    whdr['slice_order'] = nifti_slice_order_decode.get(whdr['slice_code'], \
+                nifti_slice_order_decode['0'])
+    whdr['intent_class'] = nifti_intent_decode.get(whdr['intent_code'], \
                 nifti_intent_decode[0])
     whdr['qform'] = nifti_sqform_decode.get(whdr['qform_code'], '0')
     whdr['sform'] = nifti_sqform_decode.get(whdr['sform_code'], '0')
@@ -1474,8 +1295,7 @@ def read_ge_Ifile(filename, hdr):
         if len(dir) == 0:
             dir = os.path.cwd()
 
-    xdim, ydim, zdim, tdim, mdim  = hdr['dims'][:5]
-    nhdr = hdr['native_header']
+    xdim, ydim, zdim  = (hdr['xdim'], hdr['ydim'], hdr['zdim'])
 
 #   Find I-files in the specified directory.
     img_files = []
@@ -1484,72 +1304,59 @@ def read_ge_Ifile(filename, hdr):
         if isIfile(fullpath):
             img_files.append(fullpath)
     img_files.sort()
-
-    if nhdr['PulseSequenceName'].strip().lower() == '2dfast' and \
-                                                    hdr['ndim'] == 5:
-#       Field map data. reorder them. Acquired in order M-P-R-I
-        idx = range(0, 8*zdim, 4) + range(1, 8*zdim, 4) + \
-              range(2, 8*zdim, 4) + range(3, 8*zdim, 4)
-        mdim = 4; tdim = 2
-        hdr['mdim'] = 4; hdr['tdim'] = 2; hdr['dims'][3:5] = array([2,4])
-    else:
-        idx = range(zdim*tdim*mdim)
+    tdim = len(img_files)/zdim
+    hdr['tdim'] = tdim
 
 #   Read the files.
-    image = zeros((mdim*tdim*zdim, ydim, xdim)).astype(float)
+    image = zeros((tdim*zdim, ydim, xdim)).astype(float)
     length = int(xdim*ydim*hdr['bitpix']/8)
-    for z in range(zdim*tdim*mdim):
-#        sys.stdout.write('.')
-#        sys.stdout.flush()
-        zin = idx[z]
-        f_img = open_gzbz2(img_files[zin], "rb")
+    for z in range(zdim*tdim):
+        sys.stdout.write('.')
+        sys.stdout.flush()
+        f_img = open_gzbz2(img_files[z], "rb")
         f_img.seek(hdr['start_binary'])
         img = fromstring(f_img.read(length), hdr['datatype']).byteswap()
         if len(img) != xdim*ydim:
-            raise RuntimeError("\n**** file_io::read_file: Read from %s failed.\n%d words read; %d words requested.\n" % (img_files[z], len(img), xdim*ydim))
-
+            sys.stderr.write(\
+            "\n**** file_io::read_file: Read from %s failed.\n \
+     %d words read; %d words requested.\n" % \
+            (img_files[z], len(img), xdim*ydim))
+            return 1
         image[z, :, :] =  reshape(img, (ydim, xdim))
         f_img.close()
 
+    return reshape(image, [tdim, zdim, ydim, xdim])
 
-    return reshape(image, [hdr['mdim'], tdim, zdim, ydim, xdim])
-
-#***********************************
-def read_GE_ipfile(filename, slot=0):
-#***********************************
+#***************************
+def read_GE_ipfile(filename):
+#***************************
 
     """
-    Read header from GE I or P-file.
+    Read header from GE P-file.
     Returns a dictionary containing the header.
     """
     try:
-        import geio
-    except ImportError, errmsg:
-        sys.stderr.write(\
-                "\n%s\nP-files can only be read under Linux systems " % errmsg + \
-                "with gcc and with GE-proprietary header files.\n\n")
+        import GEio
+    except ImportError:
+        sys.stderr.write("\nP-files can only be read under Linux systems " + \
+                 "with gcc and with GE-proprietary header files.\n\n")
         return None
 
     freqdir_lookup = {2:"ROW", 1:"COL", "":"N/A"}
 
     if os.path.isdir(filename):
-        fnames = os.listdir(filename)
-        nfiles = 0
-        for fname in fnames:
-            if isIfile('%s/%s' % (filename, fname)):
-                nfiles += 1
-        if "I.001" in fnames:
+        files = os.listdir(filename)
+        if "I.001" in files:
             fname = "%s/I.001" % filename
-        elif "I.001.gz" in fnames:
+        elif "I.001.gz" in files:
             fname = "%s/I.001.gz" % filename
-        elif "I.001.bz2" in fnames:
+        elif "I.001.bz2" in files:
             fname = "%s/I.001.bz2" % filename
         else:
             sys.stderr.write(\
             '\nread_GE_ipfile: Could not find "I.001" in %s\n' % filename)
             return None
     else:
-        nfiles = 1
         if os.path.exists(filename):
             fname = filename
         elif os.path.exists('%s.gz' % filename):
@@ -1560,18 +1367,18 @@ def read_GE_ipfile(filename, slot=0):
             sys.stderr.write("\nread_GE_ipfile: Could not find %s\n", fname)
 
     try:
-        hdrlist = geio.get_ge_header(fname, slot)
+        list = GEio.get_ge_header(fname)
     except IOError, StandardError:
         sys.stderr.write(\
         "\nread_GE_ipfile: Could not read header from %s\n" % fname)
         return None
 
-    if hdrlist is None:
+    if list is None:
         return None
 
-    nhdr = {}
+    whdr = {}
 #    i = 0
-    for entry in hdrlist:
+    for entry in list:
         entry = string.translate(entry, transtab)
         words = entry.split()
         value = " ".join(words[1:]).strip()
@@ -1583,29 +1390,30 @@ def read_GE_ipfile(filename, slot=0):
             if value.isdigit():
 #               Integer
                 value = int(value)
-        nhdr[words[0].strip()] = value
+        whdr[words[0].strip()] = value
 
-#    nhdr['ndim'] = 2 + (1 if nhdr['NumberSlices'] > 1 else 0) \
-#             + (1 if nhdr['NumberExcitations'] > 1 else 0) \
-#             + (1 if nhdr['NumberOfEchoes'] > 1 else 0)
-    nhdr['ndim'] = 2 + (nhdr['NumberSlices'] > 1 and 1 or 0) \
-         + ((nhdr['NumberExcitations']>1 or (nhdr['NFrames']>1)) and 1 or 0) \
-         + (nhdr['NumberOfEchoes'] > 1 and 1 or 0)
-    nhdr['PhaseEncDir'] = freqdir_lookup.get(nhdr['FrequencyDirection'], 'N/A')
-    nhdr['Nfiles'] = nfiles
-    nhdr['SliceOrder'] = 'alt+z'
+#    whdr['ndim'] = 2 + (1 if whdr['NumberSlices'] > 1 else 0) \
+#             + (1 if whdr['NumberExcitations'] > 1 else 0) \
+#             + (1 if whdr['NumberOfEchoes'] > 1 else 0)
+    whdr['ndim'] = 2 + (whdr['NumberSlices'] > 1 and 1 or 0) \
+                     + (whdr['NumberExcitations'] > 1 and 1 or 0) \
+                     + (whdr['NumberOfEchoes'] > 1 and 1 or 0)
+    whdr['PhaseEncDir'] = freqdir_lookup.get(whdr['FrequencyDirection'], 'N/A')
 
-    return(nhdr)
+    return(whdr)
 
 #*************************************************
 def write_nifti_header(hdrname, hdr, newfile=True):
 #*************************************************
 
     """ 
-    filename is the name of the nifti header file.
-    hdr is a header dictionary.  Contents of the native header
-    will be used if it is a nifti header.
-    Returns: 0 if no error, otherwise 1.
+    Purpose:  Write native nifti header .
+    Arguments:
+            filename is the name of the nifti header file.
+            hdr is a header dictionary.  Contents of the native header
+                will be used if it is a nifti header.
+    Returns:
+            0 if no error, otherwise 1.
     """
 
 
@@ -1618,14 +1426,6 @@ def write_nifti_header(hdrname, hdr, newfile=True):
     else:
         ftype = 'unknown'
     Rout = hdr['R']
-
-#   Fix broken headers.
-    if hdr['mdim'] == 0:
-        hdr['mdim'] = 1
-    if hdr['tdim'] == 0:
-        hdr['tdim'] = 1
-    if hdr['zdim'] == 0:
-        hdr['zdim'] = 1
 
 #   Insert info for fieldmap correction if available.
     modify_nifti_auxfile(hdr)
@@ -1645,8 +1445,10 @@ def write_nifti_header(hdrname, hdr, newfile=True):
         qa, qb, qc, qd, qfac, qoffx, qoffy, qoffz = \
                                     (0., 0., 0., 0., 1., 0., 0., 0.)
         qform_code = c.NIFTI_XFORM_UNKNOWN
-# TODO
-    fmt = 'i10s18sihsB8hfffhhhh8ffffhBbffffii80s24shh6f4f4f4f16s4s'
+
+#    fmt = 'i10s18sihss8hfffhhhh8ffffhcbffffii80s24shh6f4f4f4f16s4s'
+#    print 400, struct.calcsize(fmt)
+    fmt = 'i10s18sihsB8hfffhhhh8ffffhcbffffii80s24shh6f4f4f4f16s4s'
     lgth = struct.calcsize(fmt)
     if hdr['swap']:
         fmt = ">" + fmt
@@ -1670,7 +1472,6 @@ def write_nifti_header(hdrname, hdr, newfile=True):
         freq_dim = whdr.get('freq_dim', 0)
         phase_dim = whdr.get('phase_dim', 0)
         slice_dim = whdr.get('slice_dim', 0)
-
     if not whdr.has_key('quatern_b'):
         # Existing header not for a nifti file.  Rewrite defaults.
         whdr = {'sizeof_hdr':348, 'data_type':"", 'db_name':"", \
@@ -1687,7 +1488,6 @@ def write_nifti_header(hdrname, hdr, newfile=True):
         'misc_units':'', 'sform_code':'unknown', 'intent_name':"", \
         'magic':"ni1"}
 
-
 #   Set orientation information.
     whdr['quatern_b'] = qb
     whdr['quatern_c'] = qc
@@ -1697,16 +1497,15 @@ def write_nifti_header(hdrname, hdr, newfile=True):
     whdr['qoffset_z'] = qoffz
     Rlpi = convert_R_to_lpi(hdr['R'], hdr['dims'], hdr['sizes'])
 #    Rlpi = hdr['R']
-    Rtmp = dot(Rlpi, diag([hdr['xsize'], hdr['ysize'], hdr['zsize'], 1.]))
     whdr['srow_x'] = zeros(4, float)
-    whdr['srow_x'][:] = Rtmp[0, :]
+    whdr['srow_x'][:] = Rlpi[0, :]
     whdr['srow_y'] = zeros(4, float)
-    whdr['srow_y'][:] = Rtmp[1, :]
+    whdr['srow_y'][:] = Rlpi[1, :]
     whdr['srow_z'] = zeros(4, float)
-    whdr['srow_z'][:] =  Rtmp[2, :]
-#    whdr['srow_x'][:3] *= hdr['xsize']
-#    whdr['srow_y'][:3] *= hdr['ysize']
-#    whdr['srow_z'][:3] *= hdr['zsize']
+    whdr['srow_z'][:] =  Rlpi[2, :]
+    whdr['srow_x'][:3] *= hdr['xsize']
+    whdr['srow_y'][:3] *= hdr['ysize']
+    whdr['srow_z'][:3] *= hdr['zsize']
     whdr['qfac'] = qfac
 
 #   Set undefined fields to zero. Spm puts garbage here.
@@ -1721,12 +1520,10 @@ def write_nifti_header(hdrname, hdr, newfile=True):
     whdr['dim'] = [hdr['ndim'], hdr['xdim'], hdr['ydim'], hdr['zdim'], \
                                hdr['tdim'], hdr['mdim'], 0, 0]
     whdr['slice_end'] = hdr['zdim']-1
-    if hdr['sizes'][3] > 0.:
-        TR = hdr['sizes'][3]
+    if hdr['subhdr'].get('TR',0.) is None:
+        TR = 0.
     else:
-        TR = hdr.get('TR',0.)
-        if TR == 0.:
-            TR = hdr['subhdr'].get('TR',0.)
+        TR = hdr['subhdr'].get('TR',0.)
     whdr['pixdim'] = [hdr['ndim'], hdr['xsize'], hdr['ysize'], hdr['zsize'], \
                     TR, hdr['msize'], 0., 0.]
     whdr['qoffset_x'] = qoffx
@@ -1740,8 +1537,8 @@ def write_nifti_header(hdrname, hdr, newfile=True):
     whdr['datatype'] = nifti_type_to_datacode[hdr['datatype']]
 
     whdr['dim_info'] = freq_dim | (phase_dim << 2) | (slice_dim << 4)
-    whdr['slice_code'] = nifti_slice_order_encode[ \
-                        hdr['native_header'].get('SliceOrder', 'unknown')]
+    whdr['slice_code'] = nifti_slice_order_encode[whdr.get('slice_order', \
+                                                            'unknown')]
     whdr['intent_code'] = nifti_intent_encode[whdr.get('intent_class', \
                                                             'unknown')]
     whdr['qform_code'] = nifti_sqform_encode.get(qform_code, c.NIFTI_XFORM_UNKNOWN)
@@ -1765,25 +1562,25 @@ def write_nifti_header(hdrname, hdr, newfile=True):
 
     whdr['vox_offset'] = vox_offset
 
-    binary_hdr = struct.pack(fmt, whdr['sizeof_hdr'], whdr['data_type'],
-        whdr['db_name'], whdr['extents'], whdr['session_error'], whdr['regular'],
-        whdr['dim_info'], whdr['dim'][0], whdr['dim'][1], whdr['dim'][2],
-        whdr['dim'][3], whdr['dim'][4], whdr['dim'][5], whdr['dim'][6],
-        whdr['dim'][7], whdr['intent_p1'], whdr['intent_p2'], whdr['intent_p3'],
-        whdr['intent_code'], whdr['datatype'], whdr['bitpix'],
-        whdr['slice_start'], whdr['qfac'], whdr['pixdim'][1], whdr['pixdim'][2],
-        whdr['pixdim'][3], whdr['pixdim'][4], whdr['pixdim'][5],
-        whdr['pixdim'][6], whdr['pixdim'][7], whdr['vox_offset'],
-        hdr['scale_factor'], hdr['scale_offset'], whdr['slice_end'],
-        whdr['slice_code'], whdr['xyzt_units'], whdr['cal_max'], whdr['cal_min'],
-        whdr['slice_duration'], whdr['toffset'], whdr['glmax'], whdr['glmin'],
-        whdr['descrip'], whdr['aux_file'], whdr['qform_code'], whdr['sform_code'],
-        whdr['quatern_b'], whdr['quatern_c'], whdr['quatern_d'],
-        whdr['qoffset_x'], whdr['qoffset_y'], whdr['qoffset_z'],
-        whdr['srow_x'][0], whdr['srow_x'][1], whdr['srow_x'][2], whdr['srow_x'][3],
-        whdr['srow_y'][0], whdr['srow_y'][1], whdr['srow_y'][2], whdr['srow_y'][3],
-        whdr['srow_z'][0], whdr['srow_z'][1], whdr['srow_z'][2], whdr['srow_z'][3],
-        whdr['intent_name'], whdr['magic'])
+    binary_hdr = struct.pack(fmt, whdr['sizeof_hdr'], whdr['data_type'], \
+    whdr['db_name'], whdr['extents'], whdr['session_error'], whdr['regular'], \
+    whdr['dim_info'], whdr['dim'][0], whdr['dim'][1], whdr['dim'][2], \
+    whdr['dim'][3], whdr['dim'][4], whdr['dim'][5], whdr['dim'][6], \
+    whdr['dim'][7], whdr['intent_p1'], whdr['intent_p2'], whdr['intent_p3'], \
+    whdr['intent_code'], whdr['datatype'], whdr['bitpix'], \
+    whdr['slice_start'], whdr['qfac'], whdr['pixdim'][1], whdr['pixdim'][2], \
+    whdr['pixdim'][3], whdr['pixdim'][4], whdr['pixdim'][5], \
+    whdr['pixdim'][6], whdr['pixdim'][7], whdr['vox_offset'], \
+    hdr['scale_factor'], hdr['scale_offset'], whdr['slice_end'], \
+    whdr['slice_code'], whdr['xyzt_units'], whdr['cal_max'], whdr['cal_min'], \
+    whdr['slice_duration'], whdr['toffset'], whdr['glmax'], whdr['glmin'], \
+    whdr['descrip'], whdr['aux_file'], whdr['qform_code'], whdr['sform_code'], \
+    whdr['quatern_b'], whdr['quatern_c'], whdr['quatern_d'], \
+    whdr['qoffset_x'], whdr['qoffset_y'], whdr['qoffset_z'], \
+    whdr['srow_x'][0], whdr['srow_x'][1], whdr['srow_x'][2], whdr['srow_x'][3], \
+    whdr['srow_y'][0], whdr['srow_y'][1], whdr['srow_y'][2], whdr['srow_y'][3], \
+    whdr['srow_z'][0], whdr['srow_z'][1], whdr['srow_z'][2], whdr['srow_z'][3], \
+    whdr['intent_name'], whdr['magic'])
 
 #    try:
     if True:
@@ -1803,7 +1600,7 @@ def write_nifti_header(hdrname, hdr, newfile=True):
 
     if hdr['filetype'] == 'n+1':
         ecodes = whdr.get('extcode', zeros(4,byte))
-        if isinstance(ecodes, list):
+        if isinstance(ecodes,list):
             ecodes = array(ecodes)
         if ecodes[0]:
 #           Extension is present.
@@ -1843,7 +1640,6 @@ def make_to3d_cmd(input_file, output_file, dirname, hdr, input_datum_type):
     xorient, yorient, zorient, x0, y0, z0 = params
     dim_mm = array([(xdim-1)*xsize, (ydim-1)*ysize, (zdim-1)*zsize])
     Rr = hdr['R'][:3,:3]
-#    x0tox1 = dot(Rr.T, dot(Rr, dim_mm) + hdr['R'][:3,3])
     x0tox1 = dot(abs(Rr).transpose(),dot(Rr,dim_mm) + hdr['R'][:3,3])
     x0, y0, z0 = dot(abs(Rr).transpose(), hdr['R'][:3,3]).tolist()
     x1 = x0tox1[0]
@@ -1883,8 +1679,10 @@ def make_to3d_cmd(input_file, output_file, dirname, hdr, input_datum_type):
         view = 'tlrc'
     else:
         view = 'orig'
-    fname =  hdr['imgfile'].replace('+orig','')
-    hdr['imgfile'] = '%s+%s' % (fname, view)
+    if hdr['imgfile'][-5] == '+':
+        hdr['imgfile'] = '%s+%s' % (hdr['imgfile'][:-5], view)
+    else:
+        hdr['imgfile'] = '%s+%s' % (hdr['imgfile'], view)
 
     stat_types = {'Ttest':'fitt', 'Ztest':'fizt', 'Ftest':'fift'}
     if tdim == 2 and hdr['subhdr'].has_key('StatType'):
@@ -1953,8 +1751,7 @@ def make_to3d_cmd(input_file, output_file, dirname, hdr, input_datum_type):
     format_code = format_codes.get(input_datum_type, 'unknown')
 
     if to3d_type == 'epan' or to3d_type == 'abuc' or to3d_type == 'fbuc':
-        slice_order = hdr['subhdr'].get('SliceOrder', 'unknown')
-        timedef = '-time:zt %d %d %5.0f %s' %  (zdim, tdim, TR, slice_order)
+        timedef = '-time:zt %d %d %5.0f alt+z' % (zdim, tdim, TR)
     else:
         timedef = ''
 
@@ -1969,6 +1766,9 @@ def make_to3d_cmd(input_file, output_file, dirname, hdr, input_datum_type):
           % (to3d_type, timedef, xstr, ystr, zstr, orient_str, data_type, gsfac, \
           prefix, str_sess, view, statpar, format_code, xdim, ydim, zdim*tdim, \
           input_file)
+
+#    print to3d_cmd
+#    print '\nRefit cmd: ',refit_cmd
 
     return to3d_cmd, refit_cmd 
 
@@ -2164,12 +1964,14 @@ def afni_to_rot44(xdim, ydim, zdim, xsize, ysize, zsize, x0, y0, z0, \
 #***************************************************************************
 
     """
-    Purpose: Convert afni orientation info to a 4x4 transform matrix.
-    xdim, ydim, zdim: Image dimensions.
-    xsize, ysize, zsize: Voxel size.
-    x0, y0, z0: Origin as defined in the HEAD file.
-    xorient, yorient, zorient: AFNI orientation definitions.
-    Returns a 4x4 matrix defining transformation from (i,j,k) coordinates in
+    Purpose" Convert afni orientation info to a 4x4 transform matrix.
+    Arguments:
+        xdim, ydim, zdim: Image dimensions.
+        xsize, ysize, zsize: Voxel size.
+        x0, y0, z0: Origin as defined in the HEAD file.
+        xorient, yorient, zorient: AFNI orientation definitions.
+    Returns:
+        4x4 matrix defining transformation from (i,j,k) coordinates in
         image space to (x,y,z) coordinates in RAI space.  
     """
 
@@ -2295,22 +2097,15 @@ def pfile_nhdr_to_rot44(nhdr):
     """
 
 #   Find rotation matrix by first finding afni definition.
-    signs = {'R':0, 'L':1, 'P':0, 'A':1, 'I':0, 'S':1}
-    swap_start = {'R':'L', 'L':'R', 'P':'A', 'A':'P', 'I':'S', 'S':'I'}
+    sign = {'R':0, 'L':1, 'P':0, 'A':1, 'I':0, 'S':1}
     if nhdr['StartRAS'] == 'L'or nhdr['StartRAS'] == 'R':
 #        orientation = 'sagittal'
         if float(nhdr['TopLeftCornerA']) < float(nhdr['TopRghtCornerA']):
             xyz = 'P'
-            x0 = float(nhdr['TopRghtCornerA'])
+            x0 = float(nhdr['TopLeftCornerA'])
         else:
             xyz = 'A'
-            x0 = -float(nhdr['TopLeftCornerA'])
-
-#       Adjust origin to center of first sample.
-        if x0 < 0:
-            x0 += nhdr['FOVx']/nhdr['ImageDimensionX']
-        else:
-            x0 -= nhdr['FOVx']/nhdr['ImageDimensionX']
+            x0 = float(nhdr['TopRghtCornerA'])
 
         if float(nhdr['TopRghtCornerS']) > float(nhdr['BotRghtCornerS']):
             xyz = xyz + 'S'
@@ -2319,16 +2114,14 @@ def pfile_nhdr_to_rot44(nhdr):
             xyz = xyz + 'I'
             y0 = float(nhdr['TopLeftCornerS'])
 
-        if y0 < 0:
-            y0 += nhdr['FOVy']/nhdr['ImageDimensionY']
+        slice_axis = nhdr['StartRAS']
+        xyz = xyz + slice_axis
+        if sign[slice_axis]:
+            z0 = float(nhdr['EndLoc'])
         else:
-            y0 -= nhdr['FOVy']/nhdr['ImageDimensionY']
-#        xyz = xyz + nhdr['StartRAS']
-#        z0 = float(nhdr['StartLoc'])
-
+            z0 = float(nhdr['StartLoc'])
     elif nhdr['StartRAS'] == 'I'or nhdr['StartRAS'] == 'S':
 #        orientation = 'axial'
-#        sys.stderr.write('Potential error in R matrix\n')
         if float(nhdr['TopLeftCornerR']) > float(nhdr['TopRghtCornerR']):
             x0 = float(nhdr['TopRghtCornerR'])
             xyz = 'R'
@@ -2340,14 +2133,14 @@ def pfile_nhdr_to_rot44(nhdr):
             xyz = xyz + 'A'
             y0 = float(nhdr['BotRghtCornerA'])
 #            yorient = 3  # A-P
-        else: 
+        else:
             xyz = xyz + 'P'
             y0 = float(nhdr['TopRghtCornerA'])
 #            yorient = 2  # P-A
 #        xyz = xyz + nhdr['StartRAS']
 #        z0 = float(nhdr['StartLoc'])
     else:
-#        sys.stderr.write('Potential error in R matrix\n')
+#        orientation = 'coronal'
         if float(nhdr['TopLeftCornerR']) < float(nhdr['TopRghtCornerR']):
             xyz = 'R'
             x0 = float(nhdr['TopRghtCornerR'])
@@ -2364,21 +2157,15 @@ def pfile_nhdr_to_rot44(nhdr):
 #        xyz = xyz + nhdr['StartRAS']
 #        z0 = float(nhdr['StartLoc'])
 
-#    signs = {'R':0, 'L':1, 'P':0, 'A':1, 'I':0, 'S':1}
-#    swap_start = {'R':'L', 'L':'R', 'P':'A', 'A':'P', 'I':'S', 'S':'I'}
 #   Now get the slice axis.
     slice_axis = nhdr['StartRAS']
-    if not signs.has_key(slice_axis):
+    if not sign.has_key(slice_axis):
         return(identity(4))
-    if signs[slice_axis]:
-#        z0 = -float(nhdr['EndLoc'])
-        z0 = -float(nhdr['StartLoc'])
+    xyz = xyz + slice_axis
+    if sign[slice_axis]:
+        z0 = float(nhdr['EndLoc'])
     else:
         z0 = float(nhdr['StartLoc'])
-    if nhdr['StartRAS'] == nhdr['EndRAS']:
-        if float(nhdr['EndLoc']) > float(nhdr['StartLoc']) and nhdr['StartRAS'] in 'LPS':
-            slice_axis = swap_start[slice_axis]
-    xyz = xyz + slice_axis
 
     xorient = 'RLPAIS'.index(xyz[0])
     yorient = 'RLPAIS'.index(xyz[1])
@@ -2389,14 +2176,14 @@ def pfile_nhdr_to_rot44(nhdr):
     zdim = nhdr['NumberSlices']
 #    xsize = float(nhdr['FOVx'])/float(nhdr['ImageDimensionX'])
 #    ysize = float(nhdr['FOVy'])/float(nhdr['ImageDimensionY'])
-    xsize = nhdr['DimensionX']
-    ysize = nhdr['DimensionY']
+    xsize = nhdr['PixelSizeX']
+    ysize = nhdr['PixelSizeY']
     zsize = float(nhdr['SliceThickness']) + float(nhdr['ScanSpacing'])
 
-#    code = '%d %d %d %f %f %f' % (xdim, ydim, zdim, xsize, ysize, zsize)
-#    code1 = ' %f %f %f %d %d %d' % (x0, y0, z0, xorient, yorient, zorient)
-#    nhdr['Aaatest_code'] = code
-#    nhdr['Abatest_code'] = code1
+    code = '%d %d %d %f %f %f' % (xdim, ydim, zdim, xsize, ysize, zsize)
+    code1 = ' %f %f %f %d %d %d' % (x0, y0, z0, xorient, yorient, zorient)
+    nhdr['Aaatest_code'] = code
+    nhdr['Abatest_code'] = code1
 
     R = afni_to_rot44(xdim, ydim, zdim, xsize, ysize, zsize, x0, y0, z0, \
                         xorient, yorient, zorient)
@@ -2476,7 +2263,6 @@ def rot44_to_quatern(R):
     r23 = r23/zd
     r33 = r33/zd
 
-    from numpy.linalg import det
     tst = det(Rlpi[:3, :3]) # Should be -1 or 1
     if tst > 0:
         qfac = 1.0
@@ -2764,8 +2550,39 @@ def flip_image(image, xflip, yflip):
     
 
   
+#**************************
+def exec_cmd(cmd, skip, lcv):
+#**************************
+
+    """
+    Purpose: 
+        Wrap the python system command.
+    Arguments:
+        cmd: Unix command with arguments as a string.
+        skip: Don't execute but print if lcv=True
+        lcv: True = verbose mode.
+    Returns:
+        0 if successful completion.
+    
+    """
+    global EXIT_ON_ERROR
+    if(skip):
+        return
+    if(lcv):
+        print cmd
+    else:
+        cmd = cmd + " > /dev/null"
+    status = os.system(cmd)
+    if(status and not lcv):
+        print "\n****** Error occurred while executing: ******"
+        print cmd
+        print "Aborting procedure\n\n"
+        return 1
+    return 0
+
+
 #******************
-def isIfile(prefix):
+def isIfile(fname):
 #******************
     """
     Purpose: 
@@ -2777,19 +2594,9 @@ def isIfile(prefix):
     """
 
     try:
-        if os.path.isdir(prefix):
-            fname = '%s/I.001' % prefix
-        else:
-            fname = prefix
-        exts = ('', '.gz', '.bz2')
-        for ext in exts:
-            if os.path.exists(fname+ext):
-                f = open_gzbz2(fname+ext, 'rb')
-                break
-        else:
-            return False
-        code = f.read(4)
-        f.close()
+        file = open_gzbz2(fname, 'rb')
+        code = file.read(4)
+        file.close()
         if code == "IMGF":
             return(True)
         else:
@@ -2873,13 +2680,25 @@ def rot44_oblique(whdr):
 class NativeHeader():
     """
     Purpose: 
-        Create a dictionary containing native header elements.
+        Provide unifrom interface to native header functions.
     """
     def _get_dicom_header(self, scan=False):
-        self.dcm = Dicom(self.hdrname, scan=scan)
-        if self.dcm.nhdr is None:
+        try:
+            self.dcm = Dicom(self.hdrname)
+            if self.dcm.hdr is None:
+#               Unsupported syntax or storage class.
+                return None
+        except (RuntimeError, IOError), errstr:
+            if 'Unsupported storage class' in errstr.args[0]:
+                sys.stderr.write('%s\n' %  errstr)
+            else:
+                sys.stderr.write('\n%s\nError reading dicom header from %s\n'% \
+                                         (errstr, except_msg()))
             return None
-        self.nhdr = self.dcm.nhdr
+#        sys.stdout.write( ' 6c ' + self.timer.ReadTimer() )
+#        Dicom.__init__(self.hdrname)
+        self.nhdr = self.dcm.get_native_header(scan=scan)
+#        sys.stdout.write( ' 7c ' + self.timer.ReadTimer() + '\n')
         return self.nhdr
     def _get_nifti_header(self, scan=False):
         self.nhdr = read_nifti_header(self.hdrname)
@@ -2894,7 +2713,7 @@ class NativeHeader():
         self.nhdr = read_analyze_header(self.hdrname)
         return self.nhdr
     def _get_GE_ipfile_header(self, scan=False):
-        self.nhdr = read_GE_ipfile(self.hdrname, self.slot)
+        self.nhdr = read_GE_ipfile(self.hdrname)
         return self.nhdr
     def _get_none_header(self, scan=False):
         self.nhdr = None
@@ -2930,9 +2749,15 @@ class SubHeader(NativeHeader):
     """
     def _get_dicom_shdr(self):
         nhdr = self.nhdr
-        if not nhdr['ImageData']:
-            return None
         
+  #      if nhdr.get('SeriesTime',None) is not None and nhdr['SeriesTime'].isdigit():
+  #          sct = nhdr['SeriesTime']
+  #          if len(sct) > 6:
+  #              ctime = datetime.fromtimestamp(float(sct).ctime()).strftime('%d%b%Y_%X')
+  #          else:
+  #              ctime = '%s:%s:%s' % (sct[:2], sct[2:4], sct[4:])
+  #      else:
+  #          ctime = 'unknown'
         ctime = convert_unix_time(nhdr.get('SeriesTime',None))
         self.shdr = {\
                 'AcqTime':ctime, \
@@ -2948,7 +2773,7 @@ class SubHeader(NativeHeader):
                 'SeriesTime':nhdr.get('ActualSeriesDateTime',0), \
                 'SeriesDescription':nhdr['SeriesDescription'], \
                 'SeriesNumber':nhdr['SeriesNumber'], \
-#                'StartImage':nhdr['StartImage'], \
+                'StartImage':nhdr['StartImage'], \
                 'StudyDate':nhdr['StudyDate'], \
                 'StudyDescription':nhdr['StudyDescription'], \
                 'SeriesDateTime':nhdr['SeriesDateTime'], \
@@ -2967,29 +2792,33 @@ class SubHeader(NativeHeader):
         elif self.nhdr['Modality'] == 'PT':
             self.shdr['TR'] = nhdr['ActualFrameDuration']
 
-#       Fix slice order based on sorting procedure.
-#        if not nhdr.has_key('SliceOrder'):
-        if nhdr.has_key('DicomInfo'):
-            if nhdr['DicomInfo'].has_key('ndig'):
-                first_slice = nhdr['DicomInfo']['0_0_0'][0]
-            else:
-                first_slice = int(nhdr['DicomInfo']['0_0_0'][0].split('.')[1])
-            if first_slice == 1:
-                nhdr['SliceOrder'] = 'alt+z'
-            else:
-                nhdr['SliceOrder'] = 'alt-z'
-        else:
-            nhdr['SliceOrder'] = 'None'
-        self.shdr['SliceOrder'] = nhdr['SliceOrder']
+#        zdir = 1 # Slices always arranged in ascending order of slice location.
+#        R, Rsize = dicom_to_rot44(nhdr['ImageOrientation'], \
+#                nhdr['ImagePosition'], nhdr['PixelSpacing'][0], \
+#                nhdr['PixelSpacing'][1], nhdr['SpacingBetweenSlices'], \
+#                nhdr['Columns'], nhdr['Rows'], nhdr['LocationsInAcquisition'], \
+#                zdir)
 
         R = nhdr['R']
 #       Correct z-axis position if all files have been scanned.
+      #  zaxis = argmax(abs(R[:3, 2]))
+        #dicominfo = nhdr.get('DicomInfo',None)
+#       # if dicominfo is not None and 'MOSAIC' not in nhdr['ImageFormat'][-1]:
+        #if dicominfo is not None: # and 'MOSAIC' not in nhdr['ImageFormat'][-1]:
+        #    start_loc = nhdr['DicomInfo']['dims'].get('StartLoc',None)
+        #    if start_loc is not None:
+#       #        Report header in sorted order rather than acquired order.
+        #        znew = zeros(3, float)
+        #        znew[2] = start_loc
+        #        iznew = dot(abs(R[:3,:3]).round().transpose(),znew)
+        #        indctr = dot(abs(R[:3,:3]).round(),array([0.,0.,1.]))
+        #        R[:3, 3] = (1. - indctr)*R[:3,3] + iznew
         self.protohdr = { \
             'dims':(nhdr['ndim'], nhdr['Columns'], nhdr['Rows'], \
                     nhdr['LocationsInAcquisition'], nhdr['NumberOfFrames'], \
                     nhdr['TypeDim']), \
             'sizes':(nhdr['PixelSpacing'][0], nhdr['PixelSpacing'][1], \
-                    abs(nhdr['SpacingBetweenSlices']), self.shdr['TR'], 1.),\
+                    nhdr['SpacingBetweenSlices'], self.shdr['TR'], 1.),\
             'origin':nhdr['ImagePosition'], \
             'vox_info':(nhdr['Columns']*nhdr['Rows']* \
                     nhdr['LocationsInAcquisition']* \
@@ -2997,10 +2826,9 @@ class SubHeader(NativeHeader):
                     nhdr['BitsStored'], \
                     dicom_datanum_to_code.get(nhdr['BitsStored'], 'unknown'), \
 #                    1 if nhdr['HighBit'] == 0 else 0, nhdr['StartImage']), \
-#                    nhdr['HighBit'] == 0 and 1 or 0, nhdr['StartImage']), \
-                    nhdr['HighBit'] == 0 and 1 or 0, -1), \
-#                    nhdr['HighBit'] == 0 and 1 or 0, nhdr['StartImage']), \
+                    nhdr['HighBit'] == 0 and 1 or 0, nhdr['StartImage']), \
             'scale':(1., 0.), 'R':R}
+#                    1 if nhdr['HighBit'] == 0 else 0, nhdr['StartImage']), \
         return self.shdr
 
     def _get_nifti_shdr(self):
@@ -3011,14 +2839,6 @@ class SubHeader(NativeHeader):
         TR = nhdr['pixdim'][4]*time_to_scalefactor[nhdr['time_units']]
         if TR < 10: # Looks like TR is in seconds 
             TR = TR*1000
-
-            
-
-#       Fix broken headers.
-        for i in xrange(8):
-            if nhdr['dim'][i] == 0:
-                nhdr['dim'][i] = 1
-
         self.protohdr = {'dims':(nhdr['dim'][0], nhdr['dim'][1], 
             nhdr['dim'][2], nhdr['dim'][3], nhdr['dim'][4], nhdr['dim'][5]), \
             'sizes':(nhdr['pixdim'][1], nhdr['pixdim'][2], nhdr['pixdim'][3], \
@@ -3032,8 +2852,6 @@ class SubHeader(NativeHeader):
         self.shdr['TR'] = TR
         self.shdr['SeriesDescription'] = nhdr['descrip']
         self.shdr['EffEchoSpacing'] = nhdr.get('EffEchoSpacing','N/A')
-
-        self.shdr['SliceOrder'] = nhdr['SliceOrder']
         return self.shdr
 
     def _get_afni_shdr(self):
@@ -3073,8 +2891,6 @@ class SubHeader(NativeHeader):
             nhdr['orient_specific'][2])
         self.shdr = none_subhdr.copy()
         self.shdr['TR'] = nhdr.get('TR', 0)
-        if nhdr.has_key('SliceOrder'):
-            self.shdr['SliceOrder'] = nhdr['SliceOrder']
         if nhdr.has_key('brick_statsym'):
             if ';' in nhdr['brick_statsym']:
 #               HEAD file not written by fmristat.
@@ -3146,57 +2962,12 @@ class SubHeader(NativeHeader):
     def _get_GE_ipfile_shdr(self):
         nhdr = self.nhdr
 #        data_type = 'short' if nhdr['PointSize'] == 2 else 'integer'
-        if nhdr['PointSize'] == 1:
-            nhdr['PointSize'] = 2
         data_type = nhdr['PointSize'] == 2 and 'short' or 'integer'
         R = pfile_nhdr_to_rot44(nhdr)
         orientstring = R_to_orientstring(R)
-        if self.filetype == 'ge_data':
-            xdim = nhdr['DAResolutionX']; ydim = nhdr['DAResolutionY']
-#            zdim = nhdr['NumberSlices']
-            nslices = nhdr['NumberSlices']
-            if nhdr.has_key('NumberExcitations'):
-                nframes = float(nhdr['NumberExcitations'])
-            else:
-                nframes = float(nhdr['NumberSlicesTotal'])/nslices
-            nframes = int(nframes)
-            try:
-                # Sometimes this raises div by zero.
-                nchan = int((self.nbytes - nhdr['StartImage'])/ \
-                          (2*nhdr['PointSize']*xdim*ydim*nslices*nframes))
-            except:
-                nchan = 1
-            zdim = nslices
-            if nchan > 1:
-                tdim = nchan
-                mdim = nframes
-            else:
-                tdim = nframes
-                mdim = 1
-            data_type = 'complex'
-        elif 'epi' in nhdr['PulseSequenceFile'].lower():
-            xdim = nhdr['ImageDimensionX']; ydim = nhdr['ImageDimensionY']
-            zdim = nhdr['NumberSlices']
-            tdim = nhdr['NumberExcitations']
-            mdim = 1
-        elif nhdr['Nfiles'] == \
-                nhdr['NFrames']*nhdr['NumberOfEchoes']*nhdr['NumberSlices']:
-            xdim = nhdr['ImageDimensionX']; ydim = nhdr['ImageDimensionY']
-            zdim = nhdr['NumberSlices']
-            tdim = nhdr['NFrames']
-            mdim = nhdr['NumberOfEchoes']
-        elif self.filetype == 'ge_ifile':
-            xdim = nhdr['ImageDimensionX']
-            ydim = nhdr['ImageDimensionY']
-            zdim = nhdr['NumberSlices']
-            tdim = nhdr['NFrames']
-            mdim = nhdr['Nfiles']/(zdim*tdim)
-        else:
-            raise RuntimeError('Unrecognized file type: %s for %s' % \
-                                        (self.filetype, self.filename))
-                
-        self.protohdr = {'dims':(nhdr['ndim'], \
-            xdim, ydim, zdim, tdim, mdim), \
+        self.protohdr = {'dims':(nhdr['ndim'], nhdr['ImageDimensionX'], \
+            nhdr['ImageDimensionY'], nhdr['NumberSlices'], \
+            int(nhdr['NumberExcitations']), nhdr['NumberOfEchoes']), \
             'sizes':(nhdr['PixelSizeX'], nhdr['PixelSizeY'], \
             float(nhdr['SliceThickness'])+float(nhdr['ScanSpacing']), \
             float(nhdr.get('RepetitionTime',0.)), 1.), \
@@ -3252,25 +3023,36 @@ class Header(SubHeader, NativeHeader):
     Purpose:
         Read native header, create sub-header, and pack into a single 
         dictionary to comprise the header.
+    Methods:
+        __init__(filename,scan=False
+            Reads header.
+            Arguments:
+                filename: filename to be read.
+            Keyword:
+                scan: only has meaning for the dicom format. If true, every
+                file in the directory is examined.
+        get_header(scan=False)
+            Keyword:
+                scan: only has meaning for the dicom format. If true, every
+                file in the directory is examined.
+            Returns:
+                header: A dictionary containing elements common to all file
+                    types, a sub-header, and the native header.
+      Attributes:
+             header.
     """
-    def __init__(self, path_in=None, scan=False, native_header=None, \
-                 ignore_yaml=False, slot=0):
-        """
-        Check if there is a yaml or pickle file (dicom and GE I-file only). 
-        If so, read the header from the yaml or pickle file.  Otherewise,
-        read it from the data itself.
-        """
+    def __init__(self, path=None, scan=False, native_header=None, \
+                 ignore_yaml=False):
+
         self.hdr = None
         self.shdr = {}
         self.nhdr = None
         self.scan = scan
-        self.slot = slot
         self.filetype_to_nhdrmeth = {\
             'dicom':self._get_dicom_header, \
             'brik':self._get_afni_header, \
             'ni1':self._get_nifti_header, \
             'n+1':self._get_nifti_header, \
-            'nii':self._get_nifti_header, \
             'analyze':self._get_analyze_header, \
             'tes':self._get_voxbo_header, \
             'ge_data':self._get_GE_ipfile_header, \
@@ -3286,44 +3068,28 @@ class Header(SubHeader, NativeHeader):
             'ge_data':self._get_GE_ipfile_shdr, \
             'ge_ifile':self._get_GE_ipfile_shdr, \
             'none':self._get_none_shdr}
-        if path_in is None:
-            path = None
-            self.filename = None
-        else:
-            path = os.path.abspath(path_in)
-            self.filename = path
+        self.filename = path
 
         if native_header:
             self.nhdr = native_header
-            yaml_name = None
         elif not ignore_yaml:
             if os.path.isdir(path):
-                yaml_name = self.CheckYaml('%s/%s' % \
-                                            (path, os.path.basename(path)))
-            else:
-                yaml_name = self.CheckYaml(path)
-        else:
-            yaml_name = None
-        if yaml_name is not None:
-            self.ReadYaml(yaml_name)    
+#               Check for yaml file.
+                files = os.listdir(path)
+                if len(files) > 10:
+                    for fname in files:
+#                       Look for a yaml file.
+                        if fname.endswith('.yaml'):
+#                           It contained the header. 
+#                            fname = os.path.abspath(fname)
+                            fname = '%s/%s' % (path, fname)
+                            self.ReadYaml(fname)
+                            break
+            elif path.endswith('.yaml'):
+                self.ReadYaml(path)
+
         if self.hdr is None:  
             self.hdr = self.get_header(scan=scan)
-
-
-    def CheckYaml(self, prefix):
-        """
-        Check for the existence of a yaml or pickle file.
-        """
-        if os.path.exists('%s.pickle' % prefix):
-            return '%s.pickle' % prefix
-        elif os.path.exists('%s.yaml' % prefix):
-            return '%s.yaml' % prefix
-        elif os.path.exists('%s.yaml.gz' % prefix):
-            return '%s.yaml' % prefix
-        elif os.path.exists('%s.yaml.bz2' % prefix):
-            return '%s.yaml' % prefix
-        else:
-            return None
 
     def ReadYaml(self, fname):
         """
@@ -3331,14 +3097,7 @@ class Header(SubHeader, NativeHeader):
         and then rewritten in this format.
         """
         dirname = os.path.dirname(fname)
-        if 'yaml' in fname:
-            self.hdr = self.read_hdr_from_yaml(fname)
-        elif fname.endswith('.pickle'):
-            f = open(fname, 'r')
-            self.hdr = cPickle.load(f)
-            f.close()
-        else:
-            raise RuntimeError('Invalid file name: %s' % fname)
+        self.hdr = self.read_hdr_from_yaml(fname)
         if self.hdr is None:
             return
         if self.hdr.has_key('imgfile'):
@@ -3358,19 +3117,9 @@ class Header(SubHeader, NativeHeader):
                 nhdr['FileName'] = '%s/%s' % \
                     (dirname, os.path.basename(nhdr['FileName']))
             nhdr['dirname'] = dirname
-        if self.hdr['filetype'] == 'ge_ifile':
-            self.hdr['mdim'] = self.hdr['native_header']['Nfiles']/ \
-                                (self.hdr['zdim']*self.hdr['tdim'])
-            self.hdr['dims'][4] = self.hdr['mdim']
-        elif self.hdr['filetype'] == 'dicom':
-            imgfile = '%s/%s' % (os.path.dirname(fname), \
-                                os.path.basename(self.hdr['imgfile']))
-            if os.path.exists(imgfile):
-                dicom_name = imgfile
-            elif os.path.exists(imgfile + '.bz2'):
-                dicom_name = imgfile + '.bz2'
-            elif os.path.exists(imgfile + '.gz'):
-                dicom_name = imgfile + '.gz'
+        if self.hdr['filetype'] == 'dicom':
+            if os.path.exists(self.hdr['imgfile']):
+                dicom_name = self.hdr['imgfile']
             else:
                 dirname = os.path.dirname(fname)
                 fnames = os.listdir(dirname)
@@ -3379,11 +3128,6 @@ class Header(SubHeader, NativeHeader):
                     if isdicom(fullname):
                         dicom_name = fullname
                         break
-                    elif fname.endswith('.tar'):
-                        dt = DicomTar(fullname)
-                        if dt.isTar:
-                            dicom_name = fullname
-                            break
                 else:
                     self.dcm = None
                     return
@@ -3397,120 +3141,22 @@ class Header(SubHeader, NativeHeader):
                     dims = self.dcm.dicominfo['dims']
                     self.dcm.scan = True
                     self.scan = True
-#                   Fix for bug in yaml files uploaded in early 2011.
-                    self.nhdr['LocationsInAcquisition'] = dims['zdim']
-                    self.nhdr['NumberOfFrames'] = dims['tdim']
-                    self.nhdr['EchoTimes'] = dims['EchoTimes']
-                    self.dcm.nhdr['LocationsInAcquisition'] = dims['zdim']
-                    self.dcm.nhdr['NumberOfFrames'] = dims['tdim']
-                    self.hdr['zdim'] = dims['zdim']
-                    self.hdr['tdim'] = dims['tdim']
-                    self.hdr['mdim'] = dims['TypeDim']
-                    if self.hdr['mdim'] > 1:
-                        self.hdr['ndim'] = 5
-                    elif self.hdr['tdim'] > 1:
-                        self.hdr['ndim'] = 4
-                    elif self.hdr['zdim'] > 1:
-                        self.hdr['ndim'] = 3
-                    else:
-                        self.hdr['ndim'] = 2
-                    self.hdr['dims'][2:5] = [dims['zdim'], dims['tdim'], \
-                                                    dims['TypeDim']]
-
-#                   Test if yaml file written after left-right flip bug  that
-#                   occurred Spring 2011. If SliceOrder is present, the hdr 
-#                   can be trusted. Otherwise recompute R.
-                    if not dims.has_key('SliceOrder') and \
-                       self.nhdr['FirstScanRas'] is not None and \
-                       self.nhdr['FirstScanLocation'] is not None:
-                        self.hdr['R'], self.hdr['orientation'] = \
-                                                        self.GetDicomOrient()
-                    else:
-                        self.shdr['SliceOrder'] = self.nhdr.get('SliceOrder', None)
                 else:
                     self.dcm.scan = False
                     self.scan = False
-
-    def GetDicomOrient(self):
-        """
-        Deduce the transformation matrix that would transform the data within
-        a DICOM series into the RAI coordinate system.
-        """
-        dims = self.dcm.dicominfo['dims']
-        start_ras = self.nhdr['FirstScanRas'].strip()
-        revras = {'R':'L', 'A':'P', 'I':'S', 'L':'R', 'P':'A', 'S':'I'}
-        if self.nhdr['DicomInfo'].has_key('0_0_1'):
-            if self.nhdr['DicomInfo'].has_key('ndig'):
-                test = self.nhdr['DicomInfo']['0_0_1'][0] - \
-                       self.nhdr['DicomInfo']['0_0_0'][0]
-            else:
-                test = int(self.nhdr['DicomInfo']['0_0_1'][0].split('.')[1]) - \
-                        int(self.nhdr['DicomInfo']['0_0_0'][0].split('.')[1])
-        else:
-#           Only one slice.
-            test = 1
-        if test > 0:
-            self.nhdr['SliceOrder'] = 'alt+z'
-            swap_locs = False
-        else:
-            self.nhdr['SliceOrder'] = 'alt-z'
-            start_ras = revras[start_ras]
-            swap_locs = True
-        start_loc = -float(self.nhdr['FirstScanLocation'])
-        if start_loc != dims['StartLoc'] and start_loc != dims['EndLoc']:
-#           Account for unique behavior for ASL recon.
-            start_loc = -start_loc
-        if start_loc == dims['EndLoc']:
-#           First find the actual start-loc and end_loc.
-            self.nhdr['StartLoc'], self.nhdr['EndLoc'] = \
-                            self.Swap(dims['StartLoc'], dims['EndLoc'])
-        else:
-            self.nhdr['StartLoc'], self.nhdr['EndLoc'] = \
-                                (dims['StartLoc'], dims['EndLoc'])
-        if swap_locs:
-#           Now account for the flip that will take place.
-            self.nhdr['StartLoc'], self.nhdr['EndLoc'] = \
-                        self.Swap(self.nhdr['StartLoc'], self.nhdr['EndLoc'])
-        
-        self.shdr['SliceOrder'] = self.nhdr['SliceOrder']
-        R = dicom_to_rot44(self.nhdr['ImageOrientation'], \
-                  self.nhdr['ImagePosition'], start_ras, self.nhdr['StartLoc'])
-
-        orientation = R_to_orientstring(R)
-        if self.nhdr['StartLoc'] == self.nhdr['EndLoc']:
-            orientation = orientation[:2] + '?'
-        return R, orientation
-
-    def Swap(self, x1, x2):
-        """
-        Swap two elements in an array or sequence.
-        """
-        tmp = x1
-        return x2, tmp
-
+ 
     def get_header(self, scan=False):
-        """
-        Read the header. Creates the hdr attribute - a dictionary containing 
-        a uniform set of keys for parameters common to all file-types.  
-        Format-specific data are stored in dictionaries under  the "subhdr" 
-        and "native_header" keys.
-        """
+#       Fill in header fields from prototype header.
+    
+#        if  (self.scan or (not scan and self.scan is not None):
         if self.hdr is not None and self.scan == scan:
             return self.hdr
         if self.filename:
             self.hdrname, self.hdrsuffix = get_hdrname(self.filename)
             self.filetype = file_type(self.hdrname)
-            if len(self.hdrsuffix) == 0 and self.filetype == 'n+1':
-                self.hdrsuffix = '.nii'
-                self.filename = '%s.nii' % self.filename
-                self.hdrname = self.filename
-            if self.filetype == 'ge_data':
-                st = os.stat(self.filename)
-                self.nbytes = st.st_size
         else:
             self.filetype = self.nhdr['filetype']
-
-        if self.filetype is None or self.filetype is 'biopac':
+        if self.filetype is None:
             return None
 #        sys.stdout.write( ' 3c ' + self.timer.ReadTimer())
         self.file_nhdr_meth = self.filetype_to_nhdrmeth[self.filetype]
@@ -3534,17 +3180,8 @@ class Header(SubHeader, NativeHeader):
 
 #       Read subheader.
         self.shdr = apply(self.file_shdr_meth, ())
-        if self.shdr is None:
-            self.hdr = {'native_header': self.nhdr, 'subhdr':{}}
-            return self.hdr
-
-        orient = R_to_orientstring(self.protohdr['R'])
-        plane = orientstring_to_plane(orient)
-        if self.filetype == 'dicom':
-#           Orientation undefined for single-slice dicoms.
-            if self.nhdr['StartLoc'] == self.nhdr['EndLoc']:
-                orient = orient[:2] + '?'
-
+#        sys.stdout.write( ' 5c ' + self.timer.ReadTimer())
+        orient_string = R_to_orientstring(self.protohdr['R'])
         if self.filename:
             if self.filetype == 'dicom':
                 imgfile = os.path.splitext(self.filename)[0]
@@ -3589,8 +3226,8 @@ class Header(SubHeader, NativeHeader):
             'scale_factor':self.protohdr['scale'][0], \
             'scale_offset':self.protohdr['scale'][1], \
             'R':self.protohdr['R'], \
-            'orientation':orient, \
-            'plane':plane, \
+            'orientation':orient_string, \
+            'plane':orientstring_to_plane(orient_string), \
             'filetype':self.filetype, \
             'imgfile':imgfile, \
             'subhdr':self.shdr, \
@@ -3599,9 +3236,6 @@ class Header(SubHeader, NativeHeader):
         return self.hdr
 
     def convert_to_yaml(self):
-        """
-        Serialize the header using the YAML serializer.
-        """
         add_ndarray_to_yaml()
         hdr1 = self.hdr.copy()
         hdr1['imgfile'] = os.path.basename(hdr1['imgfile'])
@@ -3612,7 +3246,7 @@ class Header(SubHeader, NativeHeader):
         Write header to a yaml-encoded file.
         """
         if self.scan == False and self.hdr['filetype'] == 'dicom':
-            raise RuntimeError(\
+            raise UsageError(\
             "Cannot write dicom headers to a yaml file unless the scan option is True.\nfile: %s" % filename)
 #       Tell yaml how to handle numpy arrays.
         add_ndarray_to_yaml()
@@ -3640,52 +3274,16 @@ class Header(SubHeader, NativeHeader):
         if code != yaml_magic_code:
             f.close()
             hdr = None
+#            raise UsageError(\
+#            'file_io: Invalid magic code in alleged  yaml file: %s' % filename)
         else:
 #           Tell yaml how to handle numpy arrays.
             add_ndarray_to_yaml()
-            data = f.read()
-            try:
-                hdr = yaml.load(data)
-            except:
-                lines = data.split('\n')
-                fixed = []
-                i = 0
-                while i < len(lines):
-                    if lines[i].startswith('  MediaStorageSopClassUid:'):
-#                       Invalid constructor on scanner end. Fix it.
-                        uid = lines[i+1].replace('[','').replace(']','').split()[-1]
-                        fixed.append('  MediaStorageSopClassUid: %s\n' % uid)
-                        i += 3
-                    elif lines[i].startswith('  RequestingPhysician:'):
-                        i += 11
-                    else:
-                        fixed.append(lines[i])
-                    i += 1
-                hdr = yaml.load('\n'.join(fixed))
+            hdr = yaml.load(f.read())
             f.close()
         return hdr
 
-def write_yaml(fname, hdr, write_pickle=False):
 
-    prefix = strip_suffix(fname)
-
-#   Tell yaml how to handle numpy arrays.
-    add_ndarray_to_yaml()
-
-#   Update filename field.
-    hdr1 = hdr.copy()
-    hdr1['imgfile'] = os.path.basename(hdr1['imgfile'])
-    f = open('%s.yaml' % prefix, 'w')
-    f.write(yaml_magic_code)
-    f.write(yaml.dump(hdr1))
-    f.close()
-
-    if write_pickle == True:
-#       Now write to a pickle file.
-        f = open('%s.pickle' % prefix, 'w')
-        pickler = cPickle.Pickler(f)
-        pickler.dump(hdr1)
-        f.close()
         
 #***************************
 def rot44_inv(M, dims, sizes):
@@ -3712,50 +3310,54 @@ def rot44_inv(M, dims, sizes):
     return Minv
     
 
-##*******************************
-#def get_exam_list(exam):
-##*******************************
-#
-#
-##    Get list of study directories.
-#    top = '/export/home1/sdc_image_pool/images'
-#    topdirs = os.listdir(top)
-#    exampaths = []
-#    for dir in topdirs:
-#        subdir = "%s/%s" % (top, dir)
-#        examdirs = os.listdir(subdir)
-#        for examdir in examdirs:
-#            if examdir[:4] != 'core':
-#                exampaths.append("%s/%s" % (subdir, examdir))
-#
-#    exam_info = []
-#    examm1 = ""
-#    exams = []
-#    for exampath in exampaths:
-#        examseries = os.listdir(exampath)
-##       Loop over each series in the exam
-#        for series in examseries:
-#            seriespath = "%s/%s" % (exampath, series)
-#            slices = os.listdir(seriespath)
-#            if len(slices) > 0:
-##               Read the header from the first slice to get the exam number.
-#                filename = '%s/%s' % (seriespath, slices[0])
-#                hdr = read_ge_dicom_header(filename)
-#                examno = hdr['exam']
-#                if exam == 0 or examno == exam:
-#                    if examno != examm1:
-##                       This is a new exam.
-#                        exams.append(examno)
-#                    exam_info.append((examno, seriespath, slices[0]))
-#            examm1 = examno
-##        if examno != exam:
-##            break
-#    return(exams, exam_info)
+#*******************************
+def get_exam_list(exam):
+#*******************************
+
+# Purpose: Search for dicom files in GE's database and find out what is in them.
+
+#    Get list of study directories.
+    top = '/export/home1/sdc_image_pool/images'
+    topdirs = os.listdir(top)
+    exampaths = []
+    for dir in topdirs:
+        subdir = "%s/%s" % (top, dir)
+        examdirs = os.listdir(subdir)
+        for examdir in examdirs:
+            if examdir[:4] != 'core':
+                exampaths.append("%s/%s" % (subdir, examdir))
+
+    exam_info = []
+    examm1 = ""
+    exams = []
+    for exampath in exampaths:
+        examseries = os.listdir(exampath)
+#       Loop over each series in the exam
+        for series in examseries:
+            seriespath = "%s/%s" % (exampath, series)
+            slices = os.listdir(seriespath)
+            if len(slices) > 0:
+#               Read the header from the first slice to get the exam number.
+                filename = '%s/%s' % (seriespath, slices[0])
+                hdr = read_ge_dicom_header(filename)
+                examno = hdr['exam']
+                if exam == 0 or examno == exam:
+                    if examno != examm1:
+#                       This is a new exam.
+                        exams.append(examno)
+                    exam_info.append((examno, seriespath, slices[0]))
+            examm1 = examno
+#        if examno != exam:
+#            break
+    return(exams, exam_info)
 
 def ispfile(fname):
 
     """
-    Return true if <fname> is a GE pfile.
+    Purpose: 
+        Test if file is a GE pfile.
+    Argument: file name
+    Returns: True if file is a valid P-file
     """
     f = open_gzbz2(fname, 'rb')
     f.seek(34)
@@ -3778,34 +3380,38 @@ def ispfile(fname):
 
 class Wimage(Header):
     """
-    Image object with the header as an attribute and method to read the image. 
-    """
+    Class: Wimage()
+
+    Purpose: Front end for I/O functions in file_io.py
+
+    Attributes: header Image header.
+                image: Last image read with readfile method
+
+
+    Methods:
+
+        """
             
     def __init__(self, filename=None, scan=False, force_scan=False, \
                 native_header=None, ignore_yaml=False):
         """
-       filename: Image file name.
-       scan: Only has meaning for the dicom format. If true and no yaml file is
-             found, every file in the directory is examined.
-       force_scan*: Read raw data even if yaml file is present.
-       ignore_yaml*: Don't read ehe yaml file.
-       * Only applies to dicom files.
+        Arguments:
+            filename: filename to be read.
+            scan: only has meaning for the dicom format. If true, every
+                            file in the directory is examined.
+            force_scan*: Scan even if yaml file is present.
+            ignore_yaml*: Read the header, not the yaml file.
+            * Only applies to dicom files.
         """
         
         if filename is None and native_header is None:
-            self.hdr = None
             return None
 #        self.timer = Timer()
         try:
-            if force_scan:
-                ignore_yaml = True
-                scan = True
             Header.__init__(self, filename, scan=scan, \
                         native_header=native_header, ignore_yaml=ignore_yaml)
-        except IOError, errstr:
-            sys.stderr.write('%s\n%s\n' % (errstr, except_msg()))
+        except IOError:
             self.hdr = None
-            return
 #        sys.stdout.write( ' 1b ' + self.timer.ReadTimer() + '\n')
         if self.hdr is None:
             return None
@@ -3825,59 +3431,59 @@ class Wimage(Header):
         self.tdim = self.hdr['tdim']
         self.mdim = self.hdr['mdim']
 
-#    def readheader(self, filename, scan=False):
-#        """ 
-#        Arguments:
-#             scan: True: for dicom each file in directories will be 
-#                interrogated to determine all header parameters.
-#        Returns:
-#            header: dictionary containing header information.
-#        """
-#        if filename is not None:
-#            if not os.access(filename,F_OK):
-#                sys.stderr.write( \
-#                'Wimage: Could not open %s\n' % filename)
-#                self.hdr = None
-#                return None
-#            self.filename = filename
-#            self.hd = Header(self.filename, scan=scan)
-#        self.hdr = self.hd.get_header()
-#        return(self.hdr)
+    def readheader(self, filename, scan=False):
+        """ 
+        Arguments:
+             scan: True: for dicom each file in directories will be 
+                interrogated to determine all header parameters.
+        Returns:
+            header: dictionary containing header information.
+        """
+        if filename is not None:
+            if not os.access(filename,F_OK):
+                sys.stderr.write( \
+                'Wimage: Could not open %s\n' % filename)
+                self.hdr = None
+                return None
+            self.filename = filename
+            self.hd = Header(self.filename, scan=scan)
+        self.hdr = self.hd.get_header()
+        return(self.hdr)
 
-    def _read_dicom(self, frame=None, mtype=None, filename=None, dtype=float):
+    def _read_dicom(self, frame=-1, mtype=-1, filename=None, dtype=float):
 #       Read Dicom images.
         self.image = self.dcm.get_series(frame=frame, mtype=mtype, dtype=dtype)
 
-    def _read_ifile(self, frame=None, mtype=None, filename=None, dtype=float):
-#           Read separately if GE I-file format. mtype is not used.
+    def _read_ifile(self, frame=-1, mtype=-1, filename=None, dtype=float):
+#           Read separately if GE I-file format.
             self.image = read_ge_Ifile(self.filename, self.hdr)
 
     def _read_tes(self,frame):
 #       Voxbo stores a mask for nonzero voxels and only stores nonzero voxels.
 #       Offset for size of mask.
         self.f.seek(self.hdr['start_binary'])
-        nvox =  self.xdim*self.ydim*self.zdim
-        mask = fromstring(self.f.read(nvox), 'byte').astype(short)
+        lgth = self.xdim*self.ydim*self.zdim
+        mask = fromstring(self.f.read(lgth), 'byte').astype(short)
         self.start = int(self.hdr['start_binary'] + lgth)
-        lgth_data = self.hdr['num_voxels']* \
-                        datatype_to_lgth[self.hdr['datatype']]/8
+        self.length = self.hdr['num_voxels']*datatype_to_lgth[\
+                            self.hdr['datatype']]/8
 
 #       Voxbo tes files need special processing.
         idx = mask.nonzero()[0]
-        xyzdim = self.zdim*self.ydim*self.xdim
+        lgth = len(idx)
+        frmlgth = self.zdim*self.ydim*self.xdim
         shp = [self.tdim, self.zdim, self.ydim, self.xdim]
-        jmg = zeros([self.tdim, xyzdim], short)
+        jmg = zeros([self.tdim, frmlgth], short)
         try:
             if self.hdr['swap']:
-                img = (fromstring(self.f.read(lgth_data), \
+                img = (fromstring(self.f.read(self.length), \
                     datatype_to_dtype[self.hdr['datatype']])).byteswap()
             else:
-                img = fromstring(self.f.read(lgth_data), self.hdr['datatype'])
+                img = fromstring(self.f.read(self.length), self.hdr['datatype'])
         except IOError:
-            sys.stderr.write('%s\n' % errstr)
             sys.stderr.write('\nreadfile: Could not read from %s\n%s\n' % (imgfile, except_msg()))
             return None
-        img = reshape(img, [xyzdim, self.tdim])
+        img = reshape(img, [self.zdim*self.ydim*self.xdim, self.tdim])
         for t in range(self.tdim):
             jmg[t, :].put(idx, img[:, t])
         return reshape(jmg, shp)
@@ -3901,75 +3507,46 @@ class Wimage(Header):
         elif self.filename.endswith('.nii.gz'):
             imgfile = filename
         else:
-            base = filename.replace('.nii','')
-            base = base.replace('.img','')
-            base = base.replace('.hdr','')
-            base = base.replace('.BRIK','')
-            base = base.replace('.HEAD','')
-            imgfile = "%s%s" % (base, extlist[self.hdr['filetype']])
+            imgfile = "%s%s" % (os.path.splitext(filename)[0], \
+                                extlist[self.hdr['filetype']])
         imgfile += compression
 
 #       Find position and length in file.
         self.hdr['imgfile'] = imgfile
         self.f = open_gzbz2(imgfile, 'rb') 
 
-    def _get_frame(self, frame, mtypes, nvox, lgth):
-        if frame is None:
-            frame = 0
-        datatype =  datatype_to_dtype[self.hdr['datatype']]
-        mdim = len(mtypes)
-        img = empty((mdim, nvox), datatype)
-        start_orig = int(self.hdr['start_binary'])
-        for m in xrange(mdim):
-            target = start_orig + (m*self.tdim + frame)*lgth
-            # print("Seeking to %s = %s + (%s*%s + %s)*%s" % (target, start_orig, m, self.tdim, frame, lgth))
-            self.f.seek(target)
-            if datatype == complex64:
-                jmg = fromstring(self.f.read(lgth), int32)
-                img[m,...] = fromstring(jmg.astype(float).tostring(), complex).\
-                             reshape(nvox)
-            else:
-                read = self.f.read(lgth)
-                # print("%s[%s]: expected: %s, read %s bytes" % (self.filename, frame, lgth, len(read)))
-                img[m,:] = fromstring(read, datatype)
-        if self.hdr['swap']:
-            img = img.byteswap()
-        return img
+    def _read_image(self,frame):
 
-    def _read_image(self, frame=None, mtype=None):
-
-        if self.hdr['filetype'] != 'tes' and frame is None:
+        if self.hdr['filetype'] != 'tes' and frame < 0:
             self.start = int(self.hdr['start_binary'])
-            read_lgth = self.hdr['num_voxels']*datatype_to_lgthbits[ \
+            self.length = self.hdr['num_voxels']*datatype_to_lgthbits[ \
                                         self.hdr['datatype']]/8
-            shp = (self.mdim, self.tdim, self.zdim, self.ydim,self.xdim)
-            nvox = self.tdim*self.zdim*self.ydim*self.xdim
-            mtypes = range(self.mdim)
         else:
 #           Reading frame by frame.
-#            self.start = long(self.hdr['start_binary'] + frame*self.xdim* \
-#              self.ydim*self.zdim*datatype_to_lgthbits[self.hdr['datatype']]/8)
-            shp = (self.zdim, self.ydim, self.xdim)
-            nvox = self.zdim*self.ydim*self.xdim
-            read_lgth = self.xdim*self.ydim*self.zdim* \
-                                datatype_to_lgthbits[self.hdr['datatype']]/8
-            mtypes = [mtype]
-            if mtype is None:
-                mdim = self.mdim
-                self.start = long(self.hdr['start_binary'] + frame*read_lgth)
-            else:
-                mdim = 1
-                self.start = long(self.hdr['start_binary'] + \
-                                        mtype*(self.tdim + frame)*read_lgth)
+            self.start = long(self.hdr['start_binary'] + frame*self.xdim* \
+              self.ydim*self.zdim*datatype_to_lgthbits[self.hdr['datatype']]/8)
+            self.length = self.xdim*self.ydim*self.zdim*\
+                    datatype_to_lgthbits[self.hdr['datatype']]/8
 #       Read Image.
+        self.f.seek(self.start)
         try:
-            img = self._get_frame(frame, mtypes, nvox, read_lgth)
+            if self.hdr['swap']:
+                img = (fromstring(self.f.read(self.length), \
+                    datatype_to_dtype[self.hdr['datatype']])).byteswap()
+            else:
+                img = fromstring(self.f.read(self.length), \
+                            datatype_to_dtype[self.hdr['datatype']])
         except IOError:
-            sys.stderr.write('\nreadfile: Could not read from %s\n%s\n' % \
-                                            (self.filename, except_msg()))
+            sys.stderr.write('\nreadfile: Could not read from %s\n%s\n' % (self.filename, except_msg()))
             return None
         self.f.close()
-        return img.reshape(shp)
+        if self.length != len(img)*datatype_to_lgthbits[self.hdr['datatype']]/8:
+            raise RuntimeError('Incorrect number of bytes read from %s\n' % self.filename)
+        else:
+            if frame < 0:
+                return img.reshape([self.tdim,self.zdim,self.ydim,self.xdim])
+            else:
+                return img.reshape([self.zdim,self.ydim,self.xdim])
 
     def _set_image_scale(self,img,dtype):
 
@@ -3987,8 +3564,8 @@ class Wimage(Header):
             brick_float_facs = self.hdr['native_header']['brick_float_facs']
             if self.tdim > 1:
                 if img.dtype != dtype:
-                    self.image = zeros(img.shape, dtype)
-#                            [self.tdim, self.zdim, self.ydim, self.xdim], dtype)
+                    self.image = zeros(\
+                            [self.tdim, self.zdim, self.ydim, self.xdim], dtype)
                 else:
                     self.image = img
                 for t in range(self.tdim):
@@ -4002,73 +3579,39 @@ class Wimage(Header):
             else:
                 self.image = img.astype(dtype)
         elif  self.scl != 1. or self.offset != 0.:
-            if img.ndim == 4:
-                shp = [self.mdim, self.tdim, self.zdim, self.ydim, self.xdim]
-                self.image = zeros(shp, dtype)
-                self.image[...] = (self.scl*img.reshape(shp) + \
-                                            self.offset).squeeze().astype(dtype)
+            if img.ndim > 3:
+                self.image = zeros(\
+                             [self.tdim, self.zdim, self.ydim, self.xdim],dtype)
+                for t in xrange(img.shape[0]):
+                    self.image[t,...] = (self.scl*img[t,...] + self.offset).\
+                                                                astype(dtype)
             else:
                 self.image = (self.scl*img + self.offset).astype(dtype)
         elif dtype == img.dtype:
             self.image = img
         else:
             self.image = img.astype(dtype)
+#        self.hdr['scale_factor'] = 1./self.scl
+#        self.hdr['scale_offset'] = -self.offset
  
-    def readpfile(self, frame=None, channel=None):
-        ptsize = self.hdr['native_header']['PointSize']
-        start = self.hdr['start_binary']
-        lgth = self.xdim*self.ydim*self.zdim*ptsize*2
-        if frame == None:
-            frames = range(self.mdim)
-        elif isinstance(frame, list):
-            frames = frame
-        else:
-            frames = [frame]
 
-        if channel == None:
-            channels = range(self.tdim)
-        elif isinstance(channel, list):
-            channels = channel
-        else:
-            channels = [channel]
-
-#       Open input file.
-        self._open_for_read()
-
-        shp3d = [self.zdim, self.ydim, self.xdim]
-        image = empty([len(frames), len(channels)] + shp3d, complex64) 
-        ifrm = 0
-        ich = 0
-        for frm in frames:
-            for ch in channels:
-                self.f.seek(start + (frame*self.tdim + ch)*lgth, 0)
-                if ptsize == 4:
-                    rawimg = fromstring(self.f.read(lgth), int32)
-                else:
-                    rawimg = fromstring(self.f.read(lgth), int16)
-                image[ifrm, ich,...] = fromstring(rawimg.astype(float32).\
-                                        tostring(), complex64).reshape(shp3d)
-                ich += 1
-            ifrm += 1
-        return image.squeeze()
-        
-
-    def readfile(self, frame=None, mtype=None, filename=None, dtype=None, \
-                                                          hdr=None):
+    def readfile(self, frame=-1, mtype=-1, filename=None, dtype=None, \
+                                                            hdr=None):
         """
-        Read one or more frames or types (the fifth image dimension) from disk.
-        frame: If specified, only a single frame will be read.
-        mtype: If specified only a single image type (i.e., magnitude, phase etc.) will be read.
-        dtype: Specifies the data type to be returned. It can be any valid ndarray dtype, i.e., float, float32, short, double etc.  Images will be rescaled to prevent overflows and excessive
-           truncation errors.
-        hdr: Previously read header.  This will eliminate the overhead incurred by re-reading the header.
+        Purpose: Read one or more frames from disk.
+        Keywords:
+            frame: If specified, only a single frame will be read.
+            mtype: If specified only a single image type (i.e., magnitude, 
+                    phase etc.) will be read.
+            dtype: Specifies the data type to be returned. It can be any
+               valid ndarray dtype, i.e., float, float32, short, double etc.
+               Images will be rescaled to prevent overflows and excessive
+               truncation errors.
+            hdr: Previously read header.  This will eliminate the overhead
+                incurred by re-reading the header.
         """
         if self.hdr is None:
             return None
-
-        if self.hdr['filetype'] is 'ge_data':
-            img = self.readpfile(frame)
-            return img
 
         if dtype is None:
             dtype = datatype_to_dtype[self.hdr['datatype']]
@@ -4086,28 +3629,17 @@ class Wimage(Header):
             img = self._read_tes(frame)
         else:
 #           Read the image.
-            img = self._read_image(frame, mtype)
+            img = self._read_image(frame)
             if img is None:
                 return None
 
 #       Fix the shape
-#        if self.mdim > 1 and frame < 0:
-#            shp = [self.mdim, self.tdim, self.zdim, self.ydim, self.xdim]
-#        elif self.tdim > 1 and frame < 0 or self.hdr['filetype'] == 'tes':
-#            shp = [self.tdim, self.zdim, self.ydim, self.xdim]
-#        else:
-#            shp = [self.zdim, self.ydim, self.xdim]
-        if self.mdim > 1 and mtype is None:
-            shp = [self.mdim]
+        if self.mdim > 1 and frame < 0:
+            shp = [self.mdim, self.tdim, self.zdim, self.ydim, self.xdim]
+        elif self.tdim > 1 and frame < 0 or self.hdr['filetype'] == 'tes':
+            shp = [self.tdim, self.zdim, self.ydim, self.xdim]
         else:
-            shp = []
-        if self.tdim > 1 and frame < 0:
-            shp += [self.tdim]
-        if self.zdim > 1:
-            shp += [self.zdim]
-        shp += [self.ydim, self.xdim]
-
-
+            shp = [self.zdim, self.ydim, self.xdim]
         if dtype == 'integer':
             dtyp = datatype_to_dtype[dtype]
         else:
@@ -4122,12 +3654,14 @@ class Wimage(Header):
 
         return self.image
 
+
 def abspath_to_relpath(tgtpath, srcpath):
     """
-    Convert absolute paths to relative paths.
-    <tgtpath>: The path to be converted.
-    <srcpath>: The origin path.
-    Written by Dave Perlman.
+    Purpose: Convert absolute paths to relative paths.
+    Arguments:
+        tgtpath: The path to be converted.
+        srcpath: The origin path.
+    By Dave Perlman.
     """
     
     # make sure the paths are clean
@@ -4163,9 +3697,6 @@ def abspath_to_relpath(tgtpath, srcpath):
     return outpath
 
 def convert_R_to_lpi(R, dims, sizes):
-    """
-    Convert R such that transforms to LPI coordinates than to RAI. Might be useful with FSL.
-    """
     Rlpi = dot(array(diag([-1., -1., 1., 1.])), R)
 
  #   dirs = dot(R[:3,:3], ones(3))
@@ -4180,95 +3711,13 @@ def convert_R_to_lpi(R, dims, sizes):
  #   Rlpi[:3,:3] = Rlpi
  #   Rlpi[:3, 3] = xyz0
  #   Rlpi[ 3, 3] = 1.
+#    print 111,dims,sizes
 #    print 'Rrai:'
 #    print R
 #    print 'Rlpi:'
 #    print Rlpi
     return Rlpi
 
-class BiopacData():
-    """
-    Object for reading and displayin Biopac header information.
-    """
 
-    def __init__(self, fname):
-        """
-        Read the Biopac data.
-        """
-        import bioread
-        if fname.endswith('.gz'):
-            import gzip
-            f = gzip.GzipFile(fname, 'r')
-            tmp = GetTmpSpace(500)
-            tmpfile = '%s/tmp_biopac' % tmp.tmpdir
-            fout = open(tmpfile, 'w')
-            fout.write(f.read())
-            f.close()
-            fout.close()
-            bd = bioread.read_file(tmpfile)
-            tmp.Clean()
-        else:
-            bd = bioread.read_file(fname)
-        self.channels = bd.channels
-        self.nchan =    len(bd.channels)
-
-        self.chan_names = []
-        self.stepsizes = []
-        self.units = []
-        self.channel_data = []
-        self.sample_rate = []
-        self.npts = []
-        for ch in xrange(self.nchan):
-            self.chan_names.append(self.channels[ch].name)
-            self.stepsizes.append(self.channels[ch].sample_size)
-            self.units.append(self.channels[ch].units)
-            self.channel_data.append(self.channels[ch].data)
-            self.npts.append(self.channels[ch].data.shape[0])
-            self.sample_rate.append(self.channels[ch].samples_per_second)
-
-        self.mhdr = bd.graph_header
-        self.duration = self.mhdr.sample_time
-
-    def DumpSummary(self, fd=sys.stdout):
-        """
-        Dump a summary to the file object specified by fd.
-        """
-        print 'Number of channels: %d' % self.nchan
-
-        keys = ['Channel', 'Description', 'Units', 'Rate (Hz)', 'N']
-        data = {'Channel':(range(self.nchan), '%d')}
-        data['Description'] = (self.chan_names, '%s')
-        data['Units'] = (self.units, '%s')
-        data['Rate (Hz)'] = (self.sample_rate, '%d')
-        data['N'] = (self.npts, '%d')
-        N = 4
-#        data[4] = self.chan_names
-#        data[5] = self.chan_names
-        columns = []
-        for key in keys:
-            columns.append(self.FormatColumn(data[key], key))
-
-        text = ''
-        for ch in xrange(self.nchan):
-            for col in columns:
-                text += col[ch]
-            text += '\n'
-        print text
-
-        if fd is not None:
-            fd.write(text)
-        return text
-
-    def FormatColumn(self, data, heading):
-        column = [heading]
-        for entry in data[0]:
-            column.append(data[1] % entry)
-        maxwidth = 0
-        for row in column:
-            if len(row) > maxwidth:
-                maxwidth = len(row)
-        output = []
-        for row in column:
-            output.append(row + ' '*(maxwidth+2 - len(row)))
-
-        return output
+if __name__ == '__main__':
+    sys.stdout.write('%s\n' % ID)

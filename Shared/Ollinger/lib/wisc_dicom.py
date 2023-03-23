@@ -44,7 +44,7 @@ ID = "$Id: wisc_dicom.py 675 2012-08-02 19:33:19Z vack $"[1:-1]
 
 import sys
 import os
-from numpy import int8, int16, int32, float32, float64, float, \
+from numpy import int8, int16, int32, float32, float64, \
         fromstring, ones, zeros, reshape, int, arange, take, array, \
         nonzero, integer, int32, reshape, where, ubyte, ushort, short, \
         sign, dot, cross, put, identity, empty, argmax, byte, logical_and, \
@@ -287,13 +287,15 @@ def open_gzbz2(fullpath, mode='r'):
         i = 2
     else:
 #       No suffix.
-        for i in xrange(3):
+        for i in range(3):
             path = fullpath + ['','.bz2', '.gz'][i]
             if os.path.exists(path):
                 break
         else:
             return None
-    f = apply( open_funcs[i], (path, 'r'))
+    f = open_funcs(
+    f = list(map(open_funcs[i], (path, 'rb')))
+    print(f)
 
     if f is None:
         raise IOError('open_gzbz2: Could not open: %s\n' % file1)
@@ -465,6 +467,7 @@ class IsDicom():
             self.fname = fname
             return 
         elif os.path.isdir(fname):
+
             dname = fname
             self.isdir = True
             try:
@@ -481,8 +484,9 @@ class IsDicom():
         self.fname = None
         for fname in fnames:
             infile = os.path.join(dname, fname)
+            print(infile)
             try:
-                if fname.endswith('.tar'):
+                if fname.endswith('.tar') or fname.endswith('.tgz'):
                     self.tarobj = DicomTar(infile)
                     self.isdicom = self.tarobj.isTar
                     self.istar =  self.tarobj.isTar
@@ -491,7 +495,7 @@ class IsDicom():
                         self.isdir = False
                     self.fname = fname
                     break
-                else:
+                elif fname.endswith('.bz2'):
                     f = open_gzbz2(infile, 'r')
                     if f is None:
                         continue
@@ -662,7 +666,7 @@ class Dicom():
         try:
             dataset = dc.read_file(f, stop_before_pixels=False)
             x = dataset.pixel_array
-        except filereader.InvalidDicomError, errmsg:
+        except filereader.InvalidDicomError as errmsg:
             if fname is None:
                 raise IOError('Invalid dicom file: None\n%s\n%s\n' % \
                                                 (errmsg, ' '.join(sys.argv)))
@@ -773,7 +777,7 @@ class Dicom():
 
         if self.nhdr is None:
             sys.stderr.write( \
-                '\nread_dicom_file: Could not read header from %s\n\n'%filename)
+                '\nread_dicom_file: Could not read header from %s\n\n' % self.dirname)
             return None
 
 
@@ -816,7 +820,7 @@ class Dicom():
             mtypes = range(dims['TypeDim'])
         else:
             mtypes = [mtype]
-
+            print("HI")
         self.image = zeros([mdim, tdim, zdim, ydim, xdim], dtype)
 
         if mdim  > 1:
